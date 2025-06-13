@@ -1,0 +1,29 @@
+# Arquivos de configuração
+config/database.php
+
+# Arquivos de log
+*.log
+
+# Arquivos temporários
+*.tmp
+*.temp
+
+# Diretórios de dependências
+vendor/
+node_modules/
+
+# Arquivos de ambiente
+.env
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Arquivos de cache
+*.cache

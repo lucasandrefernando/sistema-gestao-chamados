@@ -1,0 +1,18 @@
+# Habilita o módulo de reescrita
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /sistema-gestao-chamados/public/
+
+    # Não aplicar regras a arquivos e diretórios existentes
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Redireciona todas as requisições para o index.php
+    RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+</IfModule>
+
+# Previne listagem de diretórios
+Options -Indexes
+
+# Define o charset padrão
+AddDefaultCharset UTF-8
