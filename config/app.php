@@ -7,7 +7,7 @@
 // Informações básicas da aplicação
 define('APP_NAME', 'Sistema de Gestão de Chamados');
 define('APP_VERSION', '1.0.0');
-define('APP_URL', 'http://10.0.1.66/sistema-gestao-chamados');
+define('APP_URL', 'http://localhost/sistema-gestao-chamados');
 define('APP_PRODUCTION', false);
 
 // Configurações de timezone
@@ -72,13 +72,13 @@ function get_flash_message()
 
 /**
  * Sanitiza entrada de dados
+ * 
+ * @param string $input Entrada a ser sanitizada
+ * @return string Entrada sanitizada
  */
-function sanitize_input($data)
+function sanitize_input($input)
 {
-    $data = trim($data);
-    $data = stripslashes($data);
-    $data = htmlspecialchars($data);
-    return $data;
+    return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
 }
 
 /**
@@ -99,10 +99,12 @@ function is_admin()
 
 /**
  * Obtém o ID do usuário logado
+ * 
+ * @return int ID do usuário
  */
 function get_user_id()
 {
-    return $_SESSION['user_id'] ?? null;
+    return isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
 }
 
 /**
@@ -111,4 +113,164 @@ function get_user_id()
 function get_empresa_id()
 {
     return $_SESSION['empresa_id'] ?? null;
+}
+
+/**
+ * Verifica se o usuário é administrador master
+ */
+function is_admin_master()
+{
+    return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true &&
+        isset($_SESSION['admin_tipo']) && $_SESSION['admin_tipo'] === 'master';
+}
+
+/**
+ * Verifica se o usuário é administrador regular
+ */
+function is_admin_regular()
+{
+    return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true &&
+        (!isset($_SESSION['admin_tipo']) || $_SESSION['admin_tipo'] === 'regular');
+}
+
+/**
+ * Verifica se um registro pertence à empresa do usuário logado
+ */
+function check_empresa_access($record, $redirect = 'dashboard')
+{
+    if (!isset($record['empresa_id']) || $record['empresa_id'] != get_empresa_id()) {
+        set_flash_message('error', 'Você não tem permissão para acessar este recurso.');
+        redirect($redirect);
+        exit;
+    }
+    return true;
+}
+
+/**
+ * Verifica se o usuário é administrador global
+ */
+function is_admin_global()
+{
+    return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true &&
+        isset($_SESSION['admin_tipo']) && $_SESSION['admin_tipo'] === 'global';
+}
+
+/**
+ * Verifica se um token CSRF é válido
+ * 
+ * @param string $token Token a ser verificado
+ * @return bool True se o token for válido, false caso contrário
+ */
+function verify_csrf_token($token)
+{
+    return isset($_SESSION['csrf_token']) && $_SESSION['csrf_token'] === $token;
+}
+
+/**
+ * Gera um token CSRF
+ * 
+ * @return string Token CSRF gerado
+ */
+function generate_csrf_token()
+{
+    if (!isset($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * Formata o tempo em minutos para uma representação legível
+ * 
+ * @param int $minutos Tempo em minutos
+ * @return string Tempo formatado
+ */
+function formatarTempo($minutos)
+{
+    if ($minutos < 60) {
+        return $minutos . ' min';
+    } elseif ($minutos < 1440) { // menos de 24 horas
+        $horas = floor($minutos / 60);
+        $min = $minutos % 60;
+        return $horas . 'h ' . ($min > 0 ? $min . 'min' : '');
+    } else {
+        $dias = floor($minutos / 1440);
+        $horas = floor(($minutos % 1440) / 60);
+        return $dias . 'd ' . ($horas > 0 ? $horas . 'h' : '');
+    }
+}
+
+
+
+
+/**
+ * Retorna a cor CSS para um status de chamado
+ * 
+ * @param string $status Status do chamado
+ * @return string Classe CSS de cor
+ */
+function getStatusColor($status)
+{
+    $colors = [
+        'aberto' => 'danger',
+        'em_atendimento' => 'warning',
+        'em_andamento' => 'warning',
+        'pausado' => 'info',
+        'concluido' => 'success',
+        'cancelado' => 'secondary'
+    ];
+
+    return $colors[$status] ?? 'primary';
+}
+
+/**
+ * Formata um status para exibição
+ * 
+ * @param string $status Status do chamado
+ * @return string Status formatado
+ */
+function formatarStatus($status)
+{
+    $formatado = [
+        'aberto' => 'Aberto',
+        'em_atendimento' => 'Em Atendimento',
+        'em_andamento' => 'Em Andamento',
+        'pausado' => 'Pausado',
+        'concluido' => 'Concluído',
+        'cancelado' => 'Cancelado'
+    ];
+
+    return $formatado[$status] ?? ucfirst(str_replace('_', ' ', $status));
+}
+
+/**
+ * Formata a prioridade para exibição
+ * 
+ * @param string $prioridade Prioridade do chamado
+ * @return string Prioridade formatada
+ */
+function formatarPrioridade($prioridade)
+{
+    $formatado = [
+        'baixa' => 'Baixa',
+        'media' => 'Média',
+        'alta' => 'Alta',
+        'critica' => 'Crítica'
+    ];
+
+    return isset($formatado[$prioridade]) ? $formatado[$prioridade] : $prioridade;
+}
+
+/**
+ * Formata uma data para exibição
+ * 
+ * @param string $data Data no formato MySQL
+ * @return string Data formatada
+ */
+function formatarData($data)
+{
+    if (empty($data)) return '';
+
+    $timestamp = strtotime($data);
+    return date('d/m/Y H:i:s', $timestamp);
 }

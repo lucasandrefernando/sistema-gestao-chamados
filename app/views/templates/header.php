@@ -30,6 +30,13 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <span class="nav-link">
+                                <i class="fas fa-building me-1"></i> <?= $_SESSION['empresa_nome'] ?? 'Empresa' ?>
+                            </span>
+                        </li>
+                    </ul>
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">

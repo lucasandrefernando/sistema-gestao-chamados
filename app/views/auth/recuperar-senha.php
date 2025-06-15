@@ -7,10 +7,24 @@
             <div class="card-body p-4">
                 <div class="text-center mb-4">
                     <img src="<?= base_url('public/img/logo.png') ?>" alt="Logo" height="80" class="mb-3">
-                    <p>Informe seu e-mail para receber instruções de recuperação de senha.</p>
+                    <p>Informe seu e-mail e empresa para receber instruções de recuperação de senha.</p>
                 </div>
 
                 <form action="<?= base_url('auth/processarRecuperarSenha') ?>" method="post">
+                    <div class="mb-3">
+                        <label for="empresa_id" class="form-label">Empresa</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-building"></i></span>
+                            <select class="form-select" id="empresa_id" name="empresa_id" required>
+                                <option value="">Selecione uma empresa</option>
+                                <?php if (isset($empresas) && !empty($empresas)): ?>
+                                    <?php foreach ($empresas as $empresa): ?>
+                                        <option value="<?= $empresa['id'] ?>"><?= $empresa['nome'] ?></option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                    </div>
                     <div class="mb-4">
                         <label for="email" class="form-label">E-mail</label>
                         <div class="input-group">

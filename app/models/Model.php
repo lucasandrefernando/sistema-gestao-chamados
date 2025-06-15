@@ -11,16 +11,27 @@ abstract class Model
 
     /**
      * Construtor
+     * 
+     * @param string $table Nome da tabela
      */
-    public function __construct()
+    public function __construct($table = '')
     {
         $this->db = Database::getInstance()->getConnection();
+        if (!empty($table)) {
+            $this->table = $table;
+        }
     }
 
+
     /**
-     * Busca todos os registros
+     * Busca todos os registros que atendem a uma condição
+     *
+     * @param string $where Condição WHERE
+     * @param array $params Parâmetros para a condição
+     * @param string $orderBy Ordenação
+     * @return array Registros encontrados
      */
-    public function findAll($where = '', $params = [], $orderBy = '', $limit = '')
+    public function findAll($where = '', $params = [], $orderBy = '')
     {
         $sql = "SELECT * FROM {$this->table}";
 
@@ -32,14 +43,10 @@ abstract class Model
             $sql .= " ORDER BY {$orderBy}";
         }
 
-        if (!empty($limit)) {
-            $sql .= " LIMIT {$limit}";
-        }
-
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
 
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
@@ -166,5 +173,89 @@ abstract class Model
     public function rollback()
     {
         return $this->db->rollBack();
+    }
+
+    /**
+     * Executa uma consulta SQL personalizada e retorna todos os resultados
+     * 
+     * @param string $sql Consulta SQL
+     * @param array $params Parâmetros para a consulta
+     * @return array Resultados da consulta
+     */
+    public function executeQuery($sql, $params = [])
+    {
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Executa uma consulta SQL personalizada e retorna um único resultado
+     * 
+     * @param string $sql Consulta SQL
+     * @param array $params Parâmetros para a consulta
+     * @return array|false Resultado da consulta ou false se não encontrar
+     */
+    public function executeQuerySingle($sql, $params = [])
+    {
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Executa uma consulta SQL de atualização (INSERT, UPDATE, DELETE)
+     * 
+     * @param string $sql Consulta SQL
+     * @param array $params Parâmetros para a consulta
+     * @return int Número de linhas afetadas
+     */
+    public function executeUpdate($sql, $params = [])
+    {
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Verifica se uma tabela existe no banco de dados
+     * 
+     * @param string $tableName Nome da tabela
+     * @return bool True se a tabela existir, false caso contrário
+     */
+    public function tableExists($tableName)
+    {
+        try {
+            $sql = "SELECT 1 FROM {$tableName} LIMIT 1";
+            $this->db->query($sql);
+            return true;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Executa uma consulta SQL direta (para DDL como CREATE TABLE)
+     * 
+     * @param string $sql Consulta SQL
+     * @return bool True se a consulta for executada com sucesso
+     */
+    public function executeRawQuery($sql)
+    {
+        try {
+            return $this->db->exec($sql) !== false;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Retorna a conexão com o banco de dados
+     * 
+     * @return PDO Conexão com o banco de dados
+     */
+    public function getDb()
+    {
+        return $this->db;
     }
 }

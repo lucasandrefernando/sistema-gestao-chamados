@@ -29,6 +29,13 @@ class LicencasController extends Controller
             exit;
         }
 
+        // Se não for admin master, redireciona para o dashboard
+        if (!is_admin_master()) {
+            set_flash_message('error', 'Apenas administradores master podem gerenciar licenças. Se você precisa de mais licenças, entre em contato com um administrador master.');
+            redirect('dashboard');
+            exit;
+        }
+
         // Inicializa os modelos
         $this->licencaModel = new Licenca();
         $this->empresaModel = new Empresa();

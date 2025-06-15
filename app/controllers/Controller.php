@@ -101,4 +101,16 @@ abstract class Controller
 
         return $errors;
     }
+
+    /**
+     * Verifica se o usuário tem acesso à empresa
+     */
+    protected function verificarAcessoEmpresa($empresaId)
+    {
+        if ($empresaId != get_empresa_id()) {
+            set_flash_message('error', 'Você não tem permissão para acessar dados de outra empresa.');
+            redirect('dashboard');
+            exit;
+        }
+    }
 }

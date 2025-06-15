@@ -24,21 +24,19 @@ class Licenca extends Model
         $hoje = date('Y-m-d');
 
         $sql = "SELECT SUM(quantidade) as total 
-                FROM {$this->table} 
-                WHERE empresa_id = :empresa_id 
-                AND ativo = 1 
-                AND data_inicio <= :hoje 
-                AND data_fim >= :hoje";
+            FROM {$this->table} 
+            WHERE empresa_id = ? 
+            AND ativo = 1 
+            AND data_inicio <= ? 
+            AND data_fim >= ?";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            'empresa_id' => $empresaId,
-            'hoje' => $hoje
-        ]);
+        $stmt->execute([$empresaId, $hoje, $hoje]);
 
         $result = $stmt->fetch();
 
-        return $result['total'] ?? 0;
+        // Garantir que retorne 0 se não houver licenças ou se o resultado for NULL
+        return intval($result['total'] ?? 0);
     }
 
     /**

@@ -11,6 +11,11 @@
                     <i class="fas fa-ticket-alt me-2"></i> Chamados
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'setores/visualizacao') !== false ? 'active' : '' ?>" href="<?= base_url('setores/visualizacao') ?>">
+                    <i class="fas fa-sitemap me-2"></i> Setores
+                </a>
+            </li>
 
             <?php if (is_admin()): ?>
                 <li class="nav-header mt-3 mb-2 text-muted ps-3">
@@ -22,22 +27,24 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'empresas') !== false ? 'active' : '' ?>" href="<?= base_url('empresas') ?>">
-                        <i class="fas fa-building me-2"></i> Empresas
+                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'setores/admin') !== false ? 'active' : '' ?>" href="<?= base_url('setores/admin') ?>">
+                        <i class="fas fa-sitemap me-2"></i> Gerenciar Setores
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'licencas') !== false ? 'active' : '' ?>" href="<?= base_url('licencas') ?>">
-                        <i class="fas fa-key me-2"></i> Licenças
-                    </a>
-                </li>
-            <?php endif; ?>
 
-            <li class="nav-item">
-                <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'setores') !== false ? 'active' : '' ?>" href="<?= base_url('setores') ?>">
-                    <i class="fas fa-sitemap me-2"></i> Setores
-                </a>
-            </li>
+                <?php if (is_admin_master()): ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'empresas') !== false ? 'active' : '' ?>" href="<?= base_url('empresas') ?>">
+                            <i class="fas fa-building me-2"></i> Empresas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'licencas') !== false ? 'active' : '' ?>" href="<?= base_url('licencas') ?>">
+                            <i class="fas fa-key me-2"></i> Licenças
+                        </a>
+                    </li>
+                <?php endif; ?>
+            <?php endif; ?>
         </ul>
     </div>
 </nav>
