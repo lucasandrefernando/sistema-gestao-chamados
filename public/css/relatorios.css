@@ -1,0 +1,154 @@
+/* Estilos para a página de relatórios */
+
+/* Estatísticas gerais */
+.card-estatisticas .card-body {
+  padding: 1.5rem;
+}
+
+.card-estatisticas h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+.card-estatisticas h6 {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Gráficos */
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Tabelas de dados */
+.table-dados th {
+  font-weight: 600;
+  background-color: #f8f9fa;
+}
+
+.table-dados td {
+  vertical-align: middle;
+}
+
+/* Filtros */
+.filtros-relatorio .form-label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.filtros-relatorio .form-select {
+  border-radius: 0.375rem;
+}
+
+/* Responsividade */
+@media (max-width: 767.98px) {
+  .card-estatisticas h2 {
+    font-size: 1.75rem;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
+}
+
+/* Estilos para os gráficos e relatórios */
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+.card {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  margin-bottom: 1.5rem;
+}
+
+.card-header {
+  background-color: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+  padding: 0.75rem 1.25rem;
+}
+
+.card-body {
+  padding: 1.25rem;
+}
+
+.card-title {
+  margin-bottom: 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.progress {
+  height: 20px;
+  border-radius: 0.25rem;
+}
+
+.badge {
+  padding: 0.35em 0.65em;
+  font-size: 0.75em;
+  font-weight: 700;
+  border-radius: 0.25rem;
+}
+
+/* Cores para os status */
+.bg-success {
+  background-color: #28a745 !important;
+}
+
+.bg-warning {
+  background-color: #ffc107 !important;
+}
+
+.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+.bg-info {
+  background-color: #17a2b8 !important;
+}
+
+.bg-secondary {
+  background-color: #6c757d !important;
+}
+
+.bg-dark {
+  background-color: #343a40 !important;
+}
+
+/* Estatísticas gerais */
+.text-center h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.text-center h6 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.text-center small {
+  font-size: 0.75rem;
+}
+
+/* Responsividade */
+@media (max-width: 767.98px) {
+  .chart-container {
+    height: 250px;
+  }
+
+  .text-center h2 {
+    font-size: 1.5rem;
+  }
+}

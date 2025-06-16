@@ -15,8 +15,13 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Custom JS -->
+    <!-- JavaScript do Sistema -->
+    <script src="<?= base_url('public/js/utils.js') ?>"></script>
+    <script src="<?= base_url('public/js/charts.js') ?>"></script>
+    <script src="<?= base_url('public/js/chamados.js') ?>"></script>
     <script src="<?= base_url('public/js/main.js') ?>"></script>
+    <script src="<?= base_url('public/js/relatorios.js') ?>"></script>
+
 
     <?php if (isset($page_scripts)): ?>
         <?php foreach ($page_scripts as $script): ?>

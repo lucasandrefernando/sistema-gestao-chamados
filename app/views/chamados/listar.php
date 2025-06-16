@@ -15,15 +15,18 @@
     </div>
 </div>
 
-<!-- Filtros Avançados -->
+<!-- Formulário de filtro -->
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="card-title mb-0">Filtros Avançados</h5>
-        <button class="btn btn-sm btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosCollapse" aria-expanded="false" aria-controls="filtrosCollapse">
-            <i class="fas fa-filter"></i> Mostrar/Ocultar
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosCollapse">
+            <i class="fas fa-filter me-1"></i> Filtros
+            <?php if (array_filter($filtros)): ?>
+                <span class="badge bg-primary ms-1"><?= count(array_filter($filtros)) ?></span>
+            <?php endif; ?>
         </button>
     </div>
-    <div class="collapse <?= !empty(array_filter($filtros)) ? 'show' : '' ?>" id="filtrosCollapse">
+    <div class="collapse" id="filtrosCollapse">
         <div class="card-body">
             <form action="<?= base_url('chamados/listar') ?>" method="get" class="row g-3">
                 <div class="col-md-3">
@@ -31,7 +34,7 @@
                     <select class="form-select" id="status" name="status">
                         <option value="">Todos</option>
                         <?php foreach ($statusList as $statusItem): ?>
-                            <option value="<?= $statusItem['id'] ?>" <?= $filtros['status'] == $statusItem['id'] ? 'selected' : '' ?>>
+                            <option value="<?= $statusItem['id'] ?>" <?= ($filtros['status'] ?? '') == $statusItem['id'] ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($statusItem['nome']) ?>
                             </option>
                         <?php endforeach; ?>
@@ -42,7 +45,7 @@
                     <select class="form-select" id="setor" name="setor">
                         <option value="">Todos</option>
                         <?php foreach ($setores as $setorItem): ?>
-                            <option value="<?= $setorItem['id'] ?>" <?= $filtros['setor'] == $setorItem['id'] ? 'selected' : '' ?>>
+                            <option value="<?= $setorItem['id'] ?>" <?= ($filtros['setor'] ?? '') == $setorItem['id'] ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($setorItem['nome']) ?>
                             </option>
                         <?php endforeach; ?>
@@ -53,7 +56,7 @@
                     <select class="form-select" id="tipo_servico" name="tipo_servico">
                         <option value="">Todos</option>
                         <?php foreach ($tiposServico as $tipo): ?>
-                            <option value="<?= $tipo ?>" <?= $filtros['tipo_servico'] == $tipo ? 'selected' : '' ?>>
+                            <option value="<?= $tipo ?>" <?= ($filtros['tipo_servico'] ?? '') == $tipo ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($tipo) ?>
                             </option>
                         <?php endforeach; ?>
@@ -64,7 +67,7 @@
                     <select class="form-select" id="solicitante" name="solicitante">
                         <option value="">Todos</option>
                         <?php foreach ($solicitantes as $solicitante): ?>
-                            <option value="<?= $solicitante ?>" <?= $filtros['solicitante'] == $solicitante ? 'selected' : '' ?>>
+                            <option value="<?= $solicitante ?>" <?= ($filtros['solicitante'] ?? '') == $solicitante ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($solicitante) ?>
                             </option>
                         <?php endforeach; ?>
@@ -72,24 +75,24 @@
                 </div>
                 <div class="col-md-3">
                     <label for="data_inicio" class="form-label">Data Inicial</label>
-                    <input type="date" class="form-control" id="data_inicio" name="data_inicio" value="<?= $filtros['data_inicio'] ?>">
+                    <input type="date" class="form-control" id="data_inicio" name="data_inicio" value="<?= $filtros['data_inicio'] ?? '' ?>">
                 </div>
                 <div class="col-md-3">
                     <label for="data_fim" class="form-label">Data Final</label>
-                    <input type="date" class="form-control" id="data_fim" name="data_fim" value="<?= $filtros['data_fim'] ?>">
+                    <input type="date" class="form-control" id="data_fim" name="data_fim" value="<?= $filtros['data_fim'] ?? '' ?>">
+                </div>
+                <div class="col-md-3">
+                    <label for="busca" class="form-label">Busca</label>
+                    <input type="text" class="form-control" id="busca" name="busca" value="<?= isset($filtros['busca']) && $filtros['busca'] !== null ? htmlspecialchars($filtros['busca']) : '' ?>" placeholder="Descrição, solicitante ou paciente">
                 </div>
                 <div class="col-md-3">
                     <label for="ordenacao" class="form-label">Ordenação</label>
                     <select class="form-select" id="ordenacao" name="ordenacao">
-                        <option value="recentes" <?= $filtros['ordenacao'] == 'recentes' ? 'selected' : '' ?>>Mais recentes</option>
-                        <option value="antigos" <?= $filtros['ordenacao'] == 'antigos' ? 'selected' : '' ?>>Mais antigos</option>
-                        <option value="status" <?= $filtros['ordenacao'] == 'status' ? 'selected' : '' ?>>Por status</option>
-                        <option value="setor" <?= $filtros['ordenacao'] == 'setor' ? 'selected' : '' ?>>Por setor</option>
+                        <option value="recentes" <?= ($filtros['ordenacao'] ?? 'recentes') == 'recentes' ? 'selected' : '' ?>>Mais recentes</option>
+                        <option value="antigos" <?= ($filtros['ordenacao'] ?? '') == 'antigos' ? 'selected' : '' ?>>Mais antigos</option>
+                        <option value="status" <?= ($filtros['ordenacao'] ?? '') == 'status' ? 'selected' : '' ?>>Por status</option>
+                        <option value="setor" <?= ($filtros['ordenacao'] ?? '') == 'setor' ? 'selected' : '' ?>>Por setor</option>
                     </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="busca" class="form-label">Busca</label>
-                    <input type="text" class="form-control" id="busca" name="busca" value="<?= htmlspecialchars($filtros['busca']) ?>" placeholder="Descrição, solicitante ou paciente">
                 </div>
                 <div class="col-12 d-flex justify-content-end">
                     <button type="submit" class="btn btn-primary me-2">Filtrar</button>

@@ -1,32 +1,39 @@
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Dashboard de Chamados</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
+<div class="page-header">
+    <h1 class="page-title">Dashboard de Chamados</h1>
+    <div class="btn-toolbar">
         <div class="btn-group me-2">
-            <a href="<?= base_url('chamados/listar') ?>" class="btn btn-sm btn-outline-secondary">
+            <a href="<?= base_url('chamados/listar') ?>" class="btn btn-outline-secondary">
                 <i class="fas fa-list me-1"></i> Listar Chamados
             </a>
-            <a href="<?= base_url('chamados/relatorio') ?>" class="btn btn-sm btn-outline-secondary">
+            <a href="<?= base_url('chamados/relatorio') ?>" class="btn btn-outline-secondary">
                 <i class="fas fa-chart-bar me-1"></i> Relatórios
             </a>
         </div>
-        <a href="<?= base_url('chamados/criar') ?>" class="btn btn-sm btn-primary">
+        <a href="<?= base_url('chamados/criar') ?>" class="btn btn-primary">
             <i class="fas fa-plus me-1"></i> Novo Chamado
         </a>
     </div>
 </div>
 
+<!-- Elemento oculto para armazenar dados dos gráficos -->
+<div id="dashboard-data"
+    data-status='<?= json_encode($chamadosPorStatus) ?>'
+    data-monthly='<?= json_encode($chamadosPorMes) ?>'
+    data-ano='<?= $anoFiltro ?? date('Y') ?>'>
+</div>
+
 <!-- Cards de Estatísticas -->
 <div class="row mb-4">
     <div class="col-md-3">
-        <div class="card text-white bg-primary h-100">
+        <div class="card text-white bg-primary stat-card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="card-title">Total de Chamados</h6>
-                        <h2 class="mb-0"><?= $estatisticas['total'] ?></h2>
+                        <h2 class="mb-0"><?= $estatisticas['total'] ?? 0 ?></h2>
                     </div>
-                    <div>
-                        <i class="fas fa-ticket-alt fa-3x opacity-50"></i>
+                    <div class="icon">
+                        <i class="fas fa-ticket-alt"></i>
                     </div>
                 </div>
             </div>
@@ -37,15 +44,15 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-danger h-100">
+        <div class="card text-white bg-danger stat-card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="card-title">Chamados Abertos</h6>
-                        <h2 class="mb-0"><?= $estatisticas['abertos'] ?></h2>
+                        <h2 class="mb-0"><?= $estatisticas['abertos'] ?? 0 ?></h2>
                     </div>
-                    <div>
-                        <i class="fas fa-exclamation-circle fa-3x opacity-50"></i>
+                    <div class="icon">
+                        <i class="fas fa-exclamation-circle"></i>
                     </div>
                 </div>
             </div>
@@ -56,15 +63,15 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-warning h-100">
+        <div class="card text-white bg-warning stat-card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="card-title">Em Atendimento</h6>
-                        <h2 class="mb-0"><?= $estatisticas['em_andamento'] ?></h2>
+                        <h2 class="mb-0"><?= $estatisticas['em_andamento'] ?? 0 ?></h2>
                     </div>
-                    <div>
-                        <i class="fas fa-clock fa-3x opacity-50"></i>
+                    <div class="icon">
+                        <i class="fas fa-clock"></i>
                     </div>
                 </div>
             </div>
@@ -75,15 +82,15 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-success h-100">
+        <div class="card text-white bg-success stat-card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="card-title">Concluídos</h6>
-                        <h2 class="mb-0"><?= $estatisticas['concluidos'] ?></h2>
+                        <h2 class="mb-0"><?= $estatisticas['concluidos'] ?? 0 ?></h2>
                     </div>
-                    <div>
-                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                    <div class="icon">
+                        <i class="fas fa-check-circle"></i>
                     </div>
                 </div>
             </div>
@@ -113,8 +120,20 @@
     <!-- Gráfico de Chamados por Mês -->
     <div class="col-md-6">
         <div class="card h-100">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">Chamados por Mês</h5>
+                <div class="year-selector">
+                    <form id="formAnoFiltro" method="get" action="<?= base_url('chamados') ?>" class="d-flex align-items-center">
+                        <label for="anoFiltro" class="me-2 mb-0">Ano:</label>
+                        <select id="anoFiltro" name="ano" class="form-select form-select-sm" style="width: auto;">
+                            <?php foreach ($anosDisponiveis ?? [date('Y')] as $ano): ?>
+                                <option value="<?= $ano ?>" <?= ($anoFiltro ?? date('Y')) == $ano ? 'selected' : '' ?>>
+                                    <?= $ano ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </form>
+                </div>
             </div>
             <div class="card-body">
                 <div class="chart-container">
@@ -125,15 +144,15 @@
     </div>
 </div>
 
-<!-- Filtro Rápido e Chamados Recentes -->
 <div class="row mb-4">
+    <!-- Filtro Rápido -->
     <div class="col-md-4">
         <div class="card h-100">
             <div class="card-header">
                 <h5 class="card-title mb-0">Filtro Rápido</h5>
             </div>
             <div class="card-body">
-                <form action="<?= base_url('chamados/listar') ?>" method="get">
+                <form action="<?= base_url('chamados/listar') ?>" method="get" class="quick-filter-form">
                     <div class="mb-3">
                         <label for="status" class="form-label">Status</label>
                         <select class="form-select" id="status" name="status">
@@ -170,6 +189,7 @@
         </div>
     </div>
 
+    <!-- Chamados Recentes -->
     <div class="col-md-8">
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -194,7 +214,11 @@
                                 <?php foreach ($chamadosRecentes as $chamado): ?>
                                     <tr>
                                         <td><?= $chamado['id'] ?></td>
-                                        <td><?= htmlspecialchars(substr($chamado['descricao'], 0, 30)) . (strlen($chamado['descricao']) > 30 ? '...' : '') ?></td>
+                                        <td>
+                                            <div class="text-truncate" style="max-width: 200px;" data-bs-toggle="tooltip" title="<?= htmlspecialchars($chamado['descricao']) ?>">
+                                                <?= htmlspecialchars(substr($chamado['descricao'], 0, 30)) . (strlen($chamado['descricao']) > 30 ? '...' : '') ?>
+                                            </div>
+                                        </td>
                                         <td><?= htmlspecialchars($chamado['solicitante']) ?></td>
                                         <td>
                                             <?php
@@ -231,67 +255,3 @@
         </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Gráfico de Status
-        const statusCtx = document.getElementById('statusChart').getContext('2d');
-        const statusChart = new Chart(statusCtx, {
-            type: 'doughnut',
-            data: {
-                labels: <?= json_encode($chamadosPorStatus['labels']) ?>,
-                datasets: [{
-                    data: <?= json_encode($chamadosPorStatus['data']) ?>,
-                    backgroundColor: <?= json_encode($chamadosPorStatus['backgroundColor']) ?>,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                    }
-                }
-            }
-        });
-
-        // Gráfico de Chamados por Mês
-        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
-        const monthlyChart = new Chart(monthlyCtx, {
-            type: 'bar',
-            data: {
-                labels: <?= json_encode($chamadosPorMes['labels']) ?>,
-                datasets: [{
-                    label: 'Chamados',
-                    data: <?= json_encode($chamadosPorMes['data']) ?>,
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
-                        }
-                    }
-                }
-            }
-        });
-    });
-</script>
-
-<style>
-    .chart-container {
-        position: relative;
-        height: 300px;
-        width: 100%;
-    }
-</style>

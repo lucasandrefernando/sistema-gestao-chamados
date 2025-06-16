@@ -86,4 +86,152 @@ document.addEventListener('DOMContentLoaded', function () {
             icon.classList.add('fa-sun');
         }
     }
+
+    // NOVAS FUNCIONALIDADES PARA GRÁFICOS E DASHBOARD
+
+    // Inicializa o filtro de ano para gráficos
+    const anoFiltro = document.getElementById('anoFiltro');
+    if (anoFiltro) {
+        anoFiltro.addEventListener('change', function () {
+            const form = document.getElementById('formAnoFiltro');
+            if (form) {
+                form.submit();
+            }
+        });
+    }
+
+    // Inicializa gráficos se existirem no dashboard
+    initCharts();
+
+    // Trunca textos longos e adiciona tooltips
+    const textTruncate = document.querySelectorAll('.text-truncate[data-bs-toggle="tooltip"]');
+    textTruncate.forEach(function (element) {
+        new bootstrap.Tooltip(element);
+    });
+
+    // Inicializa filtros avançados
+    const filtrosCollapse = document.getElementById('filtrosCollapse');
+    if (filtrosCollapse) {
+        const filtrosAtivos = document.querySelectorAll('.filtro-ativo');
+        if (filtrosAtivos.length > 0) {
+            const bsCollapse = new bootstrap.Collapse(filtrosCollapse, {
+                toggle: false
+            });
+            bsCollapse.show();
+        }
+    }
+
+    // Atualiza contadores de filtros ativos
+    updateFilterCount();
 });
+
+// Função para inicializar gráficos
+function initCharts() {
+    // Gráfico de Status
+    const statusChart = document.getElementById('statusChart');
+    if (statusChart) {
+        const ctx = statusChart.getContext('2d');
+        const dashboardData = document.getElementById('dashboard-data');
+
+        if (dashboardData) {
+            try {
+                const statusData = JSON.parse(dashboardData.getAttribute('data-status') || '{}');
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: statusData.labels || [],
+                        datasets: [{
+                            data: statusData.data || [],
+                            backgroundColor: statusData.backgroundColor || [],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                            },
+                            title: {
+                                display: true,
+                                text: 'Distribuição de Chamados por Status',
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('Erro ao inicializar gráfico de status:', e);
+            }
+        }
+    }
+
+    // Gráfico de Chamados por Mês
+    const monthlyChart = document.getElementById('monthlyChart');
+    if (monthlyChart) {
+        const ctx = monthlyChart.getContext('2d');
+        const dashboardData = document.getElementById('dashboard-data');
+
+        if (dashboardData) {
+            try {
+                const monthlyData = JSON.parse(dashboardData.getAttribute('data-monthly') || '{}');
+                const anoFiltro = dashboardData.getAttribute('data-ano') || new Date().getFullYear();
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: monthlyData.labels || [],
+                        datasets: [{
+                            label: 'Chamados em ' + anoFiltro,
+                            data: monthlyData.data || [],
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    title: function (tooltipItems) {
+                                        return tooltipItems[0].label + ' de ' + anoFiltro;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('Erro ao inicializar gráfico mensal:', e);
+            }
+        }
+    }
+}
+
+// Função para atualizar contadores de filtros ativos
+function updateFilterCount() {
+    const filterBadge = document.getElementById('filterBadge');
+    if (filterBadge) {
+        const filterCount = document.querySelectorAll('.filtro-ativo').length;
+        filterBadge.textContent = filterCount;
+        filterBadge.style.display = filterCount > 0 ? 'inline-block' : 'none';
+    }
+}

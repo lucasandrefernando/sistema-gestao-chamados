@@ -24,29 +24,73 @@ abstract class Model
 
 
     /**
-     * Busca todos os registros que atendem a uma condição
-     *
-     * @param string $where Condição WHERE
-     * @param array $params Parâmetros para a condição
-     * @param string $orderBy Ordenação
+     * Encontra todos os registros que correspondem à condição
+     * 
+     * @param string|null $condition Condição WHERE
+     * @param array|null $params Parâmetros para a condição
+     * @param string|null $orderBy Ordenação
+     * @param int|null $limit Limite de registros
      * @return array Registros encontrados
      */
-    public function findAll($where = '', $params = [], $orderBy = '')
+    public function findAll($condition = null, $params = null, $orderBy = null, $limit = null)
     {
-        $sql = "SELECT * FROM {$this->table}";
+        try {
+            $sql = "SELECT * FROM {$this->table}";
 
-        if (!empty($where)) {
-            $sql .= " WHERE {$where}";
+            if ($condition) {
+                $sql .= " WHERE $condition";
+            }
+
+            if ($orderBy) {
+                $sql .= " ORDER BY $orderBy";
+            }
+
+            if ($limit) {
+                $sql .= " LIMIT $limit";
+            }
+
+            $stmt = $this->db->prepare($sql);
+
+            // Log para depuração
+            error_log('SQL: ' . $sql);
+            if ($params) {
+                error_log('Parâmetros: ' . print_r($params, true));
+            }
+
+            if ($params) {
+                foreach ($params as $key => $value) {
+                    $type = PDO::PARAM_STR;
+                    if (is_int($value)) {
+                        $type = PDO::PARAM_INT;
+                    } elseif (is_bool($value)) {
+                        $type = PDO::PARAM_BOOL;
+                    } elseif (is_null($value)) {
+                        $type = PDO::PARAM_NULL;
+                    }
+
+                    // Certifique-se de que o nome do parâmetro comece com ':'
+                    $paramName = $key;
+                    if (strpos($key, ':') !== 0) {
+                        $paramName = ':' . $key;
+                    }
+
+                    // Verifique se o parâmetro existe na consulta SQL
+                    if (strpos($sql, $paramName) !== false || strpos($sql, ':' . $key) !== false) {
+                        $stmt->bindValue($paramName, $value, $type);
+                    }
+                }
+            }
+
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('Erro no método findAll: ' . $e->getMessage());
+            error_log('SQL: ' . $sql);
+            if ($params) {
+                error_log('Parâmetros: ' . print_r($params, true));
+            }
+            throw $e;
         }
-
-        if (!empty($orderBy)) {
-            $sql .= " ORDER BY {$orderBy}";
-        }
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**

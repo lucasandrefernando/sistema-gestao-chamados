@@ -46,14 +46,20 @@ class ChamadosController extends Controller
     {
         $empresaId = get_empresa_id();
 
+        // Obter o ano do filtro (padrão: ano atual)
+        $anoFiltro = isset($_GET['ano']) ? (int)$_GET['ano'] : (int)date('Y');
+
         // Estatísticas gerais
         $estatisticas = $this->chamadoModel->getEstatisticas($empresaId);
 
         // Chamados por status para gráfico
         $chamadosPorStatus = $this->chamadoModel->getChamadosPorStatus($empresaId);
 
-        // Chamados por mês para gráfico
-        $chamadosPorMes = $this->chamadoModel->getChamadosPorMes($empresaId);
+        // Chamados por mês para gráfico (com filtro de ano)
+        $chamadosPorMes = $this->chamadoModel->getChamadosPorMes($empresaId, $anoFiltro);
+
+        // Obter anos disponíveis para o filtro
+        $anosDisponiveis = $this->chamadoModel->getAnosDisponiveis($empresaId);
 
         // Chamados recentes
         $chamadosRecentes = $this->chamadoModel->findAll(
@@ -73,13 +79,29 @@ class ChamadosController extends Controller
         // Status para filtro rápido
         $statusList = $this->statusModel->findAll(null, null, 'nome ASC');
 
+        // Verificar se temos dados
+        if (empty($estatisticas)) {
+            $estatisticas = [
+                'total' => 0,
+                'abertos' => 0,
+                'em_andamento' => 0,
+                'concluidos' => 0
+            ];
+        }
+
         $this->render('chamados/dashboard', [
+            'title' => 'Dashboard de Chamados',
+            'pageClass' => 'page-dashboard',
+            'pageCSS' => ['dashboard.css'],
+            'pageJS' => ['dashboard.js'],
             'estatisticas' => $estatisticas,
             'chamadosPorStatus' => $chamadosPorStatus,
             'chamadosPorMes' => $chamadosPorMes,
             'chamadosRecentes' => $chamadosRecentes,
             'setores' => $setores,
-            'statusList' => $statusList
+            'statusList' => $statusList,
+            'anoFiltro' => $anoFiltro,
+            'anosDisponiveis' => $anosDisponiveis
         ]);
     }
 
@@ -136,96 +158,134 @@ class ChamadosController extends Controller
         $empresaId = get_empresa_id();
 
         // Obtém os filtros da URL
-        $status = isset($_GET['status']) ? $_GET['status'] : null;
-        $setor = isset($_GET['setor']) ? $_GET['setor'] : null;
-        $busca = isset($_GET['busca']) ? $_GET['busca'] : null;
-        $dataInicio = isset($_GET['data_inicio']) ? $_GET['data_inicio'] : null;
-        $dataFim = isset($_GET['data_fim']) ? $_GET['data_fim'] : null;
-        $solicitante = isset($_GET['solicitante']) ? $_GET['solicitante'] : null;
-        $tipoServico = isset($_GET['tipo_servico']) ? $_GET['tipo_servico'] : null;
+        $status = isset($_GET['status']) && $_GET['status'] !== '' ? $_GET['status'] : null;
+        $setor = isset($_GET['setor']) && $_GET['setor'] !== '' ? $_GET['setor'] : null;
+        $busca = isset($_GET['busca']) && $_GET['busca'] !== '' ? $_GET['busca'] : null;
+        $dataInicio = isset($_GET['data_inicio']) && $_GET['data_inicio'] !== '' ? $_GET['data_inicio'] : null;
+        $dataFim = isset($_GET['data_fim']) && $_GET['data_fim'] !== '' ? $_GET['data_fim'] : null;
+        $solicitante = isset($_GET['solicitante']) && $_GET['solicitante'] !== '' ? $_GET['solicitante'] : null;
+        $tipoServico = isset($_GET['tipo_servico']) && $_GET['tipo_servico'] !== '' ? $_GET['tipo_servico'] : null;
         $ordenacao = isset($_GET['ordenacao']) ? $_GET['ordenacao'] : 'recentes';
 
-        // Constrói a condição de filtro
-        $condicao = 'empresa_id = :empresa_id';
-        $params = ['empresa_id' => $empresaId];
+        try {
+            // Log dos filtros recebidos
+            error_log('Filtros recebidos: ' . print_r($_GET, true));
 
-        if ($status) {
-            $condicao .= ' AND status_id = :status_id';
-            $params['status_id'] = $status;
+            // Constrói a condição de filtro
+            $condicao = 'empresa_id = :empresa_id';
+            $params = ['empresa_id' => $empresaId];
+
+            if ($status) {
+                $condicao .= ' AND status_id = :status_id';
+                $params['status_id'] = $status;
+            }
+
+            if ($setor) {
+                $condicao .= ' AND setor_id = :setor_id';
+                $params['setor_id'] = $setor;
+            }
+
+            if ($busca) {
+                // Simplificando a busca para evitar problemas
+                $condicao .= ' AND (descricao LIKE :busca)';
+                $params['busca'] = '%' . $busca . '%';
+            }
+
+            if ($dataInicio) {
+                $condicao .= ' AND data_solicitacao >= :data_inicio';
+                $params['data_inicio'] = $dataInicio . ' 00:00:00';
+            }
+
+            if ($dataFim) {
+                $condicao .= ' AND data_solicitacao <= :data_fim';
+                $params['data_fim'] = $dataFim . ' 23:59:59';
+            }
+
+            if ($solicitante) {
+                $condicao .= ' AND solicitante = :solicitante';
+                $params['solicitante'] = $solicitante;
+            }
+
+            if ($tipoServico) {
+                $condicao .= ' AND tipo_servico = :tipo_servico';
+                $params['tipo_servico'] = $tipoServico;
+            }
+
+            // Define a ordenação
+            $ordenacaoSql = 'data_solicitacao DESC';
+            if ($ordenacao === 'antigos') {
+                $ordenacaoSql = 'data_solicitacao ASC';
+            } elseif ($ordenacao === 'status') {
+                $ordenacaoSql = 'status_id ASC, data_solicitacao DESC';
+            } elseif ($ordenacao === 'setor') {
+                $ordenacaoSql = 'setor_id ASC, data_solicitacao DESC';
+            }
+
+            // Log para depuração
+            error_log('Condição SQL: ' . $condicao);
+            error_log('Parâmetros: ' . print_r($params, true));
+            error_log('Ordenação: ' . $ordenacaoSql);
+
+            // Obtém os chamados usando SQL direto para evitar problemas com o método findAll
+            $sql = "SELECT * FROM chamados WHERE $condicao ORDER BY $ordenacaoSql";
+            $stmt = $this->chamadoModel->getDb()->prepare($sql);
+
+            foreach ($params as $key => $value) {
+                $type = PDO::PARAM_STR;
+                if (is_int($value)) {
+                    $type = PDO::PARAM_INT;
+                } elseif (is_bool($value)) {
+                    $type = PDO::PARAM_BOOL;
+                } elseif (is_null($value)) {
+                    $type = PDO::PARAM_NULL;
+                }
+
+                $stmt->bindValue(':' . $key, $value, $type);
+            }
+
+            $stmt->execute();
+            $chamados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Obtém os setores para o filtro
+            $setores = $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
+
+            // Obtém os status para o filtro
+            $statusList = $this->statusModel->findAll(null, null, 'nome ASC');
+
+            // Obtém os tipos de serviço únicos
+            $tiposServico = $this->chamadoModel->getTiposServico($empresaId);
+
+            // Obtém os solicitantes únicos
+            $solicitantes = $this->chamadoModel->getSolicitantes($empresaId);
+
+            $this->render('chamados/listar', [
+                'chamados' => $chamados,
+                'setores' => $setores,
+                'statusList' => $statusList,
+                'tiposServico' => $tiposServico,
+                'solicitantes' => $solicitantes,
+                'filtros' => [
+                    'status' => $status,
+                    'setor' => $setor,
+                    'busca' => $busca ?? '',  // Garantir que nunca seja null
+                    'data_inicio' => $dataInicio,
+                    'data_fim' => $dataFim,
+                    'solicitante' => $solicitante,
+                    'tipo_servico' => $tipoServico,
+                    'ordenacao' => $ordenacao ?? 'recentes'
+                ]
+            ]);
+        } catch (Exception $e) {
+            // Log detalhado do erro
+            error_log('Erro ao listar chamados: ' . $e->getMessage());
+            error_log('Trace: ' . $e->getTraceAsString());
+
+            // Mensagem para o usuário
+            set_flash_message('error', 'Erro ao listar chamados: ' . $e->getMessage());
+
+            // Redireciona para o dashboard
+            redirect('chamados');
         }
-
-        if ($setor) {
-            $condicao .= ' AND setor_id = :setor_id';
-            $params['setor_id'] = $setor;
-        }
-
-        if ($busca) {
-            $condicao .= ' AND (descricao LIKE :busca OR solicitante LIKE :busca OR paciente LIKE :busca)';
-            $params['busca'] = '%' . $busca . '%';
-        }
-
-        if ($dataInicio) {
-            $condicao .= ' AND data_solicitacao >= :data_inicio';
-            $params['data_inicio'] = $dataInicio . ' 00:00:00';
-        }
-
-        if ($dataFim) {
-            $condicao .= ' AND data_solicitacao <= :data_fim';
-            $params['data_fim'] = $dataFim . ' 23:59:59';
-        }
-
-        if ($solicitante) {
-            $condicao .= ' AND solicitante LIKE :solicitante';
-            $params['solicitante'] = '%' . $solicitante . '%';
-        }
-
-        if ($tipoServico) {
-            $condicao .= ' AND tipo_servico = :tipo_servico';
-            $params['tipo_servico'] = $tipoServico;
-        }
-
-        // Define a ordenação
-        $ordenacaoSql = 'data_solicitacao DESC';
-        if ($ordenacao === 'antigos') {
-            $ordenacaoSql = 'data_solicitacao ASC';
-        } elseif ($ordenacao === 'status') {
-            $ordenacaoSql = 'status_id ASC, data_solicitacao DESC';
-        } elseif ($ordenacao === 'setor') {
-            $ordenacaoSql = 'setor_id ASC, data_solicitacao DESC';
-        }
-
-        // Obtém os chamados
-        $chamados = $this->chamadoModel->findAll($condicao, $params, $ordenacaoSql);
-
-        // Obtém os setores para o filtro
-        $setores = $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
-
-        // Obtém os status para o filtro
-        $statusList = $this->statusModel->findAll(null, null, 'nome ASC');
-
-        // Obtém os tipos de serviço únicos
-        $tiposServico = $this->chamadoModel->getTiposServico($empresaId);
-
-        // Obtém os solicitantes únicos
-        $solicitantes = $this->chamadoModel->getSolicitantes($empresaId);
-
-        $this->render('chamados/listar', [
-            'chamados' => $chamados,
-            'setores' => $setores,
-            'statusList' => $statusList,
-            'tiposServico' => $tiposServico,
-            'solicitantes' => $solicitantes,
-            'filtros' => [
-                'status' => $status,
-                'setor' => $setor,
-                'busca' => $busca,
-                'data_inicio' => $dataInicio,
-                'data_fim' => $dataFim,
-                'solicitante' => $solicitante,
-                'tipo_servico' => $tipoServico,
-                'ordenacao' => $ordenacao
-            ]
-        ]);
     }
 
     /**
@@ -851,52 +911,90 @@ class ChamadosController extends Controller
     }
 
     /**
-     * Gera relatório de chamados
+     * Relatório de chamados
      */
     public function relatorio()
     {
         $empresaId = get_empresa_id();
 
         // Obtém os filtros da URL
-        $periodo = isset($_GET['periodo']) ? $_GET['periodo'] : 'mes';
-        $setor = isset($_GET['setor']) ? $_GET['setor'] : null;
-        $dataInicio = isset($_GET['data_inicio']) ? $_GET['data_inicio'] : null;
-        $dataFim = isset($_GET['data_fim']) ? $_GET['data_fim'] : null;
+        $anoFiltro = isset($_GET['ano']) ? (int)$_GET['ano'] : (int)date('Y');
+        $mesFiltro = isset($_GET['mes']) && $_GET['mes'] !== '' ? (int)$_GET['mes'] : null;
+        $setorFiltro = isset($_GET['setor']) && $_GET['setor'] !== '' ? $_GET['setor'] : null;
 
-        // Define o período se não for personalizado
-        if ($periodo === 'mes') {
-            $dataInicio = date('Y-m-01');
-            $dataFim = date('Y-m-t');
-        } elseif ($periodo === 'semana') {
-            $dataInicio = date('Y-m-d', strtotime('monday this week'));
-            $dataFim = date('Y-m-d', strtotime('sunday this week'));
-        } elseif ($periodo === 'trimestre') {
-            $mes = date('m');
-            $trimestre = ceil($mes / 3);
-            $mesInicio = (($trimestre - 1) * 3) + 1;
-            $mesFim = $trimestre * 3;
-            $dataInicio = date('Y-' . str_pad($mesInicio, 2, '0', STR_PAD_LEFT) . '-01');
-            $dataFim = date('Y-' . str_pad($mesFim, 2, '0', STR_PAD_LEFT) . '-' . date('t', strtotime($dataInicio)));
-        } elseif ($periodo === 'ano') {
-            $dataInicio = date('Y-01-01');
-            $dataFim = date('Y-12-31');
+        try {
+            // Obtém os anos disponíveis para filtro
+            $anosDisponiveis = $this->chamadoModel->getAnosDisponiveis($empresaId);
+
+            // Obtém os setores para filtro
+            $setores = $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
+
+            // Obtém os status para os gráficos
+            $statusList = $this->statusModel->findAll(null, null, 'nome ASC');
+
+            // 1. Relatório de chamados por status
+            $chamadosPorStatus = $this->chamadoModel->getChamadosPorStatusRelatorio($empresaId, $anoFiltro, $mesFiltro, $setorFiltro);
+
+            // 2. Relatório de chamados por mês
+            $chamadosPorMes = $this->chamadoModel->getChamadosPorMesRelatorio($empresaId, $anoFiltro, $setorFiltro);
+
+            // 3. Relatório de tempo médio de atendimento
+            $tempoMedioAtendimento = $this->chamadoModel->getTempoMedioAtendimento($empresaId, $anoFiltro, $mesFiltro, $setorFiltro);
+
+            // 4. Relatório de chamados por setor
+            $chamadosPorSetor = $this->chamadoModel->getChamadosPorSetorRelatorio($empresaId, $anoFiltro, $mesFiltro);
+
+            // 5. Relatório de chamados por tipo de serviço
+            $chamadosPorTipoServico = $this->chamadoModel->getChamadosPorTipoServicoRelatorio($empresaId, $anoFiltro, $mesFiltro, $setorFiltro);
+
+            // 6. Relatório de chamados por prioridade
+            $taxaResolucao = $this->chamadoModel->getTaxaResolucaoRelatorio($empresaId, $anoFiltro, $mesFiltro, $setorFiltro);
+
+            // 7. Relatório de chamados por dia da semana
+            $chamadosPorDiaSemana = $this->chamadoModel->getChamadosPorDiaSemanaRelatorio($empresaId, $anoFiltro, $mesFiltro, $setorFiltro);
+
+            // 8. Relatório de evolução mensal por status
+            $evolucaoMensalPorStatus = $this->chamadoModel->getEvolucaoMensalPorStatus($empresaId, $anoFiltro, $setorFiltro);
+
+            // 9. Estatísticas gerais
+            $estatisticasGerais = $this->chamadoModel->getEstatisticasGerais($empresaId, $anoFiltro, $mesFiltro, $setorFiltro);
+
+
+
+            // Renderiza a view
+            $this->render('chamados/relatorio', [
+                'title' => 'Relatório de Chamados',
+                'pageClass' => 'page-relatorio',
+                'pageCSS' => ['relatorios.css'],
+                'pageJS' => ['relatorios.js'],
+                'anosDisponiveis' => $anosDisponiveis,
+                'setores' => $setores,
+                'statusList' => $statusList,
+                'chamadosPorStatus' => $chamadosPorStatus,
+                'chamadosPorMes' => $chamadosPorMes,
+                'tempoMedioAtendimento' => $tempoMedioAtendimento,
+                'chamadosPorSetor' => $chamadosPorSetor,
+                'chamadosPorTipoServico' => $chamadosPorTipoServico,
+                'taxaResolucao' => $taxaResolucao,
+                'chamadosPorDiaSemana' => $chamadosPorDiaSemana,
+                'evolucaoMensalPorStatus' => $evolucaoMensalPorStatus,
+                'estatisticasGerais' => $estatisticasGerais,
+                'filtros' => [
+                    'ano' => $anoFiltro,
+                    'mes' => $mesFiltro,
+                    'setor' => $setorFiltro
+                ]
+            ]);
+        } catch (Exception $e) {
+            // Log do erro
+            error_log('Erro ao gerar relatório: ' . $e->getMessage());
+            error_log('Trace: ' . $e->getTraceAsString());
+
+            // Mensagem para o usuário
+            set_flash_message('error', 'Erro ao gerar relatório: ' . $e->getMessage());
+
+            // Redireciona para o dashboard
+            redirect('chamados');
         }
-
-        // Obtém os setores para o filtro
-        $setores = $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
-
-        // Obtém os dados para o relatório
-        $dadosRelatorio = $this->chamadoModel->getDadosRelatorio($empresaId, $setor, $dataInicio, $dataFim);
-
-        $this->render('chamados/relatorio', [
-            'dadosRelatorio' => $dadosRelatorio,
-            'setores' => $setores,
-            'filtros' => [
-                'periodo' => $periodo,
-                'setor' => $setor,
-                'data_inicio' => $dataInicio,
-                'data_fim' => $dataFim
-            ]
-        ]);
     }
 }

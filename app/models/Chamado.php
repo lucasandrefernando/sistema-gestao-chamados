@@ -23,64 +23,79 @@ class Chamado extends Model
     public function getEstatisticas($empresaId)
     {
         try {
-            // Verifica se a tabela existe
-            $this->db->query("SELECT 1 FROM {$this->table} LIMIT 1");
-
             // Total de chamados
             $total = $this->count('empresa_id = :empresa_id', ['empresa_id' => $empresaId]);
 
             // Chamados por status
-            $abertos = $this->count('empresa_id = :empresa_id AND status = :status', [
-                'empresa_id' => $empresaId,
-                'status' => 'aberto'
-            ]);
+            // Abertos (status_id = 1)
+            $sqlAbertos = "SELECT COUNT(*) as total FROM {$this->table} 
+                      WHERE empresa_id = :empresa_id AND status_id = 1";
+            $stmtAbertos = $this->db->prepare($sqlAbertos);
+            $stmtAbertos->execute(['empresa_id' => $empresaId]);
+            $abertos = $stmtAbertos->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
-            $emAndamento = $this->count('empresa_id = :empresa_id AND status = :status', [
-                'empresa_id' => $empresaId,
-                'status' => 'em_andamento'
-            ]);
+            // Em andamento (status_id = 2)
+            $sqlEmAndamento = "SELECT COUNT(*) as total FROM {$this->table} 
+                          WHERE empresa_id = :empresa_id AND status_id = 2";
+            $stmtEmAndamento = $this->db->prepare($sqlEmAndamento);
+            $stmtEmAndamento->execute(['empresa_id' => $empresaId]);
+            $emAndamento = $stmtEmAndamento->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
-            $concluidos = $this->count('empresa_id = :empresa_id AND status = :status', [
-                'empresa_id' => $empresaId,
-                'status' => 'concluido'
-            ]);
-
-            $cancelados = $this->count('empresa_id = :empresa_id AND status = :status', [
-                'empresa_id' => $empresaId,
-                'status' => 'cancelado'
-            ]);
-
-            // Últimos chamados
-            $sql = "SELECT c.*, u.nome as solicitante_nome, s.nome as setor_nome 
-                    FROM {$this->table} c
-                    LEFT JOIN usuarios u ON c.solicitante_id = u.id
-                    LEFT JOIN setores s ON c.setor_id = s.id
-                    WHERE c.empresa_id = :empresa_id
-                    ORDER BY c.data_abertura DESC
-                    LIMIT 5";
-
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute(['empresa_id' => $empresaId]);
-            $ultimosChamados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // Concluídos (status_id = 4)
+            $sqlConcluidos = "SELECT COUNT(*) as total FROM {$this->table} 
+                         WHERE empresa_id = :empresa_id AND status_id = 4";
+            $stmtConcluidos = $this->db->prepare($sqlConcluidos);
+            $stmtConcluidos->execute(['empresa_id' => $empresaId]);
+            $concluidos = $stmtConcluidos->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
             return [
                 'total' => $total,
                 'abertos' => $abertos,
                 'em_andamento' => $emAndamento,
-                'concluidos' => $concluidos,
-                'cancelados' => $cancelados,
-                'ultimos_chamados' => $ultimosChamados
+                'concluidos' => $concluidos
             ];
         } catch (Exception $e) {
-            // Se a tabela não existir ou ocorrer outro erro, retorna estatísticas vazias
+            error_log('Erro ao obter estatísticas: ' . $e->getMessage());
             return [
                 'total' => 0,
                 'abertos' => 0,
                 'em_andamento' => 0,
-                'concluidos' => 0,
-                'cancelados' => 0,
-                'ultimos_chamados' => []
+                'concluidos' => 0
             ];
+        }
+    }
+
+
+
+
+    /**
+     * Obtém os anos disponíveis para filtro
+     * 
+     * @param int $empresaId ID da empresa
+     * @return array Anos disponíveis
+     */
+    public function getAnosDisponiveis($empresaId)
+    {
+        try {
+            $sql = "SELECT DISTINCT YEAR(data_solicitacao) as ano 
+                FROM {$this->table} 
+                WHERE empresa_id = :empresa_id 
+                ORDER BY ano DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+            // Se não houver dados, retorna o ano atual
+            if (empty($result)) {
+                return [date('Y')];
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            error_log('Erro ao obter anos disponíveis: ' . $e->getMessage());
+            return [date('Y')];
         }
     }
 
@@ -93,10 +108,12 @@ class Chamado extends Model
     public function getChamadosPorStatus($empresaId)
     {
         try {
-            $sql = "SELECT status, COUNT(*) as total 
-                    FROM {$this->table} 
-                    WHERE empresa_id = :empresa_id 
-                    GROUP BY status";
+            $sql = "SELECT s.id, s.nome, COUNT(*) as total 
+                FROM {$this->table} c
+                JOIN status_chamados s ON c.status_id = s.id
+                WHERE c.empresa_id = :empresa_id 
+                GROUP BY s.id, s.nome
+                ORDER BY s.id";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute(['empresa_id' => $empresaId]);
@@ -106,18 +123,18 @@ class Chamado extends Model
             $labels = [];
             $data = [];
             $backgroundColor = [
-                'aberto' => 'rgba(255, 99, 132, 0.7)',
-                'em_andamento' => 'rgba(54, 162, 235, 0.7)',
-                'concluido' => 'rgba(75, 192, 192, 0.7)',
-                'cancelado' => 'rgba(201, 203, 207, 0.7)'
+                1 => 'rgba(255, 99, 132, 0.7)',  // Aberto
+                2 => 'rgba(54, 162, 235, 0.7)',  // Em andamento
+                3 => 'rgba(255, 206, 86, 0.7)',  // Pendente
+                4 => 'rgba(75, 192, 192, 0.7)',  // Concluído
+                5 => 'rgba(201, 203, 207, 0.7)'  // Cancelado
             ];
             $colors = [];
 
             foreach ($result as $row) {
-                $status = $row['status'];
-                $labels[] = $this->formatarStatus($status);
+                $labels[] = $row['nome'];
                 $data[] = (int)$row['total'];
-                $colors[] = $backgroundColor[$status] ?? 'rgba(153, 102, 255, 0.7)';
+                $colors[] = $backgroundColor[$row['id']] ?? 'rgba(153, 102, 255, 0.7)';
             }
 
             return [
@@ -126,6 +143,7 @@ class Chamado extends Model
                 'backgroundColor' => $colors
             ];
         } catch (Exception $e) {
+            error_log('Erro ao obter chamados por status: ' . $e->getMessage());
             return [
                 'labels' => [],
                 'data' => [],
@@ -196,26 +214,34 @@ class Chamado extends Model
     }
 
     /**
-     * Obtém dados de chamados por mês para gráficos
+     * Obtém dados de chamados por mês para gráficos com filtro de ano
      * 
      * @param int $empresaId ID da empresa
+     * @param int $ano Ano para filtrar (opcional)
      * @return array Dados para gráfico
      */
-    public function getChamadosPorMes($empresaId)
+    public function getChamadosPorMes($empresaId, $ano = null)
     {
         try {
+            // Se não for informado o ano, usa o ano atual
+            if (!$ano) {
+                $ano = date('Y');
+            }
+
             $sql = "SELECT 
-                        MONTH(data_abertura) as mes, 
-                        YEAR(data_abertura) as ano,
-                        COUNT(*) as total 
-                    FROM {$this->table} 
-                    WHERE empresa_id = :empresa_id 
-                    AND data_abertura >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-                    GROUP BY YEAR(data_abertura), MONTH(data_abertura)
-                    ORDER BY ano, mes";
+                    MONTH(data_solicitacao) as mes, 
+                    COUNT(*) as total 
+                FROM {$this->table} 
+                WHERE empresa_id = :empresa_id 
+                AND YEAR(data_solicitacao) = :ano
+                GROUP BY MONTH(data_solicitacao)
+                ORDER BY mes";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['empresa_id' => $empresaId]);
+            $stmt->execute([
+                'empresa_id' => $empresaId,
+                'ano' => $ano
+            ]);
             $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Formata os dados para o gráfico
@@ -223,33 +249,42 @@ class Chamado extends Model
             $data = [];
 
             $meses = [
-                1 => 'Jan',
-                2 => 'Fev',
-                3 => 'Mar',
-                4 => 'Abr',
-                5 => 'Mai',
-                6 => 'Jun',
-                7 => 'Jul',
-                8 => 'Ago',
-                9 => 'Set',
-                10 => 'Out',
-                11 => 'Nov',
-                12 => 'Dez'
+                1 => 'Janeiro',
+                2 => 'Fevereiro',
+                3 => 'Março',
+                4 => 'Abril',
+                5 => 'Maio',
+                6 => 'Junho',
+                7 => 'Julho',
+                8 => 'Agosto',
+                9 => 'Setembro',
+                10 => 'Outubro',
+                11 => 'Novembro',
+                12 => 'Dezembro'
             ];
 
+            // Inicializa todos os meses com zero
+            foreach ($meses as $numMes => $nomeMes) {
+                $labels[$numMes] = $nomeMes;
+                $data[$numMes] = 0;
+            }
+
+            // Preenche com os dados reais
             foreach ($result as $row) {
-                $labels[] = $meses[$row['mes']] . '/' . substr($row['ano'], 2);
-                $data[] = (int)$row['total'];
+                $data[$row['mes']] = (int)$row['total'];
             }
 
             return [
-                'labels' => $labels,
-                'data' => $data
+                'labels' => array_values($labels),
+                'data' => array_values($data),
+                'ano' => $ano
             ];
         } catch (Exception $e) {
+            error_log('Erro ao obter chamados por mês: ' . $e->getMessage());
             return [
                 'labels' => [],
-                'data' => []
+                'data' => [],
+                'ano' => $ano
             ];
         }
     }
@@ -264,32 +299,34 @@ class Chamado extends Model
     {
         try {
             // Últimos chamados
-            $sql = "SELECT c.id, c.titulo, c.status, c.data_abertura, 
-                        u.nome as solicitante_nome, 
-                        'chamado' as tipo,
-                        c.data_abertura as data
-                    FROM {$this->table} c
-                    LEFT JOIN usuarios u ON c.solicitante_id = u.id
-                    WHERE c.empresa_id = :empresa_id
-                    
-                    UNION
-                    
-                    SELECT c.id, c.titulo, c.status, cc.data_criacao, 
-                        u.nome as usuario_nome,
-                        'comentario' as tipo,
-                        cc.data_criacao as data
-                    FROM chamados_comentarios cc
-                    JOIN {$this->table} c ON cc.chamado_id = c.id
-                    LEFT JOIN usuarios u ON cc.usuario_id = u.id
-                    WHERE c.empresa_id = :empresa_id
-                    
-                    ORDER BY data DESC
-                    LIMIT 10";
+            $sql = "SELECT c.id, c.descricao as titulo, s.nome as status, c.data_solicitacao as data, 
+                    c.solicitante as solicitante_nome, 
+                    'chamado' as tipo,
+                    c.data_solicitacao as data
+                FROM {$this->table} c
+                LEFT JOIN status_chamados s ON c.status_id = s.id
+                WHERE c.empresa_id = :empresa_id
+                
+                UNION
+                
+                SELECT c.id, c.descricao as titulo, s.nome as status, cc.data_criacao, 
+                    u.nome as usuario_nome,
+                    'comentario' as tipo,
+                    cc.data_criacao as data
+                FROM chamados_comentarios cc
+                JOIN {$this->table} c ON cc.chamado_id = c.id
+                LEFT JOIN status_chamados s ON c.status_id = s.id
+                LEFT JOIN usuarios u ON cc.usuario_id = u.id
+                WHERE c.empresa_id = :empresa_id
+                
+                ORDER BY data DESC
+                LIMIT 10";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute(['empresa_id' => $empresaId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
+            error_log('Erro ao obter atividades recentes: ' . $e->getMessage());
             return [];
         }
     }
@@ -530,7 +567,7 @@ class Chamado extends Model
     }
 
     /**
-     * Obtém os tipos de serviço únicos
+     * Obtém os tipos de serviço disponíveis
      * 
      * @param int $empresaId ID da empresa
      * @return array Tipos de serviço
@@ -541,11 +578,13 @@ class Chamado extends Model
             $sql = "SELECT DISTINCT tipo_servico 
                 FROM {$this->table} 
                 WHERE empresa_id = :empresa_id 
-                AND tipo_servico IS NOT NULL
+                AND tipo_servico IS NOT NULL 
+                AND tipo_servico != '' 
                 ORDER BY tipo_servico ASC";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['empresa_id' => $empresaId]);
+            $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            $stmt->execute();
             $result = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
             return $result;
@@ -557,7 +596,7 @@ class Chamado extends Model
 
 
     /**
-     * Obtém os solicitantes únicos
+     * Obtém os solicitantes disponíveis
      * 
      * @param int $empresaId ID da empresa
      * @return array Solicitantes
@@ -568,10 +607,13 @@ class Chamado extends Model
             $sql = "SELECT DISTINCT solicitante 
                 FROM {$this->table} 
                 WHERE empresa_id = :empresa_id 
+                AND solicitante IS NOT NULL 
+                AND solicitante != '' 
                 ORDER BY solicitante ASC";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['empresa_id' => $empresaId]);
+            $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            $stmt->execute();
             $result = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
             return $result;
@@ -991,6 +1033,1106 @@ class Chamado extends Model
         } catch (Exception $e) {
             error_log("Erro ao inserir comentário: " . $e->getMessage());
             throw $e;
+        }
+    }
+
+    /**
+     * Obtém dados de chamados por status para relatórios
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $ano Ano para filtrar (opcional)
+     * @param int $mes Mês para filtrar (opcional)
+     * @param int $setorId ID do setor para filtrar (opcional)
+     * @return array Dados para gráfico
+     */
+    public function getChamadosPorStatusRelatorio($empresaId, $ano = null, $mes = null, $setorId = null)
+    {
+        try {
+            $sql = "SELECT 
+                    s.id as status_id,
+                    s.nome as status_nome,
+                    COUNT(*) as total
+                FROM {$this->table} c
+                JOIN status_chamados s ON c.status_id = s.id
+                WHERE c.empresa_id = :empresa_id";
+
+            $params = ['empresa_id' => $empresaId];
+
+            if ($ano) {
+                $sql .= " AND YEAR(c.data_solicitacao) = :ano";
+                $params['ano'] = $ano;
+            }
+
+            if ($mes) {
+                $sql .= " AND MONTH(c.data_solicitacao) = :mes";
+                $params['mes'] = $mes;
+            }
+
+            if ($setorId) {
+                $sql .= " AND c.setor_id = :setor_id";
+                $params['setor_id'] = $setorId;
+            }
+
+            $sql .= " GROUP BY s.id, s.nome
+                  ORDER BY s.id";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Formata os dados para o gráfico
+            $labels = [];
+            $data = [];
+            $backgroundColor = [];
+
+            // Cores específicas para status comuns
+            $statusColors = [
+                'aberto' => 'rgba(255, 99, 132, 0.7)',       // Vermelho
+                'andamento' => 'rgba(255, 206, 86, 0.7)',    // Amarelo
+                'atendimento' => 'rgba(255, 206, 86, 0.7)',  // Amarelo
+                'concluído' => 'rgba(75, 192, 192, 0.7)',    // Verde
+                'resolvido' => 'rgba(75, 192, 192, 0.7)',    // Verde
+                'cancelado' => 'rgba(153, 102, 255, 0.7)',   // Roxo
+                'pendente' => 'rgba(54, 162, 235, 0.7)',     // Azul
+            ];
+
+            // Cores alternativas para outros status
+            $alternativeColors = [
+                'rgba(255, 159, 64, 0.7)',   // Laranja
+                'rgba(199, 199, 199, 0.7)',  // Cinza
+                'rgba(83, 123, 196, 0.7)',   // Azul escuro
+                'rgba(245, 130, 49, 0.7)',   // Laranja escuro
+                'rgba(22, 160, 133, 0.7)'    // Verde escuro
+            ];
+
+            $colorIndex = 0;
+
+            foreach ($result as $row) {
+                $labels[] = $row['status_nome'];
+                $data[] = (int)$row['total'];
+
+                // Determina a cor com base no nome do status
+                $color = null;
+                $statusNome = strtolower($row['status_nome']);
+
+                foreach ($statusColors as $keyword => $statusColor) {
+                    if (strpos($statusNome, $keyword) !== false) {
+                        $color = $statusColor;
+                        break;
+                    }
+                }
+
+                // Se não encontrou uma cor específica, usa uma das alternativas
+                if (!$color) {
+                    $color = $alternativeColors[$colorIndex % count($alternativeColors)];
+                    $colorIndex++;
+                }
+
+                $backgroundColor[] = $color;
+            }
+
+            return [
+                'labels' => $labels,
+                'data' => $data,
+                'backgroundColor' => $backgroundColor,
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter chamados por status: ' . $e->getMessage());
+
+            // Retorna um array vazio em caso de erro
+            return [
+                'labels' => [],
+                'data' => [],
+                'backgroundColor' => [],
+                'raw' => []
+            ];
+        }
+    }
+
+    /**
+     * Obtém dados de chamados por mês para relatórios
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $ano Ano para filtrar
+     * @param int $setorId ID do setor para filtrar (opcional)
+     * @return array Dados para gráfico
+     */
+    public function getChamadosPorMesRelatorio($empresaId, $ano, $setorId = null)
+    {
+        try {
+            $sql = "SELECT 
+                    MONTH(data_solicitacao) as mes, 
+                    COUNT(*) as total 
+                FROM {$this->table} 
+                WHERE empresa_id = :empresa_id 
+                AND YEAR(data_solicitacao) = :ano";
+
+            $params = [
+                'empresa_id' => $empresaId,
+                'ano' => $ano
+            ];
+
+            if ($setorId) {
+                $sql .= " AND setor_id = :setor_id";
+                $params['setor_id'] = $setorId;
+            }
+
+            $sql .= " GROUP BY MONTH(data_solicitacao)
+                  ORDER BY mes";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Formata os dados para o gráfico
+            $labels = [];
+            $data = [];
+
+            $meses = [
+                1 => 'Janeiro',
+                2 => 'Fevereiro',
+                3 => 'Março',
+                4 => 'Abril',
+                5 => 'Maio',
+                6 => 'Junho',
+                7 => 'Julho',
+                8 => 'Agosto',
+                9 => 'Setembro',
+                10 => 'Outubro',
+                11 => 'Novembro',
+                12 => 'Dezembro'
+            ];
+
+            // Inicializa todos os meses com zero
+            foreach ($meses as $numMes => $nomeMes) {
+                $labels[$numMes] = $nomeMes;
+                $data[$numMes] = 0;
+            }
+
+            // Preenche com os dados reais
+            foreach ($result as $row) {
+                $data[$row['mes']] = (int)$row['total'];
+            }
+
+            return [
+                'labels' => array_values($labels),
+                'data' => array_values($data),
+                'ano' => $ano,
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter chamados por mês: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'data' => [],
+                'ano' => $ano,
+                'raw' => []
+            ];
+        }
+    }
+
+    /**
+     * Obtém o tempo médio de atendimento dos chamados
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $ano Ano para filtrar (opcional)
+     * @param int $mes Mês para filtrar (opcional)
+     * @param int $setorId ID do setor para filtrar (opcional)
+     * @return array Dados para gráfico
+     */
+    public function getTempoMedioAtendimento($empresaId, $ano = null, $mes = null, $setorId = null)
+    {
+        try {
+            // Log para depuração
+            error_log("Obtendo tempo médio de atendimento para empresa $empresaId");
+
+            $sql = "SELECT 
+                    s.id as status_id,
+                    s.nome as status_nome,
+                    AVG(
+                        CASE 
+                            WHEN c.data_conclusao IS NOT NULL 
+                            THEN TIMESTAMPDIFF(HOUR, c.data_solicitacao, c.data_conclusao)
+                            ELSE TIMESTAMPDIFF(HOUR, c.data_solicitacao, NOW())
+                        END
+                    ) as tempo_medio,
+                    COUNT(*) as total_chamados
+                FROM {$this->table} c
+                JOIN status_chamados s ON c.status_id = s.id
+                WHERE c.empresa_id = :empresa_id";
+
+            $params = ['empresa_id' => $empresaId];
+
+            if ($ano) {
+                $sql .= " AND YEAR(c.data_solicitacao) = :ano";
+                $params['ano'] = $ano;
+            }
+
+            if ($mes) {
+                $sql .= " AND MONTH(c.data_solicitacao) = :mes";
+                $params['mes'] = $mes;
+            }
+
+            if ($setorId) {
+                $sql .= " AND c.setor_id = :setor_id";
+                $params['setor_id'] = $setorId;
+            }
+
+            $sql .= " GROUP BY s.id, s.nome
+                  HAVING total_chamados > 0
+                  ORDER BY s.id";
+
+            error_log("SQL: $sql");
+            error_log("Params: " . print_r($params, true));
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            error_log("Resultado: " . print_r($result, true));
+
+            // Formata os dados para o gráfico
+            $labels = [];
+            $data = [];
+            $backgroundColor = [];
+
+            // Cores específicas para status comuns
+            $statusColors = [
+                'aberto' => 'rgba(255, 99, 132, 0.7)',       // Vermelho
+                'andamento' => 'rgba(255, 206, 86, 0.7)',    // Amarelo
+                'atendimento' => 'rgba(255, 206, 86, 0.7)',  // Amarelo
+                'concluído' => 'rgba(75, 192, 192, 0.7)',    // Verde
+                'resolvido' => 'rgba(75, 192, 192, 0.7)',    // Verde
+                'cancelado' => 'rgba(153, 102, 255, 0.7)',   // Roxo
+                'pendente' => 'rgba(54, 162, 235, 0.7)',     // Azul
+                'pausado' => 'rgba(54, 162, 235, 0.7)',      // Azul
+            ];
+
+            // Cores alternativas para outros status
+            $alternativeColors = [
+                'rgba(255, 159, 64, 0.7)',   // Laranja
+                'rgba(199, 199, 199, 0.7)',  // Cinza
+                'rgba(83, 123, 196, 0.7)',   // Azul escuro
+                'rgba(245, 130, 49, 0.7)',   // Laranja escuro
+                'rgba(22, 160, 133, 0.7)'    // Verde escuro
+            ];
+
+            $colorIndex = 0;
+
+            foreach ($result as $row) {
+                $labels[] = $row['status_nome'] . ' (' . $row['total_chamados'] . ')';
+                $data[] = (float)$row['tempo_medio']; // Usar float em vez de round para manter a precisão
+
+                // Determina a cor com base no nome do status
+                $color = null;
+                $statusNome = strtolower($row['status_nome']);
+
+                foreach ($statusColors as $keyword => $statusColor) {
+                    if (strpos($statusNome, $keyword) !== false) {
+                        $color = $statusColor;
+                        break;
+                    }
+                }
+
+                // Se não encontrou uma cor específica, usa uma das alternativas
+                if (!$color) {
+                    $color = $alternativeColors[$colorIndex % count($alternativeColors)];
+                    $colorIndex++;
+                }
+
+                $backgroundColor[] = $color;
+            }
+
+            return [
+                'labels' => $labels,
+                'data' => $data,
+                'backgroundColor' => $backgroundColor,
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter tempo médio de atendimento: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+
+            // Retorna um array vazio em caso de erro
+            return [
+                'labels' => [],
+                'data' => [],
+                'backgroundColor' => [],
+                'raw' => []
+            ];
+        }
+    }
+
+    /**
+     * Obtém dados de chamados por setor para relatórios
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $ano Ano para filtrar (opcional)
+     * @param int $mes Mês para filtrar (opcional)
+     * @return array Dados para gráfico
+     */
+    public function getChamadosPorSetorRelatorio($empresaId, $ano = null, $mes = null)
+    {
+        try {
+            $sql = "SELECT 
+                    s.id as setor_id,
+                    s.nome as setor_nome,
+                    COUNT(*) as total
+                FROM {$this->table} c
+                JOIN setores s ON c.setor_id = s.id
+                WHERE c.empresa_id = :empresa_id";
+
+            $params = ['empresa_id' => $empresaId];
+
+            if ($ano) {
+                $sql .= " AND YEAR(c.data_solicitacao) = :ano";
+                $params['ano'] = $ano;
+            }
+
+            if ($mes) {
+                $sql .= " AND MONTH(c.data_solicitacao) = :mes";
+                $params['mes'] = $mes;
+            }
+
+            $sql .= " GROUP BY s.id, s.nome
+                  ORDER BY total DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Formata os dados para o gráfico
+            $labels = [];
+            $data = [];
+            $backgroundColor = [];
+
+            $colors = [
+                'rgba(255, 99, 132, 0.7)',   // Vermelho
+                'rgba(54, 162, 235, 0.7)',   // Azul
+                'rgba(255, 206, 86, 0.7)',   // Amarelo
+                'rgba(75, 192, 192, 0.7)',   // Verde
+                'rgba(153, 102, 255, 0.7)',  // Roxo
+                'rgba(255, 159, 64, 0.7)',   // Laranja
+                'rgba(199, 199, 199, 0.7)'   // Cinza
+            ];
+
+            foreach ($result as $index => $row) {
+                $labels[] = $row['setor_nome'];
+                $data[] = (int)$row['total'];
+                $backgroundColor[] = $colors[$index % count($colors)];
+            }
+
+            return [
+                'labels' => $labels,
+                'data' => $data,
+                'backgroundColor' => $backgroundColor,
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter chamados por setor: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'data' => [],
+                'backgroundColor' => [],
+                'raw' => []
+            ];
+        }
+    }
+
+    /**
+     * Obtém dados de chamados por tipo de serviço para relatórios
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $ano Ano para filtrar (opcional)
+     * @param int $mes Mês para filtrar (opcional)
+     * @param int $setorId ID do setor para filtrar (opcional)
+     * @return array Dados para gráfico
+     */
+    public function getChamadosPorTipoServicoRelatorio($empresaId, $ano = null, $mes = null, $setorId = null)
+    {
+        try {
+            // Log para depuração
+            error_log("Obtendo chamados por tipo de serviço para empresa $empresaId");
+
+            $sql = "SELECT 
+                    COALESCE(tipo_servico, 'Não especificado') as tipo_servico,
+                    COUNT(*) as total
+                FROM {$this->table}
+                WHERE empresa_id = :empresa_id";
+
+            $params = ['empresa_id' => $empresaId];
+
+            if ($ano) {
+                $sql .= " AND YEAR(data_solicitacao) = :ano";
+                $params['ano'] = $ano;
+            }
+
+            if ($mes) {
+                $sql .= " AND MONTH(data_solicitacao) = :mes";
+                $params['mes'] = $mes;
+            }
+
+            if ($setorId) {
+                $sql .= " AND setor_id = :setor_id";
+                $params['setor_id'] = $setorId;
+            }
+
+            $sql .= " GROUP BY tipo_servico
+                  ORDER BY total DESC
+                  LIMIT 10";
+
+            error_log("SQL: $sql");
+            error_log("Params: " . print_r($params, true));
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            error_log("Resultado: " . print_r($result, true));
+
+            // Formata os dados para o gráfico
+            $labels = [];
+            $data = [];
+            $backgroundColor = [];
+
+            $colors = [
+                'rgba(255, 99, 132, 0.7)',   // Vermelho
+                'rgba(54, 162, 235, 0.7)',   // Azul
+                'rgba(255, 206, 86, 0.7)',   // Amarelo
+                'rgba(75, 192, 192, 0.7)',   // Verde
+                'rgba(153, 102, 255, 0.7)',  // Roxo
+                'rgba(255, 159, 64, 0.7)',   // Laranja
+                'rgba(199, 199, 199, 0.7)',  // Cinza
+                'rgba(83, 123, 196, 0.7)',   // Azul escuro
+                'rgba(245, 130, 49, 0.7)',   // Laranja escuro
+                'rgba(22, 160, 133, 0.7)'    // Verde escuro
+            ];
+
+            foreach ($result as $index => $row) {
+                $labels[] = $row['tipo_servico'];
+                $data[] = (int)$row['total'];
+                $backgroundColor[] = $colors[$index % count($colors)];
+            }
+
+            return [
+                'labels' => $labels,
+                'data' => $data,
+                'backgroundColor' => $backgroundColor,
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter chamados por tipo de serviço: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+
+            // Retorna um array vazio em caso de erro
+            return [
+                'labels' => [],
+                'data' => [],
+                'backgroundColor' => [],
+                'raw' => []
+            ];
+        }
+    }
+
+    /**
+     * Obtém dados de chamados por solicitante para relatórios
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $ano Ano para filtrar (opcional)
+     * @param int $mes Mês para filtrar (opcional)
+     * @param int $setorId ID do setor para filtrar (opcional)
+     * @return array Dados para gráfico
+     */
+    public function getChamadosPorSolicitanteRelatorio($empresaId, $ano = null, $mes = null, $setorId = null)
+    {
+        try {
+            $sql = "SELECT 
+                    solicitante,
+                    COUNT(*) as total
+                FROM {$this->table}
+                WHERE empresa_id = :empresa_id
+                AND solicitante IS NOT NULL
+                AND solicitante != ''";
+
+            $params = ['empresa_id' => $empresaId];
+
+            if ($ano) {
+                $sql .= " AND YEAR(data_solicitacao) = :ano";
+                $params['ano'] = $ano;
+            }
+
+            if ($mes) {
+                $sql .= " AND MONTH(data_solicitacao) = :mes";
+                $params['mes'] = $mes;
+            }
+
+            if ($setorId) {
+                $sql .= " AND setor_id = :setor_id";
+                $params['setor_id'] = $setorId;
+            }
+
+            $sql .= " GROUP BY solicitante
+                  ORDER BY total DESC
+                  LIMIT 10";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Formata os dados para o gráfico
+            $labels = [];
+            $data = [];
+            $backgroundColor = [];
+
+            $colors = [
+                'rgba(255, 99, 132, 0.7)',   // Vermelho
+                'rgba(54, 162, 235, 0.7)',   // Azul
+                'rgba(255, 206, 86, 0.7)',   // Amarelo
+                'rgba(75, 192, 192, 0.7)',   // Verde
+                'rgba(153, 102, 255, 0.7)',  // Roxo
+                'rgba(255, 159, 64, 0.7)',   // Laranja
+                'rgba(199, 199, 199, 0.7)',  // Cinza
+                'rgba(83, 123, 196, 0.7)',   // Azul escuro
+                'rgba(245, 130, 49, 0.7)',   // Laranja escuro
+                'rgba(22, 160, 133, 0.7)'    // Verde escuro
+            ];
+
+            foreach ($result as $index => $row) {
+                $labels[] = $row['solicitante'];
+                $data[] = (int)$row['total'];
+                $backgroundColor[] = $colors[$index % count($colors)];
+            }
+
+            return [
+                'labels' => $labels,
+                'data' => $data,
+                'backgroundColor' => $backgroundColor,
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter chamados por solicitante: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'data' => [],
+                'backgroundColor' => [],
+                'raw' => []
+            ];
+        }
+    }
+
+    /**
+     * Obtém estatísticas gerais para relatórios
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $ano Ano para filtrar (opcional)
+     * @param int $mes Mês para filtrar (opcional)
+     * @param int $setorId ID do setor para filtrar (opcional)
+     * @return array Estatísticas gerais
+     */
+    public function getEstatisticasGerais($empresaId, $ano = null, $mes = null, $setorId = null)
+    {
+        try {
+            // Condição base
+            $condicao = "empresa_id = :empresa_id";
+            $params = ['empresa_id' => $empresaId];
+
+            // Calcula o período para média diária
+            $diasPeriodo = 30; // Padrão: 30 dias
+
+            if ($ano && $mes) {
+                $condicao .= " AND YEAR(data_solicitacao) = :ano AND MONTH(data_solicitacao) = :mes";
+                $params['ano'] = $ano;
+                $params['mes'] = $mes;
+
+                // Calcula o número de dias no mês
+                $diasPeriodo = cal_days_in_month(CAL_GREGORIAN, $mes, $ano);
+            } elseif ($ano) {
+                $condicao .= " AND YEAR(data_solicitacao) = :ano";
+                $params['ano'] = $ano;
+
+                // Um ano tem 365 dias (ou 366 em anos bissextos)
+                $diasPeriodo = (date('L', strtotime("$ano-01-01")) == 1) ? 366 : 365;
+            }
+
+            if ($setorId) {
+                $condicao .= " AND setor_id = :setor_id";
+                $params['setor_id'] = $setorId;
+            }
+
+            // Total de chamados
+            $sqlTotal = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao";
+            $stmtTotal = $this->db->prepare($sqlTotal);
+            $stmtTotal->execute($params);
+            $total = $stmtTotal->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Chamados concluídos (status_id = 4)
+            $sqlConcluidos = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao AND status_id = 4";
+            $stmtConcluidos = $this->db->prepare($sqlConcluidos);
+            $stmtConcluidos->execute($params);
+            $concluidos = $stmtConcluidos->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Chamados em andamento (status_id = 2)
+            $sqlEmAndamento = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao AND status_id = 2";
+            $stmtEmAndamento = $this->db->prepare($sqlEmAndamento);
+            $stmtEmAndamento->execute($params);
+            $emAndamento = $stmtEmAndamento->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Chamados abertos (status_id = 1)
+            $sqlAbertos = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao AND status_id = 1";
+            $stmtAbertos = $this->db->prepare($sqlAbertos);
+            $stmtAbertos->execute($params);
+            $abertos = $stmtAbertos->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Tempo médio de atendimento (em horas)
+            $sqlTempoMedio = "SELECT AVG(TIMESTAMPDIFF(HOUR, data_solicitacao, 
+                            CASE 
+                                WHEN data_conclusao IS NOT NULL THEN data_conclusao 
+                                ELSE NOW() 
+                            END)) as tempo_medio
+                          FROM {$this->table} 
+                          WHERE $condicao";
+            $stmtTempoMedio = $this->db->prepare($sqlTempoMedio);
+            $stmtTempoMedio->execute($params);
+            $tempoMedio = $stmtTempoMedio->fetch(PDO::FETCH_ASSOC)['tempo_medio'] ?? 0;
+
+            // Taxa de conclusão
+            $taxaConclusao = $total > 0 ? ($concluidos / $total) * 100 : 0;
+
+            return [
+                'total' => $total,
+                'concluidos' => $concluidos,
+                'em_andamento' => $emAndamento,
+                'abertos' => $abertos,
+                'tempo_medio' => round($tempoMedio, 1),
+                'taxa_conclusao' => round($taxaConclusao, 1),
+                'dias_periodo' => $diasPeriodo
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter estatísticas gerais: ' . $e->getMessage());
+            return [
+                'total' => 0,
+                'concluidos' => 0,
+                'em_andamento' => 0,
+                'abertos' => 0,
+                'tempo_medio' => 0,
+                'taxa_conclusao' => 0,
+                'dias_periodo' => 30
+            ];
+        }
+    }
+
+    /**
+     * Obtém dados de taxa de resolução para relatórios
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $ano Ano para filtrar (opcional)
+     * @param int $mes Mês para filtrar (opcional)
+     * @param int $setorId ID do setor para filtrar (opcional)
+     * @return array Dados para gráfico
+     */
+    public function getTaxaResolucaoRelatorio($empresaId, $ano = null, $mes = null, $setorId = null)
+    {
+        try {
+            // Log para depuração
+            error_log("Obtendo taxa de resolução para empresa $empresaId");
+
+            // Condição base
+            $condicao = "empresa_id = :empresa_id";
+            $params = ['empresa_id' => $empresaId];
+
+            if ($ano) {
+                $condicao .= " AND YEAR(data_solicitacao) = :ano";
+                $params['ano'] = $ano;
+            }
+
+            if ($mes) {
+                $condicao .= " AND MONTH(data_solicitacao) = :mes";
+                $params['mes'] = $mes;
+            }
+
+            if ($setorId) {
+                $condicao .= " AND setor_id = :setor_id";
+                $params['setor_id'] = $setorId;
+            }
+
+            // Total de chamados
+            $sqlTotal = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao";
+            $stmtTotal = $this->db->prepare($sqlTotal);
+            $stmtTotal->execute($params);
+            $total = $stmtTotal->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Chamados concluídos (status_id = 4)
+            $sqlConcluidos = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao AND status_id = 4";
+            $stmtConcluidos = $this->db->prepare($sqlConcluidos);
+            $stmtConcluidos->execute($params);
+            $concluidos = $stmtConcluidos->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Chamados em andamento (status_id = 2)
+            $sqlEmAndamento = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao AND status_id = 2";
+            $stmtEmAndamento = $this->db->prepare($sqlEmAndamento);
+            $stmtEmAndamento->execute($params);
+            $emAndamento = $stmtEmAndamento->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Chamados abertos (status_id = 1)
+            $sqlAbertos = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao AND status_id = 1";
+            $stmtAbertos = $this->db->prepare($sqlAbertos);
+            $stmtAbertos->execute($params);
+            $abertos = $stmtAbertos->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Chamados cancelados (status_id = 5) ou outros status
+            $sqlOutros = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao AND status_id NOT IN (1, 2, 4)";
+            $stmtOutros = $this->db->prepare($sqlOutros);
+            $stmtOutros->execute($params);
+            $outros = $stmtOutros->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Calcula as porcentagens
+            $porcentagemConcluidos = $total > 0 ? ($concluidos / $total) * 100 : 0;
+            $porcentagemEmAndamento = $total > 0 ? ($emAndamento / $total) * 100 : 0;
+            $porcentagemAbertos = $total > 0 ? ($abertos / $total) * 100 : 0;
+            $porcentagemOutros = $total > 0 ? ($outros / $total) * 100 : 0;
+
+            // Prepara os dados para o gráfico
+            $result = [
+                [
+                    'status' => 'Concluídos',
+                    'total' => $concluidos,
+                    'porcentagem' => round($porcentagemConcluidos, 1)
+                ],
+                [
+                    'status' => 'Em Andamento',
+                    'total' => $emAndamento,
+                    'porcentagem' => round($porcentagemEmAndamento, 1)
+                ],
+                [
+                    'status' => 'Abertos',
+                    'total' => $abertos,
+                    'porcentagem' => round($porcentagemAbertos, 1)
+                ]
+            ];
+
+            // Adiciona "Outros" apenas se houver chamados nessa categoria
+            if ($outros > 0) {
+                $result[] = [
+                    'status' => 'Outros',
+                    'total' => $outros,
+                    'porcentagem' => round($porcentagemOutros, 1)
+                ];
+            }
+
+            // Formata os dados para o gráfico
+            $labels = [];
+            $data = [];
+            $backgroundColor = [];
+
+            $colors = [
+                'Concluídos' => 'rgba(75, 192, 192, 0.7)',    // Verde
+                'Em Andamento' => 'rgba(255, 206, 86, 0.7)',  // Amarelo
+                'Abertos' => 'rgba(255, 99, 132, 0.7)',       // Vermelho
+                'Outros' => 'rgba(153, 102, 255, 0.7)'        // Roxo
+            ];
+
+            foreach ($result as $row) {
+                $labels[] = $row['status'] . ' (' . $row['total'] . ')';
+                $data[] = $row['porcentagem'];
+                $backgroundColor[] = $colors[$row['status']] ?? 'rgba(201, 203, 207, 0.7)';
+            }
+
+            // Adiciona informações adicionais
+            $taxaResolucao = $total > 0 ? ($concluidos / $total) * 100 : 0;
+
+            return [
+                'labels' => $labels,
+                'data' => $data,
+                'backgroundColor' => $backgroundColor,
+                'raw' => $result,
+                'total' => $total,
+                'concluidos' => $concluidos,
+                'taxa_resolucao' => round($taxaResolucao, 1)
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter taxa de resolução: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+
+            // Retorna um array vazio em caso de erro
+            return [
+                'labels' => [],
+                'data' => [],
+                'backgroundColor' => [],
+                'raw' => [],
+                'total' => 0,
+                'concluidos' => 0,
+                'taxa_resolucao' => 0
+            ];
+        }
+    }
+
+
+    /**
+     * Obtém dados de chamados por dia da semana para relatórios
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $ano Ano para filtrar (opcional)
+     * @param int $mes Mês para filtrar (opcional)
+     * @param int $setorId ID do setor para filtrar (opcional)
+     * @return array Dados para gráfico
+     */
+    public function getChamadosPorDiaSemanaRelatorio($empresaId, $ano = null, $mes = null, $setorId = null)
+    {
+        try {
+            // Log para depuração
+            error_log("Obtendo chamados por dia da semana para empresa $empresaId");
+
+            // Usamos DAYNAME para obter o nome do dia em inglês
+            $sql = "SELECT 
+                    DAYNAME(data_solicitacao) as dia_semana,
+                    COUNT(*) as total
+                FROM {$this->table}
+                WHERE empresa_id = :empresa_id";
+
+            $params = ['empresa_id' => $empresaId];
+
+            if ($ano) {
+                $sql .= " AND YEAR(data_solicitacao) = :ano";
+                $params['ano'] = $ano;
+            }
+
+            if ($mes) {
+                $sql .= " AND MONTH(data_solicitacao) = :mes";
+                $params['mes'] = $mes;
+            }
+
+            if ($setorId) {
+                $sql .= " AND setor_id = :setor_id";
+                $params['setor_id'] = $setorId;
+            }
+
+            $sql .= " GROUP BY dia_semana
+                  ORDER BY FIELD(dia_semana, 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday')";
+
+            error_log("SQL: $sql");
+            error_log("Params: " . print_r($params, true));
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            error_log("Resultado bruto: " . print_r($result, true));
+
+            // Mapeia os dias da semana em inglês para português
+            $diasSemanaMap = [
+                'Sunday' => 'Domingo',
+                'Monday' => 'Segunda-feira',
+                'Tuesday' => 'Terça-feira',
+                'Wednesday' => 'Quarta-feira',
+                'Thursday' => 'Quinta-feira',
+                'Friday' => 'Sexta-feira',
+                'Saturday' => 'Sábado'
+            ];
+
+            // Inicializa todos os dias com zero
+            $dadosFormatados = [
+                'Domingo' => 0,
+                'Segunda-feira' => 0,
+                'Terça-feira' => 0,
+                'Quarta-feira' => 0,
+                'Quinta-feira' => 0,
+                'Sexta-feira' => 0,
+                'Sábado' => 0
+            ];
+
+            // Preenche com os dados reais
+            foreach ($result as $row) {
+                $diaSemana = $row['dia_semana'];
+                $diaSemanaPortugues = $diasSemanaMap[$diaSemana] ?? $diaSemana;
+                $dadosFormatados[$diaSemanaPortugues] = (int)$row['total'];
+            }
+
+            error_log("Dados formatados: " . print_r($dadosFormatados, true));
+
+            // Formata os dados para o gráfico
+            $labels = array_keys($dadosFormatados);
+            $data = array_values($dadosFormatados);
+
+            return [
+                'labels' => $labels,
+                'data' => $data,
+                'backgroundColor' => [
+                    'rgba(54, 162, 235, 0.7)',   // Azul - Domingo
+                    'rgba(255, 99, 132, 0.7)',   // Vermelho - Segunda
+                    'rgba(255, 206, 86, 0.7)',   // Amarelo - Terça
+                    'rgba(75, 192, 192, 0.7)',   // Verde - Quarta
+                    'rgba(153, 102, 255, 0.7)',  // Roxo - Quinta
+                    'rgba(255, 159, 64, 0.7)',   // Laranja - Sexta
+                    'rgba(199, 199, 199, 0.7)'   // Cinza - Sábado
+                ],
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter chamados por dia da semana: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+
+            // Retorna um array vazio em caso de erro
+            return [
+                'labels' => [],
+                'data' => [],
+                'backgroundColor' => [],
+                'raw' => []
+            ];
+        }
+    }
+
+    /**
+     * Obtém dados de evolução mensal de chamados por status
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $ano Ano para filtrar
+     * @param int $setorId ID do setor para filtrar (opcional)
+     * @return array Dados para gráfico
+     */
+    public function getEvolucaoMensalPorStatus($empresaId, $ano, $setorId = null)
+    {
+        try {
+            $sql = "SELECT 
+                    MONTH(c.data_solicitacao) as mes,
+                    s.id as status_id,
+                    s.nome as status_nome,
+                    COUNT(*) as total
+                FROM {$this->table} c
+                JOIN status_chamados s ON c.status_id = s.id
+                WHERE c.empresa_id = :empresa_id
+                AND YEAR(c.data_solicitacao) = :ano";
+
+            $params = [
+                'empresa_id' => $empresaId,
+                'ano' => $ano
+            ];
+
+            if ($setorId) {
+                $sql .= " AND c.setor_id = :setor_id";
+                $params['setor_id'] = $setorId;
+            }
+
+            $sql .= " GROUP BY MONTH(c.data_solicitacao), s.id, s.nome
+                  ORDER BY mes, s.id";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Obtém todos os status
+            $sqlStatus = "SELECT id, nome FROM status_chamados ORDER BY id";
+            $stmtStatus = $this->db->prepare($sqlStatus);
+            $stmtStatus->execute();
+            $statusList = $stmtStatus->fetchAll(PDO::FETCH_ASSOC);
+
+            // Mapeia os meses
+            $meses = [
+                1 => 'Jan',
+                2 => 'Fev',
+                3 => 'Mar',
+                4 => 'Abr',
+                5 => 'Mai',
+                6 => 'Jun',
+                7 => 'Jul',
+                8 => 'Ago',
+                9 => 'Set',
+                10 => 'Out',
+                11 => 'Nov',
+                12 => 'Dez'
+            ];
+
+            // Inicializa os dados
+            $labels = array_values($meses);
+            $datasets = [];
+
+            // Cores para os status
+            $statusColors = [
+                'aberto' => ['rgba(255, 99, 132, 0.7)', 'rgba(255, 99, 132, 1)'],       // Vermelho
+                'andamento' => ['rgba(255, 206, 86, 0.7)', 'rgba(255, 206, 86, 1)'],    // Amarelo
+                'atendimento' => ['rgba(255, 206, 86, 0.7)', 'rgba(255, 206, 86, 1)'],  // Amarelo
+                'concluído' => ['rgba(75, 192, 192, 0.7)', 'rgba(75, 192, 192, 1)'],    // Verde
+                'resolvido' => ['rgba(75, 192, 192, 0.7)', 'rgba(75, 192, 192, 1)'],    // Verde
+                'cancelado' => ['rgba(153, 102, 255, 0.7)', 'rgba(153, 102, 255, 1)'],  // Roxo
+                'pendente' => ['rgba(54, 162, 235, 0.7)', 'rgba(54, 162, 235, 1)'],     // Azul
+            ];
+
+            // Cores alternativas
+            $alternativeColors = [
+                ['rgba(255, 159, 64, 0.7)', 'rgba(255, 159, 64, 1)'],   // Laranja
+                ['rgba(199, 199, 199, 0.7)', 'rgba(199, 199, 199, 1)'], // Cinza
+                ['rgba(83, 123, 196, 0.7)', 'rgba(83, 123, 196, 1)'],   // Azul escuro
+                ['rgba(245, 130, 49, 0.7)', 'rgba(245, 130, 49, 1)'],   // Laranja escuro
+                ['rgba(22, 160, 133, 0.7)', 'rgba(22, 160, 133, 1)']    // Verde escuro
+            ];
+
+            $colorIndex = 0;
+
+            // Prepara os datasets para cada status
+            foreach ($statusList as $status) {
+                // Inicializa dados para todos os meses com zero
+                $dadosMensais = array_fill(1, 12, 0);
+
+                // Determina a cor com base no nome do status
+                $statusNome = strtolower($status['nome']);
+                $color = null;
+
+                foreach ($statusColors as $keyword => $statusColor) {
+                    if (strpos($statusNome, $keyword) !== false) {
+                        $color = $statusColor;
+                        break;
+                    }
+                }
+
+                // Se não encontrou uma cor específica, usa uma das alternativas
+                if (!$color) {
+                    $color = $alternativeColors[$colorIndex % count($alternativeColors)];
+                    $colorIndex++;
+                }
+
+                $datasets[] = [
+                    'label' => $status['nome'],
+                    'data' => $dadosMensais,
+                    'backgroundColor' => $color[0],
+                    'borderColor' => $color[1],
+                    'borderWidth' => 1,
+                    'status_id' => $status['id']
+                ];
+            }
+
+            // Preenche os dados reais
+            foreach ($result as $row) {
+                $mes = (int)$row['mes'];
+                $statusId = $row['status_id'];
+                $total = (int)$row['total'];
+
+                // Encontra o dataset correspondente
+                foreach ($datasets as &$dataset) {
+                    if ($dataset['status_id'] == $statusId) {
+                        $dataset['data'][$mes] = $total;
+                        break;
+                    }
+                }
+            }
+
+            // Converte os dados para arrays simples (sem índices)
+            foreach ($datasets as &$dataset) {
+                $dataset['data'] = array_values($dataset['data']);
+                unset($dataset['status_id']);
+            }
+
+            return [
+                'labels' => $labels,
+                'datasets' => $datasets,
+                'ano' => $ano
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter evolução mensal por status: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'datasets' => [],
+                'ano' => $ano
+            ];
         }
     }
 }
