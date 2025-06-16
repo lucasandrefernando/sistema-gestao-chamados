@@ -130,3 +130,24 @@
         padding: 0.75rem;
     }
 }
+
+/* Overlay para quando a sidebar estiver aberta */
+.sidebar-overlay {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    display: none;
+}
+
+.sidebar-overlay.show {
+    display: block;
+}
+
+/* Ajuste para o corpo quando a sidebar está aberta em dispositivos móveis */
+body.sidebar-open {
+    overflow: hidden;
+}
