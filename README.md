@@ -47,7 +47,8 @@ O Sistema de Gestão de Chamados é uma aplicação web completa para gerenciame
     │   └── views/
     │       ├── auth/
     │       │   ├── login.php
-    │       │   └── recuperar-senha.php
+    │       │   ├── recuperar-senha.php
+    │       │   └── redefinir-senha.php
     │       ├── chamados/
     │       │   ├── dashboard.php
     │       │   ├── form.php
@@ -86,11 +87,21 @@ O Sistema de Gestão de Chamados é uma aplicação web completa para gerenciame
     │
     ├── config/
     │   ├── app.php
-    │   └── database.php
+    │   ├── database.php
+    │   └── middlewares/
+    │       └── AuthMiddleware.php
     │
     ├── public/
     │   ├── css/
-    │   │   └── style.css
+    │   │   ├── auth.css
+    │   │   ├── base.css
+    │   │   ├── components.css
+    │   │   ├── dark-mode.css
+    │   │   ├── layout.css
+    │   │   ├── main.css
+    │   │   ├── responsive.css
+    │   │   ├── style.css
+    │   │   └── utilities.css
     │   ├── img/
     │   │   ├── favicon.ico
     │   │   └── logo.png
@@ -106,6 +117,8 @@ O Sistema de Gestão de Chamados é uma aplicação web completa para gerenciame
     ├── .htaccess
     └── README.md
 
+    ```
+
 ## 🛠️ Tecnologias Utilizadas
 
 - **PHP 7+** com arquitetura MVC
@@ -117,35 +130,56 @@ O Sistema de Gestão de Chamados é uma aplicação web completa para gerenciame
 - **AJAX** para requisições assíncronas
 - **PDO** para conexão segura com banco de dados
 
+## 📝 Arquivos CSS
+
+O sistema utiliza uma estrutura modular de CSS para melhor organização e manutenção:
+
+- **auth.css**: Estilos específicos para telas de autenticação (login, recuperação de senha)
+- **base.css**: Estilos base e reset para garantir consistência entre navegadores
+- **components.css**: Componentes reutilizáveis como botões, cards, alertas
+- **dark-mode.css**: Implementação do modo escuro para melhor experiência noturna
+- **layout.css**: Estrutura de layout, grid e posicionamento de elementos
+- **main.css**: Arquivo principal que importa os demais módulos CSS
+- **responsive.css**: Ajustes responsivos para diferentes tamanhos de tela
+- **utilities.css**: Classes utilitárias para espaçamento, cores, tipografia
+- **style.css**: Estilos legados e compatibilidade
+
+## 🔒 Middleware de Autenticação
+
+O sistema implementa um middleware de autenticação (`AuthMiddleware.php`) para proteger rotas e garantir que apenas usuários autorizados acessem determinadas funcionalidades:
+
+- **Verificação de sessão**: Valida se o usuário está autenticado
+- **Controle de acesso**: Verifica permissões específicas por rota
+- **Redirecionamento**: Encaminha para login quando necessário
+- **Timeout de sessão**: Gerencia expiração de sessões inativas
+
 ## ⚙️ Instalação
 
 1. **Clone o projeto:**
+   git clone
 
-   ```
-   git clone https://github.com/lucasandrefernando/sistema-gestao-chamados.git
-   ```
+github.com
 
 2. **Configure o banco de dados:**
 
-   - Edite `config/database.php` com suas credenciais
-   - Execute o script de criação do banco:
+- Edite `config/database.php` com suas credenciais
+- Execute o script de criação do banco:
 
-   ```
-   php scripts/setup-database.php
-   ```
+php scripts/setup-database.php
 
-   - Ou importe manualmente o arquivo `scripts/database/schema.sql`
+- Ou importe manualmente o arquivo `scripts/database/schema.sql`
 
 3. **Configure o servidor web:**
 
-   - Aponte o DocumentRoot para a pasta `public/`
-   - Certifique-se de que o mod_rewrite está habilitado (para .htaccess)
+- Aponte o DocumentRoot para a pasta `public/`
+- Certifique-se de que o mod_rewrite está habilitado (para .htaccess)
 
 4. **Acesse no navegador:**
-   - Exemplo: `http://localhost/sistema-gestao-chamados/public/`
-   - Faça login com as credenciais padrão:
-     - Email: `admin@sistema.com`
-     - Senha: `admin123`
+
+- Exemplo: `http://localhost/sistema-gestao-chamados/public/`
+- Faça login com as credenciais padrão:
+  - Email: `lucasandre.sanos@gmail.com`
+  - Senha: `admin123`
 
 ## 🖥️ Módulos do Sistema
 
@@ -215,22 +249,17 @@ O sistema implementa diversas medidas de segurança:
 1. Faça um fork do projeto
 2. Crie uma branch para sua feature:
 
-   ```
-   git checkout -b minha-feature
-   ```
+git checkout -b minha-feature
+```
 
 3. Commit suas alterações:
 
-   ```
-   git commit -m 'feat: Minha nova funcionalidade'
-   ```
-
+git commit -m 'feat: Minha nova funcionalidade'
+```
 4. Push para a branch:
 
-   ```
-   git push origin minha-feature
-   ```
-
+git push origin minha-feature
+``` 
 5. Abra um Pull Request
 
 ## 🧑‍💻 Guia para Desenvolvedores
@@ -241,6 +270,7 @@ O sistema implementa diversas medidas de segurança:
 - **models/**: Acesso ao banco de dados e regras de negócio
 - **views/**: Templates e componentes visuais
 - **config/**: Configurações da aplicação e banco de dados
+- **config/middlewares/**: Middlewares para controle de acesso e processamento de requisições
 - **public/**: Arquivos acessíveis diretamente (CSS, JS, imagens)
 
 ### 2. Fluxo de Trabalho
@@ -249,6 +279,7 @@ O sistema implementa diversas medidas de segurança:
 - **Criar nova visualização**: Adicione em `views/` e atualize o controller
 - **Alterar banco de dados**: Modifique o model e atualize o schema
 - **Ajustar layout**: Edite os templates e arquivos CSS
+- **Implementar middleware**: Adicione em `config/middlewares/` e registre na aplicação
 
 ### 3. Boas Práticas
 
