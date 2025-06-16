@@ -16,7 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link href="<?= base_url('public/css/style.css') ?>" rel="stylesheet">
+    <link rel="stylesheet" href="<?= base_url('public/css/main.css') ?>">
     <link rel="icon" href="<?= base_url('public/img/favicon.ico') ?>" type="image/x-icon">
 
     <style>

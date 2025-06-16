@@ -71,6 +71,33 @@ function get_flash_message()
 }
 
 /**
+ * Verifica se o usuário está autenticado e se a sessão não expirou
+ */
+function is_authenticated()
+{
+    // Verifica se o usuário está logado
+    if (!isset($_SESSION['user_id'])) {
+        return false;
+    }
+
+    // Verifica se a sessão expirou (30 minutos de inatividade)
+    $sessionTimeout = 30 * 60; // 30 minutos em segundos
+    $currentTime = time();
+    $lastActivity = $_SESSION['last_activity'] ?? 0;
+
+    if ($currentTime - $lastActivity > $sessionTimeout) {
+        // Sessão expirou, faz logout
+        session_destroy();
+        return false;
+    }
+
+    // Atualiza o timestamp de última atividade
+    $_SESSION['last_activity'] = $currentTime;
+
+    return true;
+}
+
+/**
  * Sanitiza entrada de dados
  * 
  * @param string $input Entrada a ser sanitizada
@@ -81,13 +108,6 @@ function sanitize_input($input)
     return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
 }
 
-/**
- * Verifica se o usuário está autenticado
- */
-function is_authenticated()
-{
-    return isset($_SESSION['user_id']);
-}
 
 /**
  * Verifica se o usuário é administrador
@@ -96,6 +116,7 @@ function is_admin()
 {
     return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
 }
+
 
 /**
  * Obtém o ID do usuário logado
@@ -273,4 +294,12 @@ function formatarData($data)
 
     $timestamp = strtotime($data);
     return date('d/m/Y H:i:s', $timestamp);
+}
+
+/**
+ * Verifica se há uma mensagem flash do tipo especificado
+ */
+function has_flash_message($type)
+{
+    return isset($_SESSION['flash_messages'][$type]);
 }

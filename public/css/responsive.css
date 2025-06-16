@@ -1,0 +1,132 @@
+/* ======================================
+   RESPONSIVIDADE
+====================================== */
+/* Telas grandes (desktops, 992px e acima) */
+@media (min-width: 992px) {
+
+    /* Conteúdo principal com sidebar visível */
+    main {
+        margin-left: 220px;
+    }
+
+    /* Sidebar sempre visível */
+    .sidebar {
+        transform: translateX(0);
+    }
+
+    /* Botão de toggle da sidebar oculto */
+    .sidebar-toggle {
+        display: none;
+    }
+}
+
+/* Telas médias (tablets, menos de 992px) */
+@media (max-width: 991.98px) {
+
+    /* Conteúdo principal sem margem lateral */
+    main {
+        margin-left: 0;
+    }
+
+    /* Sidebar oculta por padrão */
+    .sidebar {
+        transform: translateX(-100%);
+        width: 240px;
+    }
+
+    /* Classe para mostrar a sidebar quando ativada */
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    /* Overlay para quando a sidebar estiver aberta */
+    .sidebar-overlay {
+        position: fixed;
+        top: 56px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 99;
+        display: none;
+    }
+
+    .sidebar-overlay.show {
+        display: block;
+    }
+
+    /* Ajustes para navbar */
+    .navbar-center {
+        display: none;
+        /* Oculta o título central */
+    }
+}
+
+/* Telas pequenas (celulares, menos de 768px) */
+@media (max-width: 767.98px) {
+
+    /* Ajustes para navbar */
+    .hospital-name {
+        display: none;
+        /* Oculta o nome do hospital */
+    }
+
+    .user-info {
+        display: none;
+        /* Oculta informações do usuário */
+    }
+
+    /* Ajustes para autenticação */
+    .auth-card {
+        padding: 1.5rem;
+    }
+
+    .auth-logo {
+        height: 40px;
+    }
+
+    .auth-header h1 {
+        font-size: 1.125rem;
+    }
+
+    /* Ajustes para tabelas */
+    .table-responsive {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Telas muito pequenas (menos de 576px) */
+@media (max-width: 575.98px) {
+
+    /* Ajustes para autenticação */
+    .auth-card {
+        padding: 1.25rem;
+    }
+
+    .auth-logo {
+        height: 36px;
+    }
+
+    .auth-header h1 {
+        font-size: 1rem;
+    }
+
+    /* Ajustes para botões */
+    .btn {
+        padding: 0.4rem 0.6rem;
+    }
+
+    /* Ajustes para formulários */
+    .form-group {
+        margin-bottom: 0.75rem;
+    }
+
+    /* Reduz padding geral */
+    main {
+        padding: 0.75rem;
+    }
+
+    .card-body {
+        padding: 0.75rem;
+    }
+}
