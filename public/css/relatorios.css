@@ -1,154 +1,187 @@
-/* Estilos para a página de relatórios */
-
-/* Estatísticas gerais */
-.card-estatisticas .card-body {
-  padding: 1.5rem;
+/* Estilos para os filtros melhorados */
+.filtro-ativo {
+  border-color: #80bdff !important;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
 }
 
-.card-estatisticas h2 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 0;
+.filtro-ativo-icon {
+  color: #007bff;
+  animation: pulse 2s infinite;
 }
 
-.card-estatisticas h6 {
-  font-size: 0.875rem;
-  font-weight: 500;
+@keyframes pulse {
+  0% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.7;
+  }
 }
 
-/* Gráficos */
-.chart-container {
-  position: relative;
-  height: 300px;
-  width: 100%;
-  margin: 0 auto;
+/* Melhorias para os badges de filtros ativos */
+.filtro-badge {
+  display: inline-flex;
+  align-items: center;
+  background-color: #f1f8ff;
+  border: 1px solid #c8e1ff;
+  border-radius: 0.25rem;
+  padding: 0.35rem 0.65rem;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
 }
 
-/* Tabelas de dados */
-.table-dados th {
+.filtro-badge:hover {
+  background-color: #e1f0ff;
+  border-color: #a8d4ff;
+}
+
+.badge-label {
   font-weight: 600;
+  color: #0366d6;
+  margin-right: 0.25rem;
+}
+
+.badge-value {
+  font-weight: 400;
+  color: #24292e;
+}
+
+.badge-remove {
+  margin-left: 0.5rem;
+  cursor: pointer;
+  color: #6a737d;
+  transition: color 0.2s ease;
+}
+
+.badge-remove:hover {
+  color: #dc3545;
+}
+
+/* Estilo para o seletor de período predefinido */
+#periodo {
+  border-left: 3px solid #007bff;
   background-color: #f8f9fa;
 }
 
-.table-dados td {
-  vertical-align: middle;
+#periodo:focus {
+  background-color: #fff;
 }
 
-/* Filtros */
-.filtros-relatorio .form-label {
-  font-weight: 500;
-  margin-bottom: 0.5rem;
+/* Melhoria na aparência dos alertas de filtros ativos */
+.alert-info {
+  background-color: #f1f8ff;
+  border-color: #c8e1ff;
+  color: #0366d6;
 }
 
-.filtros-relatorio .form-select {
+/* Estilo para o botão de limpar todos os filtros */
+.btn-outline-primary {
+  border-color: #c8e1ff;
+  color: #0366d6;
+}
+
+.btn-outline-primary:hover {
+  background-color: #0366d6;
+  border-color: #0366d6;
+  color: #fff;
+}
+
+/* Melhorias para dispositivos móveis */
+@media (max-width: 767.98px) {
+  .filtro-badge {
+    width: 100%;
+    justify-content: space-between;
+    margin-right: 0;
+  }
+
+  .alert-info .d-flex.flex-wrap {
+    flex-direction: column;
+  }
+
+  .alert-info .btn-sm {
+    margin-top: 0.5rem;
+    width: 100%;
+  }
+}
+
+/* Estilos para o botão de mostrar/ocultar filtros */
+.card-header .btn-outline-secondary {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+}
+
+.card-header .btn-outline-secondary .badge {
+  margin-left: 0.5rem;
+}
+
+/* Estilo para os campos de data */
+input[type="date"].form-control {
+  padding: 0.375rem 0.5rem;
+}
+
+/* Estilo para os botões de ação */
+.col-12.d-flex.justify-content-end {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+/* Efeito de transição para o collapse */
+#collapseFilters {
+  transition: all 0.3s ease;
+}
+
+/* Espaçamento para os filtros ativos */
+.filtros-ativos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Estilo para o alerta de filtros ativos */
+.alert-info {
+  padding: 1rem;
   border-radius: 0.375rem;
 }
 
-/* Responsividade */
-@media (max-width: 767.98px) {
-  .card-estatisticas h2 {
-    font-size: 1.75rem;
-  }
-
-  .chart-container {
-    height: 250px;
-  }
-}
-
-/* Estilos para os gráficos e relatórios */
-.chart-container {
-  position: relative;
-  height: 300px;
-  width: 100%;
-}
-
-.card {
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-  margin-bottom: 1.5rem;
-}
-
-.card-header {
-  background-color: rgba(0, 0, 0, 0.03);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-  padding: 0.75rem 1.25rem;
-}
-
-.card-body {
-  padding: 1.25rem;
-}
-
-.card-title {
-  margin-bottom: 0;
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-.table-responsive {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.progress {
-  height: 20px;
-  border-radius: 0.25rem;
-}
-
-.badge {
-  padding: 0.35em 0.65em;
-  font-size: 0.75em;
-  font-weight: 700;
-  border-radius: 0.25rem;
-}
-
-/* Cores para os status */
-.bg-success {
-  background-color: #28a745 !important;
-}
-
-.bg-warning {
-  background-color: #ffc107 !important;
-}
-
-.bg-danger {
-  background-color: #dc3545 !important;
-}
-
-.bg-info {
-  background-color: #17a2b8 !important;
-}
-
-.bg-secondary {
-  background-color: #6c757d !important;
-}
-
-.bg-dark {
-  background-color: #343a40 !important;
-}
-
-/* Estatísticas gerais */
-.text-center h2 {
-  font-size: 2rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
-
-.text-center h6 {
-  font-size: 0.875rem;
-  font-weight: 500;
+.alert-info .d-flex.align-items-center {
   margin-bottom: 0.5rem;
 }
 
-.text-center small {
-  font-size: 0.75rem;
+.alert-info .d-flex.flex-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-/* Responsividade */
-@media (max-width: 767.98px) {
-  .chart-container {
-    height: 250px;
+/* Estilo para o badge de contagem de filtros */
+.badge.bg-primary {
+  font-size: 0.7rem;
+  padding: 0.25em 0.5em;
+  border-radius: 0.25rem;
+}
+
+/* Animação para destacar filtros recém-aplicados */
+@keyframes highlight {
+  0% {
+    background-color: rgba(0, 123, 255, 0.1);
   }
 
-  .text-center h2 {
-    font-size: 1.5rem;
+  100% {
+    background-color: transparent;
   }
+}
+
+.highlight-filter {
+  animation: highlight 2s ease;
 }

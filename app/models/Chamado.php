@@ -570,7 +570,7 @@ class Chamado extends Model
      * Obtém os tipos de serviço disponíveis
      * 
      * @param int $empresaId ID da empresa
-     * @return array Tipos de serviço
+     * @return array Lista de tipos de serviço
      */
     public function getTiposServico($empresaId)
     {
@@ -580,13 +580,12 @@ class Chamado extends Model
                 WHERE empresa_id = :empresa_id 
                 AND tipo_servico IS NOT NULL 
                 AND tipo_servico != '' 
-                ORDER BY tipo_servico ASC";
+                ORDER BY tipo_servico";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
-            $stmt->execute();
-            $result = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            $stmt->execute(['empresa_id' => $empresaId]);
 
+            $result = $stmt->fetchAll(PDO::FETCH_COLUMN);
             return $result;
         } catch (Exception $e) {
             error_log('Erro ao obter tipos de serviço: ' . $e->getMessage());
@@ -599,7 +598,7 @@ class Chamado extends Model
      * Obtém os solicitantes disponíveis
      * 
      * @param int $empresaId ID da empresa
-     * @return array Solicitantes
+     * @return array Lista de solicitantes
      */
     public function getSolicitantes($empresaId)
     {
@@ -609,13 +608,12 @@ class Chamado extends Model
                 WHERE empresa_id = :empresa_id 
                 AND solicitante IS NOT NULL 
                 AND solicitante != '' 
-                ORDER BY solicitante ASC";
+                ORDER BY solicitante";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
-            $stmt->execute();
-            $result = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            $stmt->execute(['empresa_id' => $empresaId]);
 
+            $result = $stmt->fetchAll(PDO::FETCH_COLUMN);
             return $result;
         } catch (Exception $e) {
             error_log('Erro ao obter solicitantes: ' . $e->getMessage());
@@ -1040,41 +1038,48 @@ class Chamado extends Model
      * Obtém dados de chamados por status para relatórios
      * 
      * @param int $empresaId ID da empresa
-     * @param int $ano Ano para filtrar (opcional)
-     * @param int $mes Mês para filtrar (opcional)
-     * @param int $setorId ID do setor para filtrar (opcional)
+     * @param int $ano Ano para filtro
+     * @param int|null $mes Mês para filtro (opcional)
+     * @param int|null $setorId ID do setor para filtro (opcional)
+     * @param string|null $condicaoAdicional Condição SQL adicional (opcional)
+     * @param array|null $paramsAdicionais Parâmetros adicionais para a condição (opcional)
      * @return array Dados para gráfico
      */
-    public function getChamadosPorStatusRelatorio($empresaId, $ano = null, $mes = null, $setorId = null)
+    public function getChamadosPorStatusRelatorio($empresaId, $ano, $mes = null, $setorId = null, $condicaoAdicional = null, $paramsAdicionais = null)
     {
         try {
+            // Se for fornecida uma condição adicional, use-a
+            if ($condicaoAdicional && $paramsAdicionais) {
+                $condicao = $condicaoAdicional;
+                $params = $paramsAdicionais;
+            } else {
+                // Caso contrário, use a condição padrão
+                $condicao = "c.empresa_id = :empresa_id AND YEAR(c.data_solicitacao) = :ano";
+                $params = [
+                    'empresa_id' => $empresaId,
+                    'ano' => $ano
+                ];
+
+                if ($mes !== null) {
+                    $condicao .= " AND MONTH(c.data_solicitacao) = :mes";
+                    $params['mes'] = $mes;
+                }
+
+                if ($setorId !== null) {
+                    $condicao .= " AND c.setor_id = :setor_id";
+                    $params['setor_id'] = $setorId;
+                }
+            }
+
             $sql = "SELECT 
-                    s.id as status_id,
-                    s.nome as status_nome,
-                    COUNT(*) as total
-                FROM {$this->table} c
-                JOIN status_chamados s ON c.status_id = s.id
-                WHERE c.empresa_id = :empresa_id";
-
-            $params = ['empresa_id' => $empresaId];
-
-            if ($ano) {
-                $sql .= " AND YEAR(c.data_solicitacao) = :ano";
-                $params['ano'] = $ano;
-            }
-
-            if ($mes) {
-                $sql .= " AND MONTH(c.data_solicitacao) = :mes";
-                $params['mes'] = $mes;
-            }
-
-            if ($setorId) {
-                $sql .= " AND c.setor_id = :setor_id";
-                $params['setor_id'] = $setorId;
-            }
-
-            $sql .= " GROUP BY s.id, s.nome
-                  ORDER BY s.id";
+                s.id as status_id,
+                s.nome as status_nome,
+                COUNT(*) as total
+            FROM {$this->table} c
+            JOIN status_chamados s ON c.status_id = s.id
+            WHERE $condicao
+            GROUP BY s.id, s.nome
+            ORDER BY s.id";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
@@ -1622,42 +1627,62 @@ class Chamado extends Model
     }
 
     /**
-     * Obtém estatísticas gerais para relatórios
+     * Obtém estatísticas gera  is para relatórios
      * 
      * @param int $empresaId ID da empresa
-     * @param int $ano Ano para filtrar (opcional)
-     * @param int $mes Mês para filtrar (opcional)
-     * @param int $setorId ID do setor para filtrar (opcional)
+     * @param int $ano Ano para filtro
+     * @param int|null $mes Mês para filtro (opcional)
+     * @param int|null $setorId ID do setor para filtro (opcional)
+     * @param string|null $condicaoAdicional Condição SQL adicional (opcional)
+     * @param array|null $paramsAdicionais Parâmetros adicionais para a condição (opcional)
      * @return array Estatísticas gerais
      */
-    public function getEstatisticasGerais($empresaId, $ano = null, $mes = null, $setorId = null)
+    public function getEstatisticasGerais($empresaId, $ano, $mes = null, $setorId = null, $condicaoAdicional = null, $paramsAdicionais = null)
     {
         try {
-            // Condição base
-            $condicao = "empresa_id = :empresa_id";
-            $params = ['empresa_id' => $empresaId];
+            // Se for fornecida uma condição adicional, use-a
+            if ($condicaoAdicional && $paramsAdicionais) {
+                $condicao = $condicaoAdicional;
+                $params = $paramsAdicionais;
+            } else {
+                // Caso contrário, use a condição padrão
+                $condicao = "empresa_id = :empresa_id AND YEAR(data_solicitacao) = :ano";
+                $params = [
+                    'empresa_id' => $empresaId,
+                    'ano' => $ano
+                ];
+
+                if ($mes !== null) {
+                    $condicao .= " AND MONTH(data_solicitacao) = :mes";
+                    $params['mes'] = $mes;
+                }
+
+                if ($setorId !== null) {
+                    $condicao .= " AND setor_id = :setor_id";
+                    $params['setor_id'] = $setorId;
+                }
+            }
 
             // Calcula o período para média diária
             $diasPeriodo = 30; // Padrão: 30 dias
 
-            if ($ano && $mes) {
-                $condicao .= " AND YEAR(data_solicitacao) = :ano AND MONTH(data_solicitacao) = :mes";
-                $params['ano'] = $ano;
-                $params['mes'] = $mes;
-
+            if (isset($params['data_inicio']) && isset($params['data_fim'])) {
+                // Extrai as datas dos parâmetros
+                $dataInicio = new DateTime(substr($params['data_inicio'], 0, 10));
+                $dataFim = new DateTime(substr($params['data_fim'], 0, 10));
+                $diferenca = $dataInicio->diff($dataFim);
+                $diasPeriodo = $diferenca->days + 1; // +1 para incluir o dia final
+            } else if (isset($params['ano']) && isset($params['mes'])) {
                 // Calcula o número de dias no mês
-                $diasPeriodo = cal_days_in_month(CAL_GREGORIAN, $mes, $ano);
-            } elseif ($ano) {
-                $condicao .= " AND YEAR(data_solicitacao) = :ano";
-                $params['ano'] = $ano;
-
-                // Um ano tem 365 dias (ou 366 em anos bissextos)
-                $diasPeriodo = (date('L', strtotime("$ano-01-01")) == 1) ? 366 : 365;
-            }
-
-            if ($setorId) {
-                $condicao .= " AND setor_id = :setor_id";
-                $params['setor_id'] = $setorId;
+                $diasPeriodo = cal_days_in_month(CAL_GREGORIAN, $params['mes'], $params['ano']);
+            } else if (isset($params['ano'])) {
+                // Se é o ano atual, conta apenas os dias decorridos até hoje
+                if ($params['ano'] == date('Y')) {
+                    $diasPeriodo = date('z') + 1; // dias decorridos no ano + hoje
+                } else {
+                    // Um ano tem 365 dias (ou 366 em anos bissextos)
+                    $diasPeriodo = (date('L', strtotime($params['ano'] . '-01-01')) == 1) ? 366 : 365;
+                }
             }
 
             // Total de chamados
@@ -1686,12 +1711,12 @@ class Chamado extends Model
 
             // Tempo médio de atendimento (em horas)
             $sqlTempoMedio = "SELECT AVG(TIMESTAMPDIFF(HOUR, data_solicitacao, 
-                            CASE 
-                                WHEN data_conclusao IS NOT NULL THEN data_conclusao 
-                                ELSE NOW() 
-                            END)) as tempo_medio
-                          FROM {$this->table} 
-                          WHERE $condicao";
+                    CASE 
+                        WHEN data_conclusao IS NOT NULL THEN data_conclusao 
+                        ELSE NOW() 
+                    END)) as tempo_medio
+                  FROM {$this->table} 
+                  WHERE $condicao";
             $stmtTempoMedio = $this->db->prepare($sqlTempoMedio);
             $stmtTempoMedio->execute($params);
             $tempoMedio = $stmtTempoMedio->fetch(PDO::FETCH_ASSOC)['tempo_medio'] ?? 0;
@@ -2132,6 +2157,389 @@ class Chamado extends Model
                 'labels' => [],
                 'datasets' => [],
                 'ano' => $ano
+            ];
+        }
+    }
+
+    /**
+     * Aplica filtros avançados à consulta SQL
+     * 
+     * @param string $condicao Condição SQL existente
+     * @param array $params Parâmetros existentes
+     * @param array $filtros Filtros adicionais
+     * @return array Condição e parâmetros atualizados
+     */
+    private function aplicarFiltrosAvancados($condicao, $params, $filtros)
+    {
+        // Filtro por status
+        if (!empty($filtros['status_id'])) {
+            $condicao .= " AND status_id = :status_id";
+            $params['status_id'] = $filtros['status_id'];
+        }
+
+        // Filtro por tipo de serviço
+        if (!empty($filtros['tipo_servico'])) {
+            $condicao .= " AND tipo_servico = :tipo_servico";
+            $params['tipo_servico'] = $filtros['tipo_servico'];
+        }
+
+        // Filtro por solicitante
+        if (!empty($filtros['solicitante'])) {
+            $condicao .= " AND solicitante LIKE :solicitante";
+            $params['solicitante'] = '%' . $filtros['solicitante'] . '%';
+        }
+
+        // Filtro por data de início
+        if (!empty($filtros['data_inicio'])) {
+            $condicao .= " AND data_solicitacao >= :data_inicio_completa";
+            $params['data_inicio_completa'] = $filtros['data_inicio'] . ' 00:00:00';
+        }
+
+        // Filtro por data de fim
+        if (!empty($filtros['data_fim'])) {
+            $condicao .= " AND data_solicitacao <= :data_fim_completa";
+            $params['data_fim_completa'] = $filtros['data_fim'] . ' 23:59:59';
+        }
+
+        return ['condicao' => $condicao, 'params' => $params];
+    }
+
+    /**
+     * Obtém dados de chamados por status para relatórios com filtros avançados
+     * 
+     * @param int $empresaId ID da empresa
+     * @param array $filtros Filtros adicionais
+     * @return array Dados para gráfico
+     */
+    public function getChamadosPorStatusRelatorioAvancado($empresaId, $filtros = [])
+    {
+        try {
+            $condicao = "c.empresa_id = :empresa_id";
+            $params = ['empresa_id' => $empresaId];
+
+            // Aplica filtros básicos
+            if (!empty($filtros['ano'])) {
+                $condicao .= " AND YEAR(c.data_solicitacao) = :ano";
+                $params['ano'] = $filtros['ano'];
+            }
+
+            if (!empty($filtros['mes'])) {
+                $condicao .= " AND MONTH(c.data_solicitacao) = :mes";
+                $params['mes'] = $filtros['mes'];
+            }
+
+            if (!empty($filtros['setor_id'])) {
+                $condicao .= " AND c.setor_id = :setor_id";
+                $params['setor_id'] = $filtros['setor_id'];
+            }
+
+            // Aplica filtros avançados (exceto status_id, pois estamos agrupando por status)
+            $filtrosSemStatus = $filtros;
+            unset($filtrosSemStatus['status_id']);
+            $resultado = $this->aplicarFiltrosAvancados($condicao, $params, $filtrosSemStatus);
+            $condicao = $resultado['condicao'];
+            $params = $resultado['params'];
+
+            $sql = "SELECT 
+                s.id as status_id,
+                s.nome as status_nome,
+                COUNT(*) as total
+            FROM {$this->table} c
+            JOIN status_chamados s ON c.status_id = s.id
+            WHERE $condicao
+            GROUP BY s.id, s.nome
+            ORDER BY s.id";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Formata os dados para o gráfico (mesmo código que antes)
+            $labels = [];
+            $data = [];
+            $backgroundColor = [];
+
+            // Cores específicas para status comuns
+            $statusColors = [
+                'aberto' => 'rgba(255, 99, 132, 0.7)',       // Vermelho
+                'andamento' => 'rgba(255, 206, 86, 0.7)',    // Amarelo
+                'atendimento' => 'rgba(255, 206, 86, 0.7)',  // Amarelo
+                'concluído' => 'rgba(75, 192, 192, 0.7)',    // Verde
+                'resolvido' => 'rgba(75, 192, 192, 0.7)',    // Verde
+                'cancelado' => 'rgba(153, 102, 255, 0.7)',   // Roxo
+                'pendente' => 'rgba(54, 162, 235, 0.7)',     // Azul
+            ];
+
+            // Cores alternativas para outros status
+            $alternativeColors = [
+                'rgba(255, 159, 64, 0.7)',   // Laranja
+                'rgba(199, 199, 199, 0.7)',  // Cinza
+                'rgba(83, 123, 196, 0.7)',   // Azul escuro
+                'rgba(245, 130, 49, 0.7)',   // Laranja escuro
+                'rgba(22, 160, 133, 0.7)'    // Verde escuro
+            ];
+
+            $colorIndex = 0;
+
+            foreach ($result as $row) {
+                $labels[] = $row['status_nome'];
+                $data[] = (int)$row['total'];
+
+                // Determina a cor com base no nome do status
+                $color = null;
+                $statusNome = strtolower($row['status_nome']);
+
+                foreach ($statusColors as $keyword => $statusColor) {
+                    if (strpos($statusNome, $keyword) !== false) {
+                        $color = $statusColor;
+                        break;
+                    }
+                }
+
+                // Se não encontrou uma cor específica, usa uma das alternativas
+                if (!$color) {
+                    $color = $alternativeColors[$colorIndex % count($alternativeColors)];
+                    $colorIndex++;
+                }
+
+                $backgroundColor[] = $color;
+            }
+
+            return [
+                'labels' => $labels,
+                'data' => $data,
+                'backgroundColor' => $backgroundColor,
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter chamados por status: ' . $e->getMessage());
+
+            // Retorna um array vazio em caso de erro
+            return [
+                'labels' => [],
+                'data' => [],
+                'backgroundColor' => [],
+                'raw' => []
+            ];
+        }
+    }
+
+    // Implemente os outros métodos avançados de forma similar:
+    // - getChamadosPorMesRelatorioAvancado
+    // - getTempoMedioAtendimentoAvancado
+    // - getChamadosPorSetorRelatorioAvancado
+    // - getChamadosPorTipoServicoRelatorioAvancado
+    // - getTaxaResolucaoRelatorioAvancado
+    // - getChamadosPorDiaSemanaRelatorioAvancado
+    // - getEvolucaoMensalPorStatusAvancado
+    // - getEstatisticasGeraisAvancado
+
+    // Exemplo para o método de estatísticas gerais:
+    /**
+     * Obtém estatísticas gerais para relatórios com filtros avançados
+     * 
+     * @param int $empresaId ID da empresa
+     * @param array $filtros Filtros adicionais
+     * @return array Estatísticas gerais
+     */
+    public function getEstatisticasGeraisAvancado($empresaId, $filtros = [])
+    {
+        try {
+            // Condição base
+            $condicao = "empresa_id = :empresa_id";
+            $params = ['empresa_id' => $empresaId];
+
+            // Aplica filtros básicos
+            if (!empty($filtros['ano'])) {
+                $condicao .= " AND YEAR(data_solicitacao) = :ano";
+                $params['ano'] = $filtros['ano'];
+            }
+
+            if (!empty($filtros['mes'])) {
+                $condicao .= " AND MONTH(data_solicitacao) = :mes";
+                $params['mes'] = $filtros['mes'];
+            }
+
+            if (!empty($filtros['setor_id'])) {
+                $condicao .= " AND setor_id = :setor_id";
+                $params['setor_id'] = $filtros['setor_id'];
+            }
+
+            // Aplica filtros avançados
+            $resultado = $this->aplicarFiltrosAvancados($condicao, $params, $filtros);
+            $condicao = $resultado['condicao'];
+            $params = $resultado['params'];
+
+            // Calcula o período para média diária
+            $diasPeriodo = 30; // Padrão: 30 dias
+
+            if (!empty($filtros['data_inicio']) && !empty($filtros['data_fim'])) {
+                // Calcula o número de dias entre as datas
+                $dataInicio = new DateTime($filtros['data_inicio']);
+                $dataFim = new DateTime($filtros['data_fim']);
+                $diferenca = $dataInicio->diff($dataFim);
+                $diasPeriodo = $diferenca->days + 1; // +1 para incluir o dia final
+            } else if (!empty($filtros['ano']) && !empty($filtros['mes'])) {
+                // Calcula o número de dias no mês
+                $diasPeriodo = cal_days_in_month(CAL_GREGORIAN, $filtros['mes'], $filtros['ano']);
+            } else if (!empty($filtros['ano'])) {
+                // Se é o ano atual, conta apenas os dias decorridos até hoje
+                if ($filtros['ano'] == date('Y')) {
+                    $diasPeriodo = date('z') + 1; // dias decorridos no ano + hoje
+                } else {
+                    // Um ano tem 365 dias (ou 366 em anos bissextos)
+                    $diasPeriodo = (date('L', strtotime($filtros['ano'] . '-01-01')) == 1) ? 366 : 365;
+                }
+            }
+
+            // Total de chamados
+            $sqlTotal = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao";
+            $stmtTotal = $this->db->prepare($sqlTotal);
+            $stmtTotal->execute($params);
+            $total = $stmtTotal->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Chamados concluídos (status_id = 4)
+            $sqlConcluidos = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao AND status_id = 4";
+            $stmtConcluidos = $this->db->prepare($sqlConcluidos);
+            $stmtConcluidos->execute($params);
+            $concluidos = $stmtConcluidos->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Chamados em andamento (status_id = 2)
+            $sqlEmAndamento = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao AND status_id = 2";
+            $stmtEmAndamento = $this->db->prepare($sqlEmAndamento);
+            $stmtEmAndamento->execute($params);
+            $emAndamento = $stmtEmAndamento->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Chamados abertos (status_id = 1)
+            $sqlAbertos = "SELECT COUNT(*) as total FROM {$this->table} WHERE $condicao AND status_id = 1";
+            $stmtAbertos = $this->db->prepare($sqlAbertos);
+            $stmtAbertos->execute($params);
+            $abertos = $stmtAbertos->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Tempo médio de atendimento (em horas)
+            $sqlTempoMedio = "SELECT AVG(TIMESTAMPDIFF(HOUR, data_solicitacao, 
+                    CASE 
+                        WHEN data_conclusao IS NOT NULL THEN data_conclusao 
+                        ELSE NOW() 
+                    END)) as tempo_medio
+                  FROM {$this->table} 
+                  WHERE $condicao";
+            $stmtTempoMedio = $this->db->prepare($sqlTempoMedio);
+            $stmtTempoMedio->execute($params);
+            $tempoMedio = $stmtTempoMedio->fetch(PDO::FETCH_ASSOC)['tempo_medio'] ?? 0;
+
+            // Taxa de conclusão
+            $taxaConclusao = $total > 0 ? ($concluidos / $total) * 100 : 0;
+
+            // Log para depuração
+            error_log("Estatísticas: Total=$total, Dias=$diasPeriodo, Média=" . ($total / max(1, $diasPeriodo)));
+
+            return [
+                'total' => $total,
+                'concluidos' => $concluidos,
+                'em_andamento' => $emAndamento,
+                'abertos' => $abertos,
+                'tempo_medio' => round($tempoMedio, 1),
+                'taxa_conclusao' => round($taxaConclusao, 1),
+                'dias_periodo' => $diasPeriodo
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter estatísticas gerais: ' . $e->getMessage());
+            return [
+                'total' => 0,
+                'concluidos' => 0,
+                'em_andamento' => 0,
+                'abertos' => 0,
+                'tempo_medio' => 0,
+                'taxa_conclusao' => 0,
+                'dias_periodo' => 30
+            ];
+        }
+    }
+
+    /**
+     * Obtém dados de chamados por mês para relatórios com filtros avançados
+     * 
+     * @param int $empresaId ID da empresa
+     * @param array $filtros Filtros adicionais
+     * @return array Dados para gráfico
+     */
+    public function getChamadosPorMesRelatorioAvancado($empresaId, $filtros = [])
+    {
+        try {
+            // Se não for informado o ano, usa o ano atual
+            $ano = !empty($filtros['ano']) ? $filtros['ano'] : date('Y');
+
+            $condicao = "empresa_id = :empresa_id AND YEAR(data_solicitacao) = :ano";
+            $params = [
+                'empresa_id' => $empresaId,
+                'ano' => $ano
+            ];
+
+            // Aplica filtros adicionais (exceto mês, pois estamos agrupando por mês)
+            $filtrosSemMes = $filtros;
+            unset($filtrosSemMes['mes']);
+            unset($filtrosSemMes['ano']); // Já aplicamos o ano acima
+
+            $resultado = $this->aplicarFiltrosAvancados($condicao, $params, $filtrosSemMes);
+            $condicao = $resultado['condicao'];
+            $params = $resultado['params'];
+
+            $sql = "SELECT 
+                MONTH(data_solicitacao) as mes, 
+                COUNT(*) as total 
+            FROM {$this->table} 
+            WHERE $condicao
+            GROUP BY MONTH(data_solicitacao)
+            ORDER BY mes";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Formata os dados para o gráfico
+            $labels = [];
+            $data = [];
+
+            $meses = [
+                1 => 'Janeiro',
+                2 => 'Fevereiro',
+                3 => 'Março',
+                4 => 'Abril',
+                5 => 'Maio',
+                6 => 'Junho',
+                7 => 'Julho',
+                8 => 'Agosto',
+                9 => 'Setembro',
+                10 => 'Outubro',
+                11 => 'Novembro',
+                12 => 'Dezembro'
+            ];
+
+            // Inicializa todos os meses com zero
+            foreach ($meses as $numMes => $nomeMes) {
+                $labels[$numMes] = $nomeMes;
+                $data[$numMes] = 0;
+            }
+
+            // Preenche com os dados reais
+            foreach ($result as $row) {
+                $data[$row['mes']] = (int)$row['total'];
+            }
+
+            return [
+                'labels' => array_values($labels),
+                'data' => array_values($data),
+                'ano' => $ano,
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter chamados por mês: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'data' => [],
+                'ano' => $ano,
+                'raw' => []
             ];
         }
     }

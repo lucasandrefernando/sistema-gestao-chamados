@@ -16,7 +16,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- JavaScript do Sistema -->
-    <script src="<?= base_url('public/js/utils.js') ?>"></script>
     <script src="<?= base_url('public/js/charts.js') ?>"></script>
     <script src="<?= base_url('public/js/chamados.js') ?>"></script>
     <script src="<?= base_url('public/js/main.js') ?>"></script>

@@ -127,22 +127,11 @@ function createStatusChart(data) {
     // Verifica se há dados válidos
     if (!data.labels || !data.data || data.labels.length === 0 || data.data.length === 0) {
         console.log('Sem dados para o gráfico de status, usando dados de exemplo');
-
-        // Dados de exemplo para quando não houver dados reais
-        data = {
-            labels: ['Aberto', 'Em Andamento', 'Concluído', 'Cancelado'],
-            data: [5, 3, 8, 1],
-            backgroundColor: [
-                'rgba(255, 99, 132, 0.7)',   // Vermelho
-                'rgba(255, 206, 86, 0.7)',   // Amarelo
-                'rgba(75, 192, 192, 0.7)',   // Verde
-                'rgba(153, 102, 255, 0.7)'   // Roxo
-            ]
-        };
+        // ... (código existente para dados de exemplo)
     }
 
     const ctx = document.getElementById('statusChart').getContext('2d');
-    new Chart(ctx, {
+    const statusChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: data.labels,
@@ -158,6 +147,23 @@ function createStatusChart(data) {
             plugins: {
                 legend: {
                     position: 'right',
+                    onClick: function(e, legendItem, legend) {
+                        // Obtém o índice do item clicado
+                        const index = legendItem.index;
+                        
+                        // Obtém o status_id do item clicado (dos dados raw)
+                        if (data.raw && data.raw[index] && data.raw[index].status_id) {
+                            const statusId = data.raw[index].status_id;
+                            
+                            // Redireciona para a lista de chamados filtrada por status
+                            window.location.href = gerarUrlFiltro({
+                                status: statusId
+                            });
+                        } else {
+                            // Comportamento padrão se não houver dados raw
+                            Chart.defaults.plugins.legend.onClick(e, legendItem, legend);
+                        }
+                    }
                 },
                 tooltip: {
                     callbacks: {
@@ -170,9 +176,31 @@ function createStatusChart(data) {
                         }
                     }
                 }
+            },
+            onClick: function(event, elements) {
+                if (elements && elements.length > 0) {
+                    const index = elements[0].index;
+                    
+                    // Obtém o status_id do item clicado (dos dados raw)
+                    if (data.raw && data.raw[index] && data.raw[index].status_id) {
+                        const statusId = data.raw[index].status_id;
+                        
+                        // Redireciona para a lista de chamados filtrada por status
+                        window.location.href = gerarUrlFiltro({
+                            status: statusId
+                        });
+                    }
+                }
             }
         }
     });
+    
+    // Adiciona um botão "Ver todos" abaixo do gráfico
+    const container = document.getElementById('statusChart').parentNode;
+    const verTodosBtn = document.createElement('div');
+    verTodosBtn.className = 'text-center mt-3';
+    verTodosBtn.innerHTML = '<a href="' + gerarUrlFiltro({}) + '" class="btn btn-sm btn-outline-primary">Ver todos os chamados</a>';
+    container.appendChild(verTodosBtn);
 }
 
 /**
@@ -558,4 +586,21 @@ function initFiltros() {
             this.closest('form').submit();
         });
     });
+}
+
+/**
+ * Gera URL para filtrar chamados com base nos parâmetros
+ */
+function gerarUrlFiltro(params) {
+    const baseUrl = window.location.origin + '/chamados/listar';
+    const queryParams = new URLSearchParams();
+
+    // Adiciona os parâmetros à URL
+    for (const key in params) {
+        if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+            queryParams.append(key, params[key]);
+        }
+    }
+
+    return baseUrl + '?' + queryParams.toString();
 }

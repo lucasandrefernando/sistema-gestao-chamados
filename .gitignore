@@ -9,7 +9,7 @@ config/database.php
 *.temp
 
 # Diretórios de dependências
-vendor/
+#vendor/
 node_modules/
 
 # Arquivos de ambiente

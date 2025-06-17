@@ -922,6 +922,13 @@ class ChamadosController extends Controller
         $mesFiltro = isset($_GET['mes']) && $_GET['mes'] !== '' ? (int)$_GET['mes'] : null;
         $setorFiltro = isset($_GET['setor']) && $_GET['setor'] !== '' ? $_GET['setor'] : null;
 
+        // Novos filtros
+        $statusFiltro = isset($_GET['status']) && $_GET['status'] !== '' ? $_GET['status'] : null;
+        $tipoServicoFiltro = isset($_GET['tipo_servico']) && $_GET['tipo_servico'] !== '' ? $_GET['tipo_servico'] : null;
+        $solicitanteFiltro = isset($_GET['solicitante']) && $_GET['solicitante'] !== '' ? $_GET['solicitante'] : null;
+        $dataInicioFiltro = isset($_GET['data_inicio']) && $_GET['data_inicio'] !== '' ? $_GET['data_inicio'] : null;
+        $dataFimFiltro = isset($_GET['data_fim']) && $_GET['data_fim'] !== '' ? $_GET['data_fim'] : null;
+
         try {
             // Obtém os anos disponíveis para filtro
             $anosDisponiveis = $this->chamadoModel->getAnosDisponiveis($empresaId);
@@ -929,37 +936,70 @@ class ChamadosController extends Controller
             // Obtém os setores para filtro
             $setores = $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
 
-            // Obtém os status para os gráficos
+            // Obtém os status para filtro
             $statusList = $this->statusModel->findAll(null, null, 'nome ASC');
 
-            // 1. Relatório de chamados por status
-            $chamadosPorStatus = $this->chamadoModel->getChamadosPorStatusRelatorio($empresaId, $anoFiltro, $mesFiltro, $setorFiltro);
+            // Obtém os tipos de serviço para filtro
+            $tiposServico = $this->chamadoModel->getTiposServico($empresaId);
 
-            // 2. Relatório de chamados por mês
-            $chamadosPorMes = $this->chamadoModel->getChamadosPorMesRelatorio($empresaId, $anoFiltro, $setorFiltro);
+            // Obtém os solicitantes para filtro
+            $solicitantes = $this->chamadoModel->getSolicitantes($empresaId);
 
-            // 3. Relatório de tempo médio de atendimento
-            $tempoMedioAtendimento = $this->chamadoModel->getTempoMedioAtendimento($empresaId, $anoFiltro, $mesFiltro, $setorFiltro);
+            // Aplica os filtros básicos (ano, mês, setor)
+            $condicaoBase = "empresa_id = :empresa_id";
+            $paramsBase = ['empresa_id' => $empresaId];
 
-            // 4. Relatório de chamados por setor
-            $chamadosPorSetor = $this->chamadoModel->getChamadosPorSetorRelatorio($empresaId, $anoFiltro, $mesFiltro);
+            if ($anoFiltro) {
+                $condicaoBase .= " AND YEAR(data_solicitacao) = :ano";
+                $paramsBase['ano'] = $anoFiltro;
+            }
 
-            // 5. Relatório de chamados por tipo de serviço
-            $chamadosPorTipoServico = $this->chamadoModel->getChamadosPorTipoServicoRelatorio($empresaId, $anoFiltro, $mesFiltro, $setorFiltro);
+            if ($mesFiltro) {
+                $condicaoBase .= " AND MONTH(data_solicitacao) = :mes";
+                $paramsBase['mes'] = $mesFiltro;
+            }
 
-            // 6. Relatório de chamados por prioridade
-            $taxaResolucao = $this->chamadoModel->getTaxaResolucaoRelatorio($empresaId, $anoFiltro, $mesFiltro, $setorFiltro);
+            if ($setorFiltro) {
+                $condicaoBase .= " AND setor_id = :setor_id";
+                $paramsBase['setor_id'] = $setorFiltro;
+            }
 
-            // 7. Relatório de chamados por dia da semana
-            $chamadosPorDiaSemana = $this->chamadoModel->getChamadosPorDiaSemanaRelatorio($empresaId, $anoFiltro, $mesFiltro, $setorFiltro);
+            // Aplica os filtros adicionais
+            if ($statusFiltro) {
+                $condicaoBase .= " AND status_id = :status_id";
+                $paramsBase['status_id'] = $statusFiltro;
+            }
 
-            // 8. Relatório de evolução mensal por status
-            $evolucaoMensalPorStatus = $this->chamadoModel->getEvolucaoMensalPorStatus($empresaId, $anoFiltro, $setorFiltro);
+            if ($tipoServicoFiltro) {
+                $condicaoBase .= " AND tipo_servico = :tipo_servico";
+                $paramsBase['tipo_servico'] = $tipoServicoFiltro;
+            }
 
-            // 9. Estatísticas gerais
-            $estatisticasGerais = $this->chamadoModel->getEstatisticasGerais($empresaId, $anoFiltro, $mesFiltro, $setorFiltro);
+            if ($solicitanteFiltro) {
+                $condicaoBase .= " AND solicitante = :solicitante";
+                $paramsBase['solicitante'] = $solicitanteFiltro;
+            }
 
+            if ($dataInicioFiltro) {
+                $condicaoBase .= " AND data_solicitacao >= :data_inicio";
+                $paramsBase['data_inicio'] = $dataInicioFiltro . ' 00:00:00';
+            }
 
+            if ($dataFimFiltro) {
+                $condicaoBase .= " AND data_solicitacao <= :data_fim";
+                $paramsBase['data_fim'] = $dataFimFiltro . ' 23:59:59';
+            }
+
+            // Obtém os dados para os relatórios
+            $chamadosPorStatus = $this->chamadoModel->getChamadosPorStatusRelatorio($empresaId, $anoFiltro, $mesFiltro, $setorFiltro, $condicaoBase, $paramsBase);
+            $chamadosPorMes = $this->chamadoModel->getChamadosPorMesRelatorio($empresaId, $anoFiltro, $setorFiltro, $condicaoBase, $paramsBase);
+            $tempoMedioAtendimento = $this->chamadoModel->getTempoMedioAtendimento($empresaId, $anoFiltro, $mesFiltro, $setorFiltro, $condicaoBase, $paramsBase);
+            $chamadosPorSetor = $this->chamadoModel->getChamadosPorSetorRelatorio($empresaId, $anoFiltro, $mesFiltro, $condicaoBase, $paramsBase);
+            $chamadosPorTipoServico = $this->chamadoModel->getChamadosPorTipoServicoRelatorio($empresaId, $anoFiltro, $mesFiltro, $setorFiltro, $condicaoBase, $paramsBase);
+            $taxaResolucao = $this->chamadoModel->getTaxaResolucaoRelatorio($empresaId, $anoFiltro, $mesFiltro, $setorFiltro, $condicaoBase, $paramsBase);
+            $chamadosPorDiaSemana = $this->chamadoModel->getChamadosPorDiaSemanaRelatorio($empresaId, $anoFiltro, $mesFiltro, $setorFiltro, $condicaoBase, $paramsBase);
+            $evolucaoMensalPorStatus = $this->chamadoModel->getEvolucaoMensalPorStatus($empresaId, $anoFiltro, $setorFiltro, $condicaoBase, $paramsBase);
+            $estatisticasGerais = $this->chamadoModel->getEstatisticasGerais($empresaId, $anoFiltro, $mesFiltro, $setorFiltro, $condicaoBase, $paramsBase);
 
             // Renderiza a view
             $this->render('chamados/relatorio', [
@@ -970,6 +1010,8 @@ class ChamadosController extends Controller
                 'anosDisponiveis' => $anosDisponiveis,
                 'setores' => $setores,
                 'statusList' => $statusList,
+                'tiposServico' => $tiposServico,
+                'solicitantes' => $solicitantes,
                 'chamadosPorStatus' => $chamadosPorStatus,
                 'chamadosPorMes' => $chamadosPorMes,
                 'tempoMedioAtendimento' => $tempoMedioAtendimento,
@@ -982,7 +1024,12 @@ class ChamadosController extends Controller
                 'filtros' => [
                     'ano' => $anoFiltro,
                     'mes' => $mesFiltro,
-                    'setor' => $setorFiltro
+                    'setor' => $setorFiltro,
+                    'status' => $statusFiltro,
+                    'tipo_servico' => $tipoServicoFiltro,
+                    'solicitante' => $solicitanteFiltro,
+                    'data_inicio' => $dataInicioFiltro,
+                    'data_fim' => $dataFimFiltro
                 ]
             ]);
         } catch (Exception $e) {

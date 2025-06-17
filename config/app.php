@@ -7,7 +7,7 @@
 // Informações básicas da aplicação
 define('APP_NAME', 'Sistema de Gestão de Chamados');
 define('APP_VERSION', '1.0.0');
-define('APP_URL', 'http://10.0.1.66/sistema-gestao-chamados');
+define('APP_URL', 'http://localhost/sistema-gestao-chamados');
 define('APP_PRODUCTION', false);
 
 // Configurações de timezone
