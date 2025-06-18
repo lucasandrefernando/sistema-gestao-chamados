@@ -1,0 +1,54 @@
+name: Deploy to Localweb
+
+on:
+  push:
+    branches:
+      - producao
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup SSH and deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            # Diretório temporário para o repositório
+            REPO_DIR="/home/eagletelecom2/temp_repo"
+
+            # Diretório de destino da aplicação
+            WEB_DIR="/home/eagletelecom2/public_html/sistema-chamado"
+
+            # Criar diretório temporário se não existir
+            mkdir -p $REPO_DIR
+
+            # Limpar diretório temporário caso já exista conteúdo
+            rm -rf $REPO_DIR/*
+
+            # Clonar a branch de produção do repositório
+            cd $REPO_DIR
+            git clone --branch producao https://github.com/lucasandrefernando/sistema-gestao-chamados.git .
+
+            # Garantir que o diretório de destino existe
+            mkdir -p $WEB_DIR
+
+            # Copiar os arquivos para o diretório web
+            cp -R $REPO_DIR/* $WEB_DIR/
+
+            # Ajustar permissões (ajuste conforme necessário para seu servidor)
+            chmod -R 755 $WEB_DIR
+            find $WEB_DIR -type f -exec chmod 644 {} \;
+
+            # Limpar diretório temporário após o deploy
+            rm -rf $REPO_DIR
+
+            echo "Deploy concluído em $(date)"
