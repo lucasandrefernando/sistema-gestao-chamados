@@ -55,33 +55,32 @@ class AuthController extends Controller
         $email = sanitize_input($_POST['email'] ?? '');
         $senha = $_POST['senha'] ?? '';
         $empresaId = intval($_POST['empresa_id'] ?? 0);
+        $isAdminMaster = isset($_POST['is_admin_master']) && $_POST['is_admin_master'] === 'true';
 
         // Log para depuração
-        error_log("Tentativa de login - Email: $email, Empresa ID: $empresaId");
+        error_log("Tentativa de login - Email: $email, Empresa ID: $empresaId, Admin Master: " . ($isAdminMaster ? 'Sim' : 'Não'));
 
         // Valida os campos
-        $errors = $this->validateRequired(
-            ['email' => $email, 'senha' => $senha, 'empresa_id' => $empresaId],
-            ['email' => 'E-mail', 'senha' => 'Senha', 'empresa_id' => 'Empresa']
-        );
+        $errors = [];
 
-        // Validação adicional para o formato de e-mail
-        if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (empty($email)) {
+            $errors[] = 'O campo E-mail é obrigatório.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = 'O formato do e-mail é inválido.';
+        }
+
+        if (empty($senha)) {
+            $errors[] = 'O campo Senha é obrigatório.';
+        }
+
+        // Só valida empresa_id se não for admin master
+        if (!$isAdminMaster && $empresaId <= 0) {
+            $errors[] = 'O campo Empresa é obrigatório.';
         }
 
         if (!empty($errors)) {
             error_log("Erro de validação: " . implode(', ', $errors));
             set_flash_message('error', implode('<br>', $errors));
-            redirect('auth');
-            return;
-        }
-
-        // Verifica se a empresa existe e está ativa
-        $empresa = $this->empresaModel->findById($empresaId);
-        if (!$empresa || !$empresa['ativo']) {
-            error_log("Empresa inválida ou inativa: $empresaId");
-            set_flash_message('error', 'Empresa inválida ou inativa.');
             redirect('auth');
             return;
         }
@@ -104,35 +103,50 @@ class AuthController extends Controller
         // Verifica se é um admin master
         $isAdminMaster = $usuarioGlobal['admin'] == 1 && $usuarioGlobal['admin_tipo'] == 'master';
 
-        // Se for admin master, pode logar em qualquer empresa
+        // Se for admin master, pode logar sem verificar empresa
         if ($isAdminMaster) {
             // Verifica a senha
             if ($this->usuarioModel->verificarSenha($senha, $usuarioGlobal['senha'])) {
+                // Se for admin master, usa a empresa do usuário como referência
+                $empresaId = $usuarioGlobal['empresa_id'];
+                $empresa = $this->empresaModel->findById($empresaId);
+
                 // Registra o login bem-sucedido
                 $this->registrarLoginSucesso($usuarioGlobal, $empresaId, $empresa);
                 return;
             }
         } else {
             // Se não for admin master, só pode logar na própria empresa
-            $usuario = $this->usuarioModel->findOne('email = :email AND empresa_id = :empresa_id AND ativo = 1', [
-                'email' => $email,
-                'empresa_id' => $empresaId
-            ]);
+            // Verifica se a empresa existe e está ativa
+            if ($empresaId > 0) {
+                $empresa = $this->empresaModel->findById($empresaId);
+                if (!$empresa || !$empresa['ativo']) {
+                    error_log("Empresa inválida ou inativa: $empresaId");
+                    set_flash_message('error', 'Empresa inválida ou inativa.');
+                    redirect('auth');
+                    return;
+                }
 
-            if ($usuario && $this->usuarioModel->verificarSenha($senha, $usuario['senha'])) {
-                // Registra o login bem-sucedido
-                $this->registrarLoginSucesso($usuario, $empresaId, $empresa);
-                return;
+                $usuario = $this->usuarioModel->findOne('email = :email AND empresa_id = :empresa_id AND ativo = 1', [
+                    'email' => $email,
+                    'empresa_id' => $empresaId
+                ]);
+
+                if ($usuario && $this->usuarioModel->verificarSenha($senha, $usuario['senha'])) {
+                    // Registra o login bem-sucedido
+                    $this->registrarLoginSucesso($usuario, $empresaId, $empresa);
+                    return;
+                }
             }
         }
 
         // Se chegou aqui, a autenticação falhou
-        error_log("Login falhou para: $email na empresa: $empresaId");
+        error_log("Login falhou para: $email" . ($isAdminMaster ? " (admin master)" : " na empresa: $empresaId"));
 
         // Adiciona um pequeno atraso para dificultar ataques de força bruta
         sleep(1);
 
-        set_flash_message('error', 'E-mail ou senha inválidos para a empresa selecionada.');
+        set_flash_message('error', 'E-mail ou senha inválidos.');
         redirect('auth');
     }
 
@@ -388,5 +402,121 @@ class AuthController extends Controller
 
         set_flash_message('success', 'Sua senha foi redefinida com sucesso. Você já pode fazer login com sua nova senha.');
         redirect('auth');
+    }
+
+    /**
+     * Busca todas as empresas associadas a um email (para AJAX)
+     */
+    public function buscarEmpresasDoUsuario()
+    {
+        // Obtém o email da requisição
+        $email = sanitize_input($_GET['email'] ?? '');
+
+        if (empty($email)) {
+            echo json_encode(['success' => false, 'message' => 'Email não fornecido']);
+            exit;
+        }
+
+        // Log para depuração
+        error_log("Buscando empresas para o email: $email");
+
+        // Verifica primeiro se é um admin master
+        $adminMaster = $this->usuarioModel->findOne(
+            'email = :email AND ativo = 1 AND admin = 1 AND admin_tipo = "master"',
+            ['email' => $email]
+        );
+
+        if ($adminMaster) {
+            // Se for admin master, retorna essa informação
+            echo json_encode([
+                'success' => true,
+                'isAdminMaster' => true,
+                'empresa_id' => $adminMaster['empresa_id'],
+                'empresas' => [] // Não precisa de lista de empresas
+            ]);
+            exit;
+        }
+
+        // Busca todas as empresas onde o usuário está cadastrado
+        $sql = "SELECT u.empresa_id, e.nome as empresa_nome, u.admin, u.admin_tipo 
+            FROM usuarios u 
+            JOIN empresas e ON u.empresa_id = e.id 
+            WHERE u.email = :email AND u.ativo = 1 AND e.ativo = 1 
+            ORDER BY e.nome ASC";
+
+        $stmt = $this->usuarioModel->getDb()->prepare($sql);
+        $stmt->execute(['email' => $email]);
+        $empresasDoUsuario = $stmt->fetchAll();
+
+        if (count($empresasDoUsuario) > 0) {
+            // Formata a resposta
+            $empresas = [];
+            $isAdminRegular = false;
+
+            foreach ($empresasDoUsuario as $empresa) {
+                $empresas[] = [
+                    'id' => $empresa['empresa_id'],
+                    'nome' => $empresa['empresa_nome']
+                ];
+
+                // Verifica se é admin regular em pelo menos uma empresa
+                if ($empresa['admin'] == 1 && $empresa['admin_tipo'] == 'regular') {
+                    $isAdminRegular = true;
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'isAdminMaster' => false,
+                'isAdminRegular' => $isAdminRegular,
+                'empresas' => $empresas,
+                'totalEmpresas' => count($empresas)
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Usuário não encontrado em nenhuma empresa ativa'
+            ]);
+        }
+
+        exit;
+    }
+
+    /**
+     * Verifica se um email pertence a um admin master (para AJAX)
+     */
+    public function verificarAdminMaster()
+    {
+        // Obtém o email da requisição
+        $email = sanitize_input($_GET['email'] ?? '');
+
+        if (empty($email)) {
+            echo json_encode(['success' => false, 'message' => 'Email não fornecido']);
+            exit;
+        }
+
+        // Log para depuração
+        error_log("Verificando se o email é admin master: $email");
+
+        // Busca o usuário pelo email
+        $usuario = $this->usuarioModel->findOne('email = :email AND ativo = 1', ['email' => $email]);
+
+        if ($usuario && $usuario['admin'] == 1 && $usuario['admin_tipo'] == 'master') {
+            error_log("Usuário é admin master: ID={$usuario['id']}");
+
+            echo json_encode([
+                'success' => true,
+                'isAdminMaster' => true,
+                'empresa_id' => $usuario['empresa_id'] // Enviamos a empresa_id mesmo assim para referência
+            ]);
+        } else {
+            error_log("Usuário não é admin master ou não foi encontrado: $email");
+            echo json_encode([
+                'success' => true,
+                'isAdminMaster' => false
+            ]);
+        }
+
+        exit;
     }
 }
