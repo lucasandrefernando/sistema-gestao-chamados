@@ -10,6 +10,7 @@ define('ROOT_DIR', dirname(__DIR__));
 // Carrega as configurações
 require_once ROOT_DIR . '/config/app.php';
 require_once ROOT_DIR . '/config/database.php';
+require_once ROOT_DIR . '/vendor/autoload.php';
 
 // Carrega os helpers
 $helpersDir = ROOT_DIR . '/app/helpers/';

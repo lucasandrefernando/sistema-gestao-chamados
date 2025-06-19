@@ -8,62 +8,6 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="<?= base_url('public/css/auth.css') ?>">
-    <style>
-        /* Estilos para o medidor de força de senha */
-        .password-strength {
-            margin-top: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .strength-meter {
-            height: 4px;
-            background-color: var(--gray-200);
-            border-radius: 2px;
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 0.5rem;
-        }
-
-        .strength-meter-fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 0.3s ease, background-color 0.3s ease;
-            width: 0;
-        }
-
-        .strength-text {
-            font-size: 0.75rem;
-            color: var(--gray-500);
-            display: flex;
-            align-items: center;
-            gap: 0.375rem;
-        }
-
-        .strength-text i {
-            font-size: 0.875rem;
-        }
-
-        /* Cores para diferentes níveis de força */
-        .strength-weak {
-            background-color: var(--danger);
-            width: 25%;
-        }
-
-        .strength-medium {
-            background-color: var(--warning);
-            width: 50%;
-        }
-
-        .strength-good {
-            background-color: var(--success);
-            width: 75%;
-        }
-
-        .strength-strong {
-            background-color: var(--success);
-            width: 100%;
-        }
-    </style>
 </head>
 
 <body>
@@ -71,16 +15,18 @@
         <div class="auth-background"></div>
 
         <div class="auth-wrapper">
-            <div class="auth-logo-wrapper">
-                <div class="auth-logo-container">
-                    <img src="<?= base_url('public/img/logo.png') ?>" alt="Logo" class="auth-logo">
-                </div>
-            </div>
-
             <div class="auth-card">
+                <!-- Barra superior colorida -->
                 <div class="auth-card-header"></div>
 
                 <div class="auth-content">
+                    <!-- Container do logo -->
+                    <div class="auth-logo-wrapper">
+                        <div class="auth-logo-container">
+                            <img src="<?= base_url('public/img/logo.png') ?>" alt="Logo" class="auth-logo">
+                        </div>
+                    </div>
+
                     <div class="auth-header">
                         <h1 class="auth-title">Redefinir Senha</h1>
                         <p class="auth-subtitle">Crie uma nova senha segura para sua conta</p>
@@ -148,7 +94,7 @@
                     <div class="auth-footer">
                         <div class="auth-support">
                             <i class="fas fa-headset"></i>
-                            <span>Suporte: <a href="mailto:suporte@eagletelecom.com.br">suporte@eagletelecom.com.br</a></span>
+                            <span>Suporte: <a href="mailto:atendimento@eagletelecom.com.br">atendimento@eagletelecom.com.br</a></span>
                         </div>
                         <div class="auth-copyright">
                             &copy; <?= date('Y') ?> Eagle Telecom - Todos os direitos reservados

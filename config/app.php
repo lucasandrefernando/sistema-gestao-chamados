@@ -7,8 +7,24 @@ session_start();
 // Informações básicas da aplicação
 define('APP_NAME', 'Sistema de Gestão de Chamados');
 define('APP_VERSION', '1.0.0');
+//define('APP_URL', 'http://localhost/sistema-gestao-chamados');
 define('APP_URL', 'https://chamado.eagletelecom.com.br');
 define('APP_PRODUCTION', false);
+
+// Configurações de e-mail
+define('EMAIL_FROM', 'lucas.santos@eagletelecom.com.br');
+define('EMAIL_FROM_NAME', 'Sistema de Gestão de Chamados');
+define('EMAIL_REPLY_TO', 'lucas.santos@eagletelecom.com.br');
+
+// Configurações de SMTP
+define('EMAIL_SMTP_ENABLED', true);
+define('EMAIL_SMTP_HOST', 'smtp.gmail.com'); // Altere para o seu servidor SMTP
+define('EMAIL_SMTP_AUTH', true);
+define('EMAIL_SMTP_USERNAME', 'eagle.madreteresa@gmail.com'); // Altere para o seu e-mail
+define('EMAIL_SMTP_PASSWORD', 'sssi yskm dznh lwco'); // Altere para sua senha ou senha de app
+define('EMAIL_SMTP_SECURE', 'tls'); // tls ou ssl
+define('EMAIL_SMTP_PORT', 587); // 587 (TLS) ou 465 (SSL)
+define('EMAIL_SMTP_DEBUG', false); // true para debug, false para produção
 
 // Configurações de timezone
 date_default_timezone_set('America/Sao_Paulo');

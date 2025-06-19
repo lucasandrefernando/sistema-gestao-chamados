@@ -2,6 +2,7 @@
 require_once ROOT_DIR . '/app/controllers/Controller.php';
 require_once ROOT_DIR . '/app/models/Usuario.php';
 require_once ROOT_DIR . '/app/models/Empresa.php';
+require_once ROOT_DIR . '/app/models/EmailService.php';
 
 /**
  * Controlador para autenticação
@@ -10,6 +11,7 @@ class AuthController extends Controller
 {
     private $usuarioModel;
     private $empresaModel;
+    private $emailService;
 
     /**
      * Construtor
@@ -18,9 +20,8 @@ class AuthController extends Controller
     {
         $this->usuarioModel = new Usuario();
         $this->empresaModel = new Empresa();
+        $this->emailService = new EmailService();
     }
-
-
 
     /**
      * Exibe o formulário de login
@@ -176,7 +177,6 @@ class AuthController extends Controller
         redirect('dashboard');
     }
 
-
     /**
      * Processa o logout
      */
@@ -197,7 +197,7 @@ class AuthController extends Controller
         // Obtém a lista de empresas ativas para o dropdown
         $empresas = $this->empresaModel->findAtivas();
 
-        $this->render('auth/recuperar-senha', [
+        $this->render('auth/solicitar-recuperacao', [
             'empresas' => $empresas
         ]);
     }
@@ -215,6 +215,7 @@ class AuthController extends Controller
 
         $email = sanitize_input($_POST['email'] ?? '');
         $empresaId = intval($_POST['empresa_id'] ?? 0);
+        $isAdminMaster = isset($_POST['is_admin_master']) && $_POST['is_admin_master'] === 'true';
 
         // Valida os campos
         $errors = [];
@@ -225,7 +226,8 @@ class AuthController extends Controller
             $errors[] = 'O formato do e-mail é inválido.';
         }
 
-        if ($empresaId <= 0) {
+        // Só valida empresa_id se não for admin master
+        if (!$isAdminMaster && $empresaId <= 0) {
             $errors[] = 'O campo Empresa é obrigatório.';
         }
 
@@ -235,11 +237,23 @@ class AuthController extends Controller
             return;
         }
 
-        // Verifica se o usuário existe na empresa especificada
-        $usuario = $this->usuarioModel->findOne('email = :email AND empresa_id = :empresa_id AND ativo = 1', [
-            'email' => $email,
-            'empresa_id' => $empresaId
-        ]);
+        // Se for admin master, busca o usuário pelo email apenas
+        if ($isAdminMaster) {
+            $usuario = $this->usuarioModel->findOne('email = :email AND admin = 1 AND admin_tipo = "master" AND ativo = 1', [
+                'email' => $email
+            ]);
+
+            // Se encontrou, usa a empresa do admin master
+            if ($usuario) {
+                $empresaId = $usuario['empresa_id'];
+            }
+        } else {
+            // Caso contrário, busca o usuário pelo email e empresa
+            $usuario = $this->usuarioModel->findOne('email = :email AND empresa_id = :empresa_id AND ativo = 1', [
+                'email' => $email,
+                'empresa_id' => $empresaId
+            ]);
+        }
 
         // Adiciona um pequeno atraso para dificultar ataques de enumeração
         sleep(1);
@@ -255,25 +269,20 @@ class AuthController extends Controller
                 'token_expiracao' => $expira
             ]);
 
-            // Envia o e-mail (implementação simplificada)
-            $resetUrl = base_url("auth/redefinirSenha?token={$token}");
-            $mensagem = "Olá {$usuario['nome']},\n\n";
-            $mensagem .= "Você solicitou a recuperação de senha. Clique no link abaixo para redefinir sua senha:\n\n";
-            $mensagem .= $resetUrl . "\n\n";
-            $mensagem .= "Este link expira em 1 hora.\n\n";
-            $mensagem .= "Se você não solicitou esta recuperação, ignore este e-mail.\n\n";
-            $mensagem .= "Atenciosamente,\nEquipe Eagle Telecom";
+            // Envia o e-mail de recuperação usando o EmailService
+            $resultado = $this->emailService->enviarRecuperacaoSenha($usuario['email'], $usuario['nome'], $token);
 
-            // Aqui você deve implementar o envio de e-mail real
-            // mail($usuario['email'], 'Recuperação de Senha', $mensagem);
-
-            // Para fins de desenvolvimento, apenas exibe a mensagem
-            error_log("E-mail de recuperação para {$usuario['email']}: {$resetUrl}");
+            // Registra o resultado
+            if ($resultado['success']) {
+                error_log("E-mail de recuperação enviado com sucesso para {$usuario['email']}");
+            } else {
+                error_log("Falha ao enviar e-mail de recuperação para {$usuario['email']}: " . $resultado['message']);
+            }
 
             // Registra a tentativa de recuperação
-            $this->registrarTentativaRecuperacao($usuario['id'], true);
+            $this->registrarTentativaRecuperacao($usuario['id'], $resultado['success']);
 
-            set_flash_message('success', 'Enviamos um e-mail com instruções para recuperar sua senha.');
+            set_flash_message('success', 'Enviamos um e-mail com instruções para recuperar sua senha. Verifique sua caixa de entrada e spam.');
         } else {
             // Não informamos se o e-mail existe ou não por segurança
             // Mas registramos a tentativa para monitoramento
@@ -517,6 +526,54 @@ class AuthController extends Controller
             ]);
         }
 
+        exit;
+    }
+
+    /**
+     * Envia um e-mail de teste para verificar a configuração do PHPMailer
+     * Útil para depuração das configurações de e-mail
+     */
+    public function testarEmail()
+    {
+        // Verifica se o usuário é admin
+        if (!is_authenticated() || !$_SESSION['is_admin']) {
+            redirect('auth');
+            return;
+        }
+
+        $para = sanitize_input($_GET['email'] ?? $_SESSION['user_email'] ?? '');
+
+        if (empty($para) || !filter_var($para, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'E-mail inválido']);
+            exit;
+        }
+
+        $assunto = 'Teste de Configuração de E-mail - Sistema de Gestão de Chamados';
+        $mensagem = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;'>
+            <h2 style='color: #2563eb; margin-bottom: 20px;'>Teste de E-mail</h2>
+            
+            <p>Este é um e-mail de teste para verificar a configuração do sistema de envio de e-mails.</p>
+            
+            <p>Se você está recebendo este e-mail, significa que a configuração está funcionando corretamente!</p>
+            
+            <p>Detalhes técnicos:</p>
+            <ul>
+                <li>Data e hora: " . date('d/m/Y H:i:s') . "</li>
+                <li>Servidor: " . $_SERVER['SERVER_NAME'] . "</li>
+                <li>PHPMailer: Ativo</li>
+            </ul>
+            
+            <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;'>
+                <p>Atenciosamente,<br>Sistema de Gestão de Chamados</p>
+                <p>Este é um e-mail automático, por favor não responda.</p>
+            </div>
+        </div>
+        ";
+
+        $resultado = $this->emailService->enviar($para, $assunto, $mensagem);
+
+        echo json_encode($resultado);
         exit;
     }
 }

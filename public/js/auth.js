@@ -100,6 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const multiEmpresaMessage = document.getElementById('multiEmpresaMessage');
     const multiEmpresaText = document.getElementById('multiEmpresaText');
     const isAdminMasterInput = document.getElementById('isAdminMaster');
+    const loadingIndicator = document.getElementById('emailLoadingIndicator');
 
     // Só continua se estiver na página de login com esses elementos
     if (emailInput && empresaSelect && empresaGroup) {
@@ -132,13 +133,37 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log('Verificando usuário para o email:', email);
 
             // Exibe indicador de carregamento
+            if (loadingIndicator) {
+                loadingIndicator.classList.add('active');
+            }
+
+            // Alternativa: mudar o ícone do email para um spinner
+            const emailIcon = emailInput.parentNode.querySelector('.input-icon');
+            if (emailIcon) {
+                const originalIcon = emailIcon.innerHTML;
+                emailIcon.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+            }
+
             empresaSelect.disabled = true;
+
+            // Obtém a URL base para as requisições AJAX
+            let baseUrl = getBaseUrl();
 
             // Cria uma nova requisição AJAX
             const xhr = new XMLHttpRequest();
-            xhr.open('GET', baseUrl + 'auth/buscarEmpresasDoUsuario?email=' + encodeURIComponent(email), true);
+            xhr.open('GET', baseUrl + 'buscarEmpresasDoUsuario?email=' + encodeURIComponent(email), true);
 
             xhr.onload = function () {
+                // Oculta o indicador de carregamento
+                if (loadingIndicator) {
+                    loadingIndicator.classList.remove('active');
+                }
+
+                // Restaura o ícone original
+                if (emailIcon) {
+                    emailIcon.innerHTML = '<i class="fas fa-envelope"></i>';
+                }
+
                 if (xhr.status === 200) {
                     try {
                         const data = JSON.parse(xhr.responseText);
@@ -187,6 +212,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
             xhr.onerror = function () {
                 console.error('Erro na requisição AJAX');
+
+                // Oculta o indicador de carregamento
+                if (loadingIndicator) {
+                    loadingIndicator.classList.remove('active');
+                }
+
+                // Restaura o ícone original
+                if (emailIcon) {
+                    emailIcon.innerHTML = '<i class="fas fa-envelope"></i>';
+                }
+
                 empresaSelect.disabled = false;
                 resetarFormulario();
             };
@@ -276,6 +312,32 @@ document.addEventListener('DOMContentLoaded', function () {
             empresaSelect.setAttribute('required', 'required');
         }
 
+        /**
+         * Obtém a URL base para as requisições AJAX
+         * @returns {string} URL base para as requisições AJAX
+         */
+        function getBaseUrl() {
+            // Tenta obter do link de recuperação de senha
+            const forgotLink = document.querySelector('.forgot-link');
+            if (forgotLink) {
+                const href = forgotLink.getAttribute('href');
+                const authIndex = href.indexOf('auth/');
+                if (authIndex !== -1) {
+                    return href.substring(0, authIndex + 5);
+                }
+            }
+
+            // Tenta obter da URL atual
+            const currentUrl = window.location.href;
+            const authIndex = currentUrl.indexOf('auth/');
+            if (authIndex !== -1) {
+                return currentUrl.substring(0, authIndex + 5);
+            }
+
+            // Fallback - usa a URL atual
+            return window.location.origin + '/auth/';
+        }
+
         // Configura o evento para detectar quando o usuário para de digitar
         emailInput.addEventListener('keyup', function () {
             clearTimeout(typingTimer);
@@ -289,27 +351,5 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Também verifica quando o campo perde o foco
         emailInput.addEventListener('blur', verificarUsuario);
-
-        // Obtém a URL base para as requisições AJAX
-        // Extrai do atributo href do link de recuperação de senha ou define um padrão
-        const forgotLink = document.querySelector('.forgot-link');
-        let baseUrl = '';
-
-        if (forgotLink) {
-            const href = forgotLink.getAttribute('href');
-            baseUrl = href.substring(0, href.indexOf('auth/') + 5) + '/';
-        } else {
-            // Fallback - tenta extrair do location
-            const pathArray = window.location.pathname.split('/');
-            const indexOfAuth = pathArray.indexOf('auth');
-            if (indexOfAuth !== -1) {
-                baseUrl = window.location.origin + pathArray.slice(0, indexOfAuth + 1).join('/') + '/';
-            } else {
-                // Último recurso - assume que está na raiz
-                baseUrl = window.location.origin + '/auth/';
-            }
-        }
-
-        console.log('URL base para requisições AJAX:', baseUrl);
     }
 });
