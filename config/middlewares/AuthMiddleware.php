@@ -16,6 +16,21 @@ class AuthMiddleware
             redirect('auth');
             exit;
         }
+
+        // Verifica se a sessão atual é válida
+        require_once ROOT_DIR . '/app/models/Usuario.php';
+        $usuarioModel = new Usuario();
+
+        $sessionId = session_id();
+        $userId = $_SESSION['user_id'];
+
+        if (!$usuarioModel->validarSessao($userId, $sessionId)) {
+            // A sessão não é válida, limpa a sessão atual
+            session_destroy();
+            set_flash_message('error', 'Sua sessão expirou ou foi encerrada em outro dispositivo. Por favor, faça login novamente.');
+            redirect('auth');
+            exit;
+        }
     }
 
     /**

@@ -1044,4 +1044,119 @@ class ChamadosController extends Controller
             redirect('chamados');
         }
     }
+
+    /**
+     * Exibe os chamados do setor do usuário logado
+     */
+    public function meus()
+    {
+        $usuarioId = get_user_id();
+
+        // Buscar dados do usuário para obter o setor
+        require_once ROOT_DIR . '/app/models/Usuario.php';
+        $usuarioModel = new Usuario();
+        $usuario = $usuarioModel->findById($usuarioId);
+
+        if (!$usuario || empty($usuario['setor_id'])) {
+            set_flash_message('warning', 'Você não está associado a nenhum setor ou não foi possível identificar seu setor.');
+            redirect('chamados/listar');
+            exit;
+        }
+
+        $setorId = $usuario['setor_id'];
+        $empresaId = get_empresa_id();
+
+        // Buscar o nome do setor
+        require_once ROOT_DIR . '/app/models/Setor.php';
+        $setorModel = new Setor();
+        $setor = $setorModel->findById($setorId);
+        $setorNome = $setor ? $setor['nome'] : 'Setor não identificado';
+
+        // Definir condições de busca
+        $condicao = 'c.empresa_id = :empresa_id AND c.setor_id = :setor_id';
+        $params = [
+            'empresa_id' => $empresaId,
+            'setor_id' => $setorId
+        ];
+
+        // Verificar se há filtros adicionais
+        $filtros = $this->getFiltrosFromRequest();
+
+        // Adicionar filtros à condição
+        if (!empty($filtros['status_id'])) {
+            $condicao .= ' AND c.status_id = :status_id';
+            $params['status_id'] = $filtros['status_id'];
+        }
+
+        if (!empty($filtros['prioridade'])) {
+            $condicao .= ' AND c.prioridade = :prioridade';
+            $params['prioridade'] = $filtros['prioridade'];
+        }
+
+        if (!empty($filtros['data_inicio']) && !empty($filtros['data_fim'])) {
+            $condicao .= ' AND c.data_criacao BETWEEN :data_inicio AND :data_fim';
+            $params['data_inicio'] = $filtros['data_inicio'] . ' 00:00:00';
+            $params['data_fim'] = $filtros['data_fim'] . ' 23:59:59';
+        }
+
+        if (!empty($filtros['busca'])) {
+            $condicao .= ' AND (c.titulo LIKE :busca OR c.descricao LIKE :busca OR c.id LIKE :busca)';
+            $params['busca'] = '%' . $filtros['busca'] . '%';
+        }
+
+        // Buscar chamados com as condições
+        $chamados = $this->chamadoModel->buscarChamadosCompletos($condicao, $params, 'c.data_criacao DESC');
+
+        // Buscar status disponíveis para o filtro
+        $statusChamado = $this->statusModel->findAll('ativo = 1', [], 'ordem ASC');
+
+        // Preparar dados para a view
+        $data = [
+            'chamados' => $chamados,
+            'statusChamado' => $statusChamado,
+            'filtros' => $filtros,
+            'titulo_pagina' => 'Chamados do Setor: ' . $setorNome,
+            'descricao_pagina' => 'Visualize e gerencie os chamados do seu setor.',
+            'is_meus_chamados' => true // Flag para indicar que estamos na página "Meus Chamados"
+        ];
+
+        // Renderizar a view
+        $this->render('chamados/listar', $data);
+    }
+
+    /**
+     * Obtém os filtros da requisição
+     * 
+     * @return array Filtros da requisição
+     */
+    private function getFiltrosFromRequest()
+    {
+        $filtros = [];
+
+        // Filtro de status
+        if (isset($_GET['status_id']) && $_GET['status_id'] !== '') {
+            $filtros['status_id'] = $_GET['status_id'];
+        }
+
+        // Filtro de prioridade
+        if (isset($_GET['prioridade']) && $_GET['prioridade'] !== '') {
+            $filtros['prioridade'] = $_GET['prioridade'];
+        }
+
+        // Filtro de data
+        if (isset($_GET['data_inicio']) && $_GET['data_inicio'] !== '') {
+            $filtros['data_inicio'] = $_GET['data_inicio'];
+        }
+
+        if (isset($_GET['data_fim']) && $_GET['data_fim'] !== '') {
+            $filtros['data_fim'] = $_GET['data_fim'];
+        }
+
+        // Filtro de busca
+        if (isset($_GET['busca']) && $_GET['busca'] !== '') {
+            $filtros['busca'] = $_GET['busca'];
+        }
+
+        return $filtros;
+    }
 }

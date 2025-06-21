@@ -57,6 +57,7 @@ class AuthController extends Controller
         $senha = $_POST['senha'] ?? '';
         $empresaId = intval($_POST['empresa_id'] ?? 0);
         $isAdminMaster = isset($_POST['is_admin_master']) && $_POST['is_admin_master'] === 'true';
+        $forcarLogin = isset($_POST['forcar_login']) && $_POST['forcar_login'] === 'true';
 
         // Log para depuração
         error_log("Tentativa de login - Email: $email, Empresa ID: $empresaId, Admin Master: " . ($isAdminMaster ? 'Sim' : 'Não'));
@@ -108,6 +109,33 @@ class AuthController extends Controller
         if ($isAdminMaster) {
             // Verifica a senha
             if ($this->usuarioModel->verificarSenha($senha, $usuarioGlobal['senha'])) {
+                // Verifica se o usuário já tem uma sessão ativa
+                $sessaoAtiva = $this->usuarioModel->verificarSessaoAtiva($usuarioGlobal['id']);
+
+                if ($sessaoAtiva && !$forcarLogin) {
+                    // Armazena informações temporárias para a página de confirmação
+                    $_SESSION['temp_login'] = [
+                        'user_id' => $usuarioGlobal['id'],
+                        'email' => $email,
+                        'senha' => $senha,
+                        'empresa_id' => $usuarioGlobal['empresa_id'],
+                        'is_admin_master' => true,
+                        'sessao_ativa' => $sessaoAtiva
+                    ];
+
+                    redirect('auth/confirmar_sessao');
+                    return;
+                }
+
+                // Se não tem sessão ativa ou está forçando o login
+                if ($forcarLogin) {
+                    // Limpa a sessão anterior
+                    $this->usuarioModel->limparSessao($usuarioGlobal['id']);
+
+                    // Pequeno atraso para garantir que a sessão anterior seja encerrada
+                    sleep(1);
+                }
+
                 // Se for admin master, usa a empresa do usuário como referência
                 $empresaId = $usuarioGlobal['empresa_id'];
                 $empresa = $this->empresaModel->findById($empresaId);
@@ -134,6 +162,30 @@ class AuthController extends Controller
                 ]);
 
                 if ($usuario && $this->usuarioModel->verificarSenha($senha, $usuario['senha'])) {
+                    // Verifica se o usuário já tem uma sessão ativa
+                    $sessaoAtiva = $this->usuarioModel->verificarSessaoAtiva($usuario['id']);
+
+                    if ($sessaoAtiva && !$forcarLogin) {
+                        // Armazena informações temporárias para a página de confirmação
+                        $_SESSION['temp_login'] = [
+                            'user_id' => $usuario['id'],
+                            'email' => $email,
+                            'senha' => $senha,
+                            'empresa_id' => $empresaId,
+                            'is_admin_master' => false,
+                            'sessao_ativa' => $sessaoAtiva
+                        ];
+
+                        redirect('auth/confirmar_sessao');
+                        return;
+                    }
+
+                    // Se não tem sessão ativa ou está forçando o login
+                    if ($forcarLogin) {
+                        // Limpa a sessão anterior
+                        $this->usuarioModel->limparSessao($usuario['id']);
+                    }
+
                     // Registra o login bem-sucedido
                     $this->registrarLoginSucesso($usuario, $empresaId, $empresa);
                     return;
@@ -156,7 +208,14 @@ class AuthController extends Controller
      */
     private function registrarLoginSucesso($usuario, $empresaId, $empresa)
     {
-        // Atualiza apenas o último acesso
+        // Registra a sessão do usuário
+        $sessionId = session_id();
+        $ip = $_SERVER['REMOTE_ADDR'];
+        $userAgent = $_SERVER['HTTP_USER_AGENT'];
+
+        $this->usuarioModel->registrarSessao($usuario['id'], $sessionId, $ip, $userAgent);
+
+        // Atualiza o último acesso
         $this->usuarioModel->update($usuario['id'], [
             'ultimo_acesso' => date('Y-m-d H:i:s')
         ]);
@@ -182,11 +241,124 @@ class AuthController extends Controller
      */
     public function logout()
     {
+        // Se estiver autenticado, limpa a sessão no banco de dados
+        if (is_authenticated()) {
+            $userId = $_SESSION['user_id'];
+            $this->usuarioModel->limparSessao($userId);
+        }
+
         // Destrói a sessão
         session_destroy();
 
         // Redireciona para o login
         redirect('auth');
+    }
+
+    /**
+     * Exibe a página de confirmação para forçar logout de sessão ativa
+     */
+    public function confirmar_sessao()
+    {
+        // Verifica se há dados temporários na sessão
+        if (!isset($_SESSION['temp_login'])) {
+            redirect('auth');
+            return;
+        }
+
+        $tempLogin = $_SESSION['temp_login'];
+
+        // Busca informações do usuário
+        $usuario = $this->usuarioModel->findById($tempLogin['user_id']);
+
+        if (!$usuario) {
+            unset($_SESSION['temp_login']);
+            set_flash_message('error', 'Usuário não encontrado.');
+            redirect('auth');
+            return;
+        }
+
+        // Renderiza a página de confirmação
+        $this->render('auth/confirmar_sessao', [
+            'usuario' => $usuario,
+            'sessao_ativa' => $tempLogin['sessao_ativa']
+        ]);
+    }
+
+    /**
+     * Força o login encerrando a sessão anterior
+     */
+    public function forcar_login()
+    {
+        // Verifica se há dados temporários na sessão
+        if (!isset($_SESSION['temp_login'])) {
+            redirect('auth');
+            return;
+        }
+
+        $tempLogin = $_SESSION['temp_login'];
+        $userId = $tempLogin['user_id'];
+
+        // Limpa a sessão anterior diretamente no banco de dados
+        $sql = "UPDATE usuarios SET session_id = NULL, session_start = NULL, session_ip = NULL, session_user_agent = NULL WHERE id = :id";
+        $stmt = $this->usuarioModel->getDb()->prepare($sql);
+        $stmt->execute(['id' => $userId]);
+
+        // Pequeno atraso para garantir que a sessão anterior seja encerrada
+        sleep(1);
+
+        // Redireciona para o login com parâmetros para login automático
+        redirect('auth/auto_login?email=' . urlencode($tempLogin['email']) . '&token=' . $this->gerarTokenAutoLogin($tempLogin));
+    }
+
+    /**
+     * Gera um token para auto login
+     */
+    private function gerarTokenAutoLogin($tempLogin)
+    {
+        $token = md5($tempLogin['email'] . $tempLogin['user_id'] . time());
+        $_SESSION['auto_login'] = [
+            'token' => $token,
+            'email' => $tempLogin['email'],
+            'senha' => $tempLogin['senha'],
+            'empresa_id' => $tempLogin['empresa_id'],
+            'is_admin_master' => $tempLogin['is_admin_master'],
+            'expires' => time() + 60 // Expira em 1 minuto
+        ];
+        return $token;
+    }
+
+    /**
+     * Processa o auto login após forçar logout
+     */
+    public function auto_login()
+    {
+        $email = $_GET['email'] ?? '';
+        $token = $_GET['token'] ?? '';
+
+        if (empty($email) || empty($token) || !isset($_SESSION['auto_login'])) {
+            redirect('auth');
+            return;
+        }
+
+        $autoLogin = $_SESSION['auto_login'];
+
+        if ($autoLogin['token'] !== $token || $autoLogin['email'] !== $email || $autoLogin['expires'] < time()) {
+            unset($_SESSION['auto_login']);
+            redirect('auth');
+            return;
+        }
+
+        // Preenche os dados do POST para o login
+        $_POST['email'] = $autoLogin['email'];
+        $_POST['senha'] = $autoLogin['senha'];
+        $_POST['empresa_id'] = $autoLogin['empresa_id'];
+        $_POST['is_admin_master'] = $autoLogin['is_admin_master'] ? 'true' : 'false';
+
+        // Limpa os dados de auto login
+        unset($_SESSION['auto_login']);
+
+        // Chama o método de login
+        $this->login();
     }
 
     /**
@@ -574,6 +746,27 @@ class AuthController extends Controller
         $resultado = $this->emailService->enviar($para, $assunto, $mensagem);
 
         echo json_encode($resultado);
+        exit;
+    }
+
+    /**
+     * Verifica se a sessão atual é válida (para AJAX)
+     */
+    public function verificar_sessao()
+    {
+        header('Content-Type: application/json');
+
+        if (!is_authenticated()) {
+            echo json_encode(['valid' => false]);
+            exit;
+        }
+
+        $userId = $_SESSION['user_id'];
+        $sessionId = session_id();
+
+        $isValid = $this->usuarioModel->validarSessao($userId, $sessionId);
+
+        echo json_encode(['valid' => $isValid]);
         exit;
     }
 }

@@ -7,7 +7,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'chamados') !== false ? 'active' : '' ?>" href="<?= base_url('chamados') ?>">
+                <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'chamados') !== false ? 'active' : '' ?>" href="<?= base_url('chamados/listar') ?>">
                     <i class="fas fa-ticket-alt me-2"></i> Chamados
                 </a>
             </li>

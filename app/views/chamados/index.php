@@ -7,7 +7,7 @@
         </a>
     </div>
 </div>
-
+ 
 <!-- Filtros -->
 <div class="card mb-4">
     <div class="card-header">
@@ -37,10 +37,14 @@
                     <?php endforeach; ?>
                 </select>
             </div>
+
+  
             <div class="col-md-4">
                 <label for="busca" class="form-label">Busca</label>
-                <input type="text" class="form-control" id="busca" name="busca" value="<?= htmlspecialchars($filtros['busca']) ?>" placeholder="Descrição ou solicitante">
+                <input type="text" class="form-control" id="busca" name="busca" value="<?= htmlspecialchars($filtros['busca']) ?>"
+                    placeholder="Descrição ou solicitante">
             </div>
+
             <div class="col-md-2 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary me-2">Filtrar</button>
                 <a href="<?= base_url('chamados') ?>" class="btn btn-secondary">Limpar</a>

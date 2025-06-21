@@ -36,7 +36,7 @@ class Empresa extends Model
 
         return $count > 0;
     }
-    
+
 
     /**
      * Verifica se uma empresa tem licenças associadas

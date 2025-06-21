@@ -1,0 +1,556 @@
+/* ========== HEADER STYLES ========== */
+
+/* Navbar principal */
+.custom-navbar {
+    background: linear-gradient(90deg, #2c3e50, #1a2a3a);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem 1rem;
+    height: 60px;
+    z-index: 1030;
+}
+
+.navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* Seções da navbar */
+.navbar-left,
+.navbar-center,
+.navbar-right {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-left {
+    width: 30%;
+    justify-content: flex-start;
+}
+
+.navbar-center {
+    width: 40%;
+    justify-content: center;
+}
+
+.navbar-right {
+    width: 30%;
+    justify-content: flex-end;
+}
+
+/* Nome da empresa */
+.hospital-name {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+/* Título do sistema */
+.system-title {
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+    text-align: center;
+}
+
+/* Botões da navbar */
+.navbar-right .btn {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.navbar-right .btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+#sidebar-toggle {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+#sidebar-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Perfil do usuário */
+.user-profile {
+    display: flex;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    padding: 4px 12px 4px 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.user-profile:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #3498db;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+    margin-right: 8px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.user-name {
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-role {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.7rem;
+}
+
+.dropdown-icon {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.7rem;
+}
+
+/* Dropdown personalizado */
+.custom-dropdown {
+    width: 300px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0;
+}
+
+.dropdown-user-header {
+    background-color: #f8f9fa;
+    padding: 16px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.dropdown-user-info {
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-user-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: #3498db;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-right: 12px;
+}
+
+.dropdown-user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.dropdown-user-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.dropdown-user-email {
+    font-size: 0.8rem;
+    color: #6c757d;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Estatísticas do usuário */
+.dropdown-user-stats {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.dropdown-stat-item {
+    text-align: center;
+    flex: 1;
+}
+
+.dropdown-stat-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #3498db;
+}
+
+.dropdown-stat-label {
+    font-size: 0.7rem;
+    color: #6c757d;
+}
+
+/* Itens do menu dropdown */
+.dropdown-menu-items {
+    padding: 8px 0;
+}
+
+.dropdown-item {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    color: #333;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item i {
+    width: 20px;
+    margin-right: 8px;
+    color: #6c757d;
+}
+
+.dropdown-item:hover {
+    background-color: #f1f4f9;
+}
+
+.dropdown-item.text-danger i {
+    color: #dc3545;
+}
+
+/* Rodapé do dropdown */
+.dropdown-footer {
+    padding: 8px 16px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+}
+
+.dropdown-footer-link {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-decoration: none;
+}
+
+.dropdown-footer-link:hover {
+    color: #3498db;
+    text-decoration: none;
+}
+
+/* Notificações */
+.notification-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+}
+
+.notification-item:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-content {
+    display: flex;
+    align-items: flex-start;
+}
+
+.notification-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.bg-primary {
+    background-color: #3498db;
+}
+
+.bg-success {
+    background-color: #2ecc71;
+}
+
+.bg-warning {
+    background-color: #f39c12;
+}
+
+.bg-danger {
+    background-color: #e74c3c;
+}
+
+.bg-info {
+    background-color: #3498db;
+}
+
+.notification-text {
+    flex-grow: 1;
+}
+
+.notification-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 2px;
+    color: #333;
+}
+
+.notification-subtitle {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+
+.notification-time {
+    color: #adb5bd;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.notification-btn {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    background: none;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.notification-btn:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-btn-primary {
+    color: #3498db;
+    border-color: #3498db;
+}
+
+.notification-btn-primary:hover {
+    background-color: rgba(52, 152, 219, 0.1);
+}
+
+/* Ações rápidas */
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 16px;
+}
+
+.quick-action-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #333;
+    transition: all 0.2s ease;
+}
+
+.quick-action-item:hover {
+    background-color: #f1f4f9;
+}
+
+.quick-action-icon {
+    font-size: 1.5rem;
+    color: #3498db;
+    margin-bottom: 8px;
+}
+
+.quick-action-text {
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+/* Sidebar overlay */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1025;
+    display: none;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+    .navbar-center {
+        display: none;
+    }
+
+    .navbar-left,
+    .navbar-right {
+        width: 50%;
+    }
+
+    .hospital-name {
+        max-width: 150px;
+    }
+}
+
+@media (max-width: 768px) {
+    .d-none-xs {
+        display: none !important;
+    }
+
+    .hospital-name {
+        max-width: 120px;
+        font-size: 0.9rem;
+    }
+
+    .user-name {
+        max-width: 80px;
+    }
+
+    .custom-dropdown {
+        width: 280px;
+    }
+}
+
+@media (max-width: 576px) {
+    .hospital-name {
+        max-width: 100px;
+        font-size: 0.8rem;
+    }
+
+    .user-profile {
+        padding: 4px 8px 4px 4px;
+    }
+
+    .user-name {
+        max-width: 60px;
+    }
+
+    .user-role {
+        display: none;
+    }
+}
+
+/* Modo escuro */
+.dark-mode .custom-navbar {
+    background: linear-gradient(90deg, #1a1a2e, #16213e);
+}
+
+.dark-mode .dropdown-user-header,
+.dark-mode .dropdown-user-stats,
+.dark-mode .dropdown-footer {
+    background-color: #2a2a3a;
+    border-color: #3a3a4a;
+}
+
+.dark-mode .dropdown-user-name {
+    color: #e9ecef;
+}
+
+.dark-mode .dropdown-user-email,
+.dark-mode .dropdown-stat-label {
+    color: #adb5bd;
+}
+
+.dark-mode .dropdown-item {
+    color: #e9ecef;
+}
+
+.dark-mode .dropdown-item:hover {
+    background-color: #3a3a4a;
+}
+
+.dark-mode .dropdown-menu-items {
+    background-color: #2a2a3a;
+}
+
+.dark-mode .dropdown-footer-link {
+    color: #adb5bd;
+}
+
+.dark-mode .notification-item {
+    border-color: #3a3a4a;
+}
+
+.dark-mode .notification-item:hover {
+    background-color: #3a3a4a;
+}
+
+.dark-mode .notification-title {
+    color: #e9ecef;
+}
+
+.dark-mode .notification-subtitle {
+    color: #adb5bd;
+}
+
+.dark-mode .notification-btn {
+    border-color: #3a3a4a;
+    color: #adb5bd;
+}
+
+.dark-mode .notification-btn:hover {
+    background-color: #3a3a4a;
+}
+
+.dark-mode .quick-action-item {
+    color: #e9ecef;
+}
+
+.dark-mode .quick-action-item:hover {
+    background-color: #3a3a4a;
+}
+
+.dark-mode .custom-dropdown {
+    background-color: #2a2a3a;
+    border-color: #3a3a4a;
+}

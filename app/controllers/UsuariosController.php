@@ -680,4 +680,41 @@ class UsuariosController extends Controller
 
         redirect('usuarios');
     }
+
+    /**
+     * Força o logout de um usuário
+     */
+    public function forcarLogout($id)
+    {
+        $empresaId = get_empresa_id();
+
+        // Obtém o usuário
+        $usuario = $this->usuarioModel->findById($id);
+
+        // Verifica se o usuário existe e pertence à empresa do usuário logado
+        if (!$usuario || $usuario['empresa_id'] != $empresaId) {
+            set_flash_message('error', 'Usuário não encontrado.');
+            redirect('usuarios');
+            return;
+        }
+
+        // Verifica se o usuário tem uma sessão ativa
+        if (empty($usuario['session_id'])) {
+            set_flash_message('info', 'Este usuário não está logado atualmente.');
+            redirect('usuarios');
+            return;
+        }
+
+        // Limpa a sessão do usuário
+        if ($this->usuarioModel->limparSessao($id)) {
+            // Registra a ação no log
+            error_log("Sessão do usuário ID: {$id} foi encerrada forçadamente pelo usuário ID: " . get_user_id());
+
+            set_flash_message('success', 'Sessão do usuário encerrada com sucesso.');
+        } else {
+            set_flash_message('error', 'Erro ao encerrar sessão do usuário.');
+        }
+
+        redirect('usuarios');
+    }
 }

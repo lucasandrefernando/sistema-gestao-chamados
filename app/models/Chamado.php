@@ -2543,4 +2543,95 @@ class Chamado extends Model
             ];
         }
     }
+
+    /**
+     * Busca chamados recentes de um usuário
+     * 
+     * @param int $usuarioId ID do usuário
+     * @param int $limite Limite de chamados a retornar
+     * @return array Lista de chamados
+     */
+    public function buscarChamadosRecentes($usuarioId, $limite = 5)
+    {
+        $sql = "SELECT c.*, s.nome as status_nome
+            FROM chamados c
+            LEFT JOIN status_chamado s ON c.status_id = s.id
+            WHERE c.criado_por = :usuario_id
+            ORDER BY c.data_criacao DESC
+            LIMIT :limite";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':usuario_id', $usuarioId, PDO::PARAM_INT);
+        $stmt->bindParam(':limite', $limite, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Cria notificações para um novo chamado
+     * 
+     * @param int $chamadoId ID do chamado
+     * @param string $emailSetor E-mail do setor destinatário
+     * @return bool Sucesso ou falha
+     */
+    public function criarNotificacoesChamado($chamadoId, $emailSetor)
+    {
+        // Buscar dados do chamado
+        $chamado = $this->findById($chamadoId);
+        if (!$chamado) {
+            return false;
+        }
+
+        // Carregar modelo de notificações
+        require_once ROOT_DIR . '/app/models/Notificacao.php';
+        $notificacaoModel = new Notificacao();
+
+        // Dados da notificação
+        $dados = [
+            'tipo' => 'novo_chamado',
+            'titulo' => 'Novo chamado aberto',
+            'descricao' => "Chamado #{$chamadoId} - {$chamado['titulo']}",
+            'referencia_id' => $chamadoId,
+            'referencia_tipo' => 'chamado'
+        ];
+
+        // Notificar usuários do setor
+        return $notificacaoModel->notificarPorEmailSetor($emailSetor, $dados);
+    }
+
+    /**
+     * Busca chamados com informações completas
+     * 
+     * @param string $condicao Condição WHERE
+     * @param array $params Parâmetros para a condição
+     * @param string $orderBy Ordenação
+     * @return array Lista de chamados
+     */
+    public function buscarChamadosCompletos($condicao = '', $params = [], $orderBy = 'c.id DESC')
+    {
+        $sql = "SELECT 
+                c.*, 
+                u.nome as usuario_nome,
+                s.nome as status_nome,
+                s.cor as status_cor,
+                st.nome as setor_nome
+            FROM {$this->table} c
+            LEFT JOIN usuarios u ON c.criado_por = u.id
+            LEFT JOIN status_chamado s ON c.status_id = s.id
+            LEFT JOIN setores st ON c.setor_id = st.id";
+
+        if (!empty($condicao)) {
+            $sql .= " WHERE {$condicao}";
+        }
+
+        if (!empty($orderBy)) {
+            $sql .= " ORDER BY {$orderBy}";
+        }
+
+        $stmt = $this->getDb()->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

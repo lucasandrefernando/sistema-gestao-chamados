@@ -38,6 +38,7 @@
                             </tr>
                             <tr>
                                 <th>Setor:</th>
+                                
                                 <td>
                                     <?= htmlspecialchars($setor['nome']) ?>
                                     <button type="button" class="btn btn-sm btn-link p-0 ms-2" data-bs-toggle="modal" data-bs-target="#transferirSetorModal">

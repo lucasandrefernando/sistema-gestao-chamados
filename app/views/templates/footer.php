@@ -20,6 +20,9 @@
     <script src="<?= base_url('public/js/chamados.js') ?>"></script>
     <script src="<?= base_url('public/js/main.js') ?>"></script>
     <script src="<?= base_url('public/js/relatorios.js') ?>"></script>
+    <script src="<?= base_url('public/js/session-check.js') ?>"></script>
+    <script src="<?= base_url('public/js/usuarios.js') ?>"></script>
+        <script src="<?= base_url('public/js/header.js') ?>"></script>
 
 
     <?php if (isset($page_scripts)): ?>
@@ -27,6 +30,8 @@
             <script src="<?= base_url('public/js/' . $script) ?>"></script>
         <?php endforeach; ?>
     <?php endif; ?>
+
+
     </body>
 
     </html>

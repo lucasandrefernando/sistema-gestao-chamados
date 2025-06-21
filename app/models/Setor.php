@@ -95,4 +95,47 @@ class Setor extends Model
             return 0;
         }
     }
+
+    /**
+     * Busca o e-mail de um setor
+     * 
+     * @param int $id ID do setor
+     * @return string|null E-mail do setor ou null se não encontrado
+     */
+    public function buscarEmail($id)
+    {
+        $setor = $this->findById($id);
+        return $setor ? $setor['email'] : null;
+    }
+
+    /**
+     * Busca o ID de um setor pelo e-mail
+     * 
+     * @param string $email E-mail do setor
+     * @return int|null ID do setor ou null se não encontrado
+     */
+    public function buscarIdPorEmail($email)
+    {
+        $setor = $this->findOne('email = :email', ['email' => $email]);
+        return $setor ? $setor['id'] : null;
+    }
+
+    /**
+     * Busca usuários de um setor
+     * 
+     * @param int $id ID do setor
+     * @return array Lista de usuários
+     */
+    public function buscarUsuarios($id)
+    {
+        $sql = "SELECT id, nome, email
+            FROM usuarios
+            WHERE setor_id = :setor_id AND ativo = 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':setor_id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

@@ -1,4 +1,4 @@
-<?php
+<?php 
 session_start();
 /**
  * Configurações gerais da aplicação
@@ -6,9 +6,9 @@ session_start();
 
 // Informações básicas da aplicação
 define('APP_NAME', 'Sistema de Gestão de Chamados');
-define('APP_VERSION', '1.0.0');
-//define('APP_URL', 'http://localhost/sistema-gestao-chamados');
-define('APP_URL', 'https://chamado.eagletelecom.com.br');
+define('APP_VERSION', '2.0.0');
+define('APP_URL', 'http://localhost/sistema-gestao-chamados');
+//define('APP_URL', 'https://chamado.eagletelecom.com.br');
 define('APP_PRODUCTION', false);
 
 // Configurações de e-mail
@@ -30,9 +30,9 @@ define('EMAIL_SMTP_DEBUG', false); // true para debug, false para produção
 date_default_timezone_set('America/Sao_Paulo');
 
 // Configurações de sessão
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-ini_set('session.cookie_secure', APP_PRODUCTION ? 1 : 0);
+//ini_set('session.cookie_httponly', 1);
+//ini_set('session.use_only_cookies', 1);
+//ini_set('session.cookie_secure', APP_PRODUCTION ? 1 : 0);
 
 // Configurações de exibição de erros
 if (APP_PRODUCTION) {
@@ -318,3 +318,4 @@ function has_flash_message($type)
 {
     return isset($_SESSION['flash_messages'][$type]);
 }
+
