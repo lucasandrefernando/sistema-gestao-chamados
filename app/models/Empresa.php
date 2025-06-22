@@ -50,4 +50,29 @@ class Empresa extends Model
 
         return $count > 0;
     }
+
+    /**
+     * Verifica se já existe uma empresa com o CNPJ informado
+     * 
+     * @param string $cnpj CNPJ a ser verificado
+     * @param int|null $excluirId ID da empresa a ser excluída da verificação (útil para edição)
+     * @return bool
+     */
+    public function cnpjExiste($cnpj, $excluirId = null)
+    {
+        // Normaliza o CNPJ (remove caracteres não numéricos)
+        $cnpjNormalizado = preg_replace('/[^0-9]/', '', $cnpj);
+
+        $params = ['cnpj' => $cnpjNormalizado];
+        $where = 'cnpj = :cnpj';
+
+        // Se estiver editando, exclui a própria empresa da verificação
+        if ($excluirId) {
+            $where .= ' AND id != :id';
+            $params['id'] = $excluirId;
+        }
+
+        $count = $this->count($where, $params);
+        return $count > 0;
+    }
 }

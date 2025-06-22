@@ -43,6 +43,12 @@
                             <i class="fas fa-key me-2"></i> Licenças
                         </a>
                     </li>
+                <?php elseif (is_admin_regular()): ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'empresas/editar') !== false ? 'active' : '' ?>" href="<?= base_url('empresas/editar/' . get_empresa_id()) ?>">
+                            <i class="fas fa-building me-2"></i> Empresa
+                        </a>
+                    </li>
                 <?php endif; ?>
             <?php endif; ?>
         </ul>

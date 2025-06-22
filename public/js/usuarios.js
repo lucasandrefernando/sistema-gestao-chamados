@@ -1,15 +1,15 @@
 /**
- * Script para a página de usuários
+ * Script aprimorado para a página de usuários
  * Gerencia os modais, tooltips, filtros, paginação e funcionalidades responsivas
  */
 
 // Inicializa os componentes quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', function () {
-    // Inicializa tooltips (comum a todas as páginas)
+    // Inicializa tooltips
     initTooltips();
 
     // Verifica se estamos na página de usuários
-    if (document.querySelector('.users-container')) {
+    if (document.querySelector('.users-dashboard')) {
         // Configura os modais
         setupModals();
 
@@ -21,20 +21,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Configura a paginação
         setupPagination();
+
+        // Adiciona efeitos visuais
+        setupVisualEffects();
     }
 
-    // Configura a verificação de sessão (comum a todas as páginas)
+    // Configura a verificação de sessão
     setupSessionCheck();
-
-    // Adiciona efeitos visuais (comum a todas as páginas)
-    setupVisualEffects();
 });
 
 /**
  * Inicializa os tooltips em toda a página
  */
 function initTooltips() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl, {
             boundary: document.body
@@ -132,15 +132,20 @@ function setupEncerrarSessaoModal() {
 }
 
 /**
- * Configura os filtros de pesquisa
+ * Configura os filtros de pesquisa com debounce para melhor performance
  */
 function setupFilters() {
     // Filtro de pesquisa por texto
     var searchInput = document.getElementById('userSearch');
     if (searchInput) {
+        // Usa debounce para evitar muitas chamadas durante a digitação
+        let debounceTimeout;
         searchInput.addEventListener('input', function () {
-            filterUsers();
-            updatePagination();
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(function () {
+                filterUsers();
+                updatePagination();
+            }, 300); // Espera 300ms após o usuário parar de digitar
         });
     }
 
@@ -212,10 +217,10 @@ function setupViewToggle() {
         cardViewBtn.classList.remove('active');
         listViewBtn.classList.add('active');
     }
-} 
+}
 
 /**
- * Configura a paginação
+ * Configura a paginação com melhor desempenho
  */
 function setupPagination() {
     // Verifica se estamos em uma página que usa paginação
@@ -240,9 +245,8 @@ function setupPagination() {
     // Inicializa a paginação
     updatePagination();
 
-    // Adiciona evento para alternar entre visualizações
-    window.addEventListener('resize', function () {
-        // Ajusta itens por página com base no tamanho da tela
+    // Ajusta itens por página com base no tamanho da tela
+    function adjustItemsPerPage() {
         var width = window.innerWidth;
         if (width < 768) {
             window.paginationState.itemsPerPage = 6;
@@ -252,11 +256,39 @@ function setupPagination() {
             window.paginationState.itemsPerPage = 12;
         }
 
-        updatePagination();
+        // Só atualiza a paginação se a página estiver visível
+        if (document.visibilityState === 'visible') {
+            updatePagination();
+        }
+    }
+
+    // Adiciona evento para ajustar paginação quando a janela for redimensionada
+    window.addEventListener('resize', debounce(adjustItemsPerPage, 250));
+
+    // Ajusta a paginação quando a página se torna visível
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+            adjustItemsPerPage();
+        }
     });
 
     // Dispara o evento de resize para configurar corretamente
-    window.dispatchEvent(new Event('resize'));
+    adjustItemsPerPage();
+}
+
+/**
+ * Função de debounce para melhorar performance
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 /**
@@ -292,7 +324,7 @@ function createPaginationContainer() {
                 </li>
             </ul>
             <div class="page-info">
-                <span>Página 1 de 1</span>
+                <span>Exibindo 0-0 de 0 itens</span>
             </div>
         `;
         cardView.appendChild(paginationContainer);
@@ -319,7 +351,7 @@ function createPaginationContainer() {
                 </li>
             </ul>
             <div class="page-info">
-                <span>Página 1 de 1</span>
+                <span>Exibindo 0-0 de 0 itens</span>
             </div>
         `;
         listView.appendChild(paginationContainer);
@@ -353,8 +385,9 @@ function updatePagination() {
     }
 
     // Obtém todos os itens visíveis (não filtrados)
-    var visibleItems = Array.from(document.querySelectorAll(selector)).filter(function (item) {
-        return item.style.display !== 'none';
+    var allItems = Array.from(document.querySelectorAll(selector));
+    var visibleItems = allItems.filter(function (item) {
+        return window.getComputedStyle(item).display !== 'none';
     });
 
     // Calcula o total de páginas
@@ -388,7 +421,7 @@ function updatePaginationUI(paginationContainer, totalItems) {
     // Atualiza a informação da página
     var pageInfo = paginationContainer.querySelector('.page-info span');
     if (pageInfo) {
-        var startItem = (currentPage - 1) * itemsPerPage + 1;
+        var startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
         var endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
         if (totalItems === 0) {
@@ -475,20 +508,14 @@ function getPagesToShow(currentPage, totalPages) {
         pages.push(1);
 
         // Determina onde começar e terminar
-        var startPage, endPage;
-
         if (currentPage <= 3) {
             // Se estiver nas primeiras páginas
-            startPage = 2;
-            endPage = 5;
-            pages.push(startPage, startPage + 1, startPage + 2, startPage + 3);
+            pages.push(2, 3, 4, 5);
             pages.push('...');
         } else if (currentPage >= totalPages - 2) {
             // Se estiver nas últimas páginas
-            startPage = totalPages - 4;
-            endPage = totalPages - 1;
             pages.push('...');
-            pages.push(startPage, startPage + 1, startPage + 2, startPage + 3);
+            pages.push(totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1);
         } else {
             // Se estiver no meio
             pages.push('...');
@@ -511,9 +538,9 @@ function goToPage(page) {
     updatePagination();
 
     // Rola para o topo da lista
-    var container = document.querySelector('.users-container');
+    var container = document.querySelector('.users-main-section');
     if (container) {
-        container.scrollIntoView({ behavior: 'smooth' });
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
 
@@ -536,6 +563,18 @@ function applyPagination(items, containerSelector) {
     for (var i = startIndex; i < endIndex && i < items.length; i++) {
         items[i].classList.add('visible-item');
         items[i].style.display = '';
+
+        // Adiciona animação de entrada
+        setTimeout(function (item, index) {
+            item.style.opacity = '0';
+            item.style.transform = 'translateY(20px)';
+
+            setTimeout(function () {
+                item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                item.style.opacity = '1';
+                item.style.transform = 'translateY(0)';
+            }, index * 50);
+        }, 0, items[i], i - startIndex);
     }
 
     // Verifica se há resultados visíveis
@@ -637,11 +676,11 @@ function showNoResults(containerSelector) {
 
     if (!parentContainer) return;
 
-    var existingNoResults = parentContainer.querySelector('.no-users-found');
+    var existingNoResults = parentContainer.querySelector('.no-results');
 
     if (!existingNoResults) {
         var noResults = document.createElement('div');
-        noResults.className = 'no-users-found';
+        noResults.className = 'no-results';
         noResults.innerHTML = '<i class="fas fa-search"></i><p>Nenhum usuário encontrado com os filtros selecionados.</p>';
         container.appendChild(noResults);
     }
@@ -657,7 +696,7 @@ function hideNoResults(containerSelector) {
 
     if (!parentContainer) return;
 
-    var existingNoResults = parentContainer.querySelector('.no-users-found');
+    var existingNoResults = parentContainer.querySelector('.no-results');
 
     if (existingNoResults) {
         existingNoResults.remove();
@@ -704,39 +743,14 @@ function setupVisualEffects() {
     statCards.forEach(function (card, index) {
         // Adiciona um pequeno atraso para cada card, criando um efeito cascata
         setTimeout(function () {
-            card.classList.add('animate-in');
-        }, index * 100);
-    });
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
 
-    // Animação para os cards de usuários
-    var userCards = document.querySelectorAll('.user-card, .user-list-item');
-    userCards.forEach(function (card, index) {
-        setTimeout(function () {
-            card.classList.add('animate-in');
-        }, 300 + (index * 50)); // Começa após os cards de estatísticas
+            setTimeout(function () {
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        }, 0);
     });
 }
-
-// Adiciona animações CSS
-document.head.insertAdjacentHTML('beforeend', `
-<style>
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .animate-in {
-        animation: fadeInUp 0.5s ease forwards;
-    }
-    
-    .stat-card, .user-card, .user-list-item {
-        opacity: 0;
-    }
-</style>
-`);

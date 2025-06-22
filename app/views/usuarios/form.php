@@ -1,18 +1,18 @@
-<div class="page-container">
+<div class="user-form-container">
     <!-- Cabeçalho da página -->
     <div class="page-header">
-        <div class="page-header-content">
-            <div class="page-title-wrapper">
-                <h1 class="page-title">
-                    <i class="fas fa-user-<?= $acao == 'criar' ? 'plus' : 'edit' ?> page-title-icon"></i>
+        <div class="header-content">
+            <div class="header-title">
+                <h1>
+                    <i class="fas fa-user-<?= $acao == 'criar' ? 'plus' : 'edit' ?>"></i>
                     <?= $titulo ?>
                 </h1>
-                <p class="page-subtitle">
+                <p class="subtitle">
                     <?= $acao == 'criar' ? 'Preencha os dados para criar um novo usuário' : 'Edite as informações do usuário' ?>
                 </p>
             </div>
-            <div class="page-actions">
-                <a href="<?= base_url('usuarios') ?>" class="btn btn-outline-secondary">
+            <div class="header-actions">
+                <a href="<?= base_url('usuarios') ?>" class="btn-secondary">
                     <i class="fas fa-arrow-left"></i>
                     <span>Voltar</span>
                 </a>
@@ -21,126 +21,195 @@
     </div>
 
     <!-- Formulário de usuário -->
-    <div class="content-card">
-        <div class="content-card-header">
-            <div class="content-card-title">
-                <h2 class="section-title">Informações do Usuário</h2>
-            </div>
-        </div>
-        <div class="content-card-body">
-            <form action="<?= base_url('usuarios/' . ($acao == 'criar' ? 'store' : 'update/' . $usuario['id'])) ?>" method="post" class="user-form">
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label for="nome" class="form-label">Nome <span class="required-indicator">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-user"></i></span>
-                            <input type="text" class="form-control" id="nome" name="nome" value="<?= $usuario['nome'] ?? '' ?>" required>
-                        </div>
-                    </div>
-                    <div class="form-group col-md-6">
-                        <label for="email" class="form-label">E-mail <span class="required-indicator">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                            <input type="email" class="form-control" id="email" name="email" value="<?= $usuario['email'] ?? '' ?>" required>
-                        </div>
+    <div class="form-card">
+        <div class="form-card-header">
+            <h2>Informações do Usuário</h2>
+            <?php if ($acao == 'editar' && isset($usuario['nome'])): ?>
+                <div class="user-avatar-preview">
+                    <div class="avatar-circle <?= isset($usuario['admin']) && $usuario['admin'] ? (isset($usuario['admin_tipo']) && $usuario['admin_tipo'] == 'master' ? 'admin-master' : 'admin') : 'user' ?>">
+                        <?= strtoupper(substr($usuario['nome'], 0, 1)) ?>
                     </div>
                 </div>
+            <?php endif; ?>
+        </div>
 
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label for="senha" class="form-label">
-                            <?= $acao == 'criar' ? 'Senha <span class="required-indicator">*</span>' : 'Nova Senha <span class="text-muted">(deixe em branco para manter a atual)</span>' ?>
+        <div class="form-card-body">
+            <form action="<?= base_url('usuarios/' . ($acao == 'criar' ? 'store' : 'update/' . $usuario['id'])) ?>" method="post" class="user-form">
+                <div class="form-grid">
+                    <!-- Nome e Email -->
+                    <div class="form-group">
+                        <label for="nome">
+                            Nome <span class="required">*</span>
                         </label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                            <input type="password" class="form-control" id="senha" name="senha" <?= $acao == 'criar' ? 'required' : '' ?>>
-                            <button class="btn btn-outline-secondary" type="button" id="togglePassword" title="Mostrar/Ocultar Senha">
+                            <span class="input-icon">
+                                <i class="fas fa-user"></i>
+                            </span>
+                            <input type="text" id="nome" name="nome" value="<?= $usuario['nome'] ?? '' ?>" required placeholder="Nome completo">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">
+                            E-mail <span class="required">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-icon">
+                                <i class="fas fa-envelope"></i>
+                            </span>
+                            <input type="email" id="email" name="email" value="<?= $usuario['email'] ?? '' ?>" required placeholder="exemplo@email.com">
+                        </div>
+                    </div>
+
+                    <!-- Senha e Cargo -->
+                    <div class="form-group">
+                        <label for="senha">
+                            <?= $acao == 'criar' ? 'Senha <span class="required">*</span>' : 'Nova Senha <span class="optional">(opcional)</span>' ?>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-icon">
+                                <i class="fas fa-lock"></i>
+                            </span>
+                            <input type="password" id="senha" name="senha" <?= $acao == 'criar' ? 'required' : '' ?> placeholder="<?= $acao == 'criar' ? 'Mínimo 8 caracteres' : 'Deixe em branco para manter a atual' ?>">
+                            <button type="button" class="toggle-password" id="togglePassword">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
                         <?php if ($acao == 'criar'): ?>
-                            <div class="form-text">
-                                <i class="fas fa-info-circle text-info"></i> A senha deve ter pelo menos 8 caracteres.
+                            <div class="form-hint">
+                                <i class="fas fa-info-circle"></i> A senha deve ter pelo menos 8 caracteres.
                             </div>
                         <?php endif; ?>
                     </div>
-                    <div class="form-group col-md-6">
-                        <label for="cargo" class="form-label">Cargo</label>
+
+                    <div class="form-group">
+                        <label for="cargo">
+                            Cargo <span class="optional">(opcional)</span>
+                        </label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-briefcase"></i></span>
-                            <input type="text" class="form-control" id="cargo" name="cargo" value="<?= $usuario['cargo'] ?? '' ?>" placeholder="Ex: Analista de Suporte">
+                            <span class="input-icon">
+                                <i class="fas fa-briefcase"></i>
+                            </span>
+                            <input type="text" id="cargo" name="cargo" value="<?= $usuario['cargo'] ?? '' ?>" placeholder="Ex: Analista de Suporte">
                         </div>
                     </div>
-                </div>
 
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label for="empresa_nome" class="form-label">Empresa</label>
+                    <!-- Empresa e Tipo de Usuário -->
+                    <div class="form-group">
+                        <label for="empresa_nome">
+                            Empresa
+                        </label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-building"></i></span>
-                            <input type="text" class="form-control bg-light" id="empresa_nome" value="<?= $_SESSION['empresa_nome'] ?>" readonly>
+                            <span class="input-icon">
+                                <i class="fas fa-building"></i>
+                            </span>
+                            <input type="text" id="empresa_nome" value="<?= $_SESSION['empresa_nome'] ?>" readonly class="readonly">
                             <input type="hidden" name="empresa_id" value="<?= get_empresa_id() ?>">
                         </div>
-                        <div class="form-text">
-                            <i class="fas fa-info-circle text-info"></i> Os usuários são criados na empresa atual.
+                        <div class="form-hint">
+                            <i class="fas fa-info-circle"></i> Os usuários são criados na empresa atual.
                         </div>
                     </div>
-                    <div class="form-group col-md-6">
-                        <div class="admin-options-card">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="admin" name="admin" value="1" <?= (isset($usuario['admin']) && $usuario['admin']) ? 'checked' : '' ?> onchange="toggleAdminTipo()">
-                                <label class="form-check-label fw-bold" for="admin">
-                                    Usuário Administrador
-                                </label>
-                            </div>
 
-                            <div id="adminTipoContainer" class="admin-tipo-options" style="display: <?= (isset($usuario['admin']) && $usuario['admin']) ? 'block' : 'none' ?>;">
-                                <?php if (is_admin_master()): ?>
-                                    <label class="form-label">Tipo de Administrador</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="admin_tipo" id="adminRegular" value="regular" <?= (!isset($usuario['admin_tipo']) || $usuario['admin_tipo'] == 'regular') ? 'checked' : '' ?>>
-                                        <label class="form-check-label" for="adminRegular">
-                                            <span class="badge bg-info">Regular</span>
-                                            Pode gerenciar usuários comuns
-                                        </label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="admin_tipo" id="adminMaster" value="master" <?= (isset($usuario['admin_tipo']) && $usuario['admin_tipo'] == 'master') ? 'checked' : '' ?>>
-                                        <label class="form-check-label" for="adminMaster">
-                                            <span class="badge bg-danger">Master</span>
-                                            Pode gerenciar licenças, empresas e acessar todas as empresas
-                                        </label>
-                                    </div>
-                                <?php else: ?>
-                                    <!-- Para administradores regulares, apenas mostra o tipo sem opção de alterar -->
-                                    <?php if (isset($usuario['admin_tipo']) && $usuario['admin_tipo'] == 'master'): ?>
-                                        <input type="hidden" name="admin_tipo" value="master">
-                                        <div class="alert alert-info">
-                                            <div class="d-flex align-items-center">
-                                                <i class="fas fa-info-circle text-info me-2"></i>
-                                                <div>Este usuário é um administrador master.</div>
-                                            </div>
-                                        </div>
-                                    <?php else: ?>
-                                        <input type="hidden" name="admin_tipo" value="regular">
-                                        <div class="alert alert-info">
-                                            <div class="d-flex align-items-center">
-                                                <i class="fas fa-info-circle text-info me-2"></i>
-                                                <div>Este usuário será um administrador regular (pode gerenciar usuários).</div>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-                                <?php endif; ?>
-                            </div>
-                        </div>
+                    <div class="form-group">
+                        <!-- Espaço vazio para manter o grid alinhado -->
                     </div>
                 </div>
 
+                <!-- Seção de Permissões -->
+                <div class="permissions-section">
+                    <h3 class="section-title">Permissões de Acesso</h3>
+
+                    <div class="permission-toggle">
+                        <div class="toggle-header">
+                            <div class="toggle-info">
+                                <h4>Usuário Administrador</h4>
+                                <p>Concede permissões administrativas ao usuário</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="admin" name="admin" value="1" <?= (isset($usuario['admin']) && $usuario['admin']) ? 'checked' : '' ?>>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="adminTipoContainer" class="admin-tipo-container">
+                        <?php if (is_admin_master()): ?>
+                            <div class="admin-tipo-header">
+                                <h4>Tipo de Administrador</h4>
+                                <p>Selecione o nível de acesso administrativo</p>
+                            </div>
+
+                            <div class="admin-tipo-options">
+                                <label class="admin-tipo-card">
+                                    <input type="radio" name="admin_tipo" value="regular" <?= (!isset($usuario['admin_tipo']) || $usuario['admin_tipo'] == 'regular') ? 'checked' : '' ?>>
+                                    <div class="admin-tipo-content">
+                                        <div class="admin-tipo-icon regular">
+                                            <i class="fas fa-user-cog"></i>
+                                        </div>
+                                        <div class="admin-tipo-details">
+                                            <h5>Administrador Regular</h5>
+                                            <ul>
+                                                <li>Gerenciar usuários comuns</li>
+                                                <li>Visualizar relatórios básicos</li>
+                                                <li>Acesso limitado às configurações</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <label class="admin-tipo-card">
+                                    <input type="radio" name="admin_tipo" value="master" <?= (isset($usuario['admin_tipo']) && $usuario['admin_tipo'] == 'master') ? 'checked' : '' ?>>
+                                    <div class="admin-tipo-content">
+                                        <div class="admin-tipo-icon master">
+                                            <i class="fas fa-user-shield"></i>
+                                        </div>
+                                        <div class="admin-tipo-details">
+                                            <h5>Administrador Master</h5>
+                                            <ul>
+                                                <li>Acesso completo ao sistema</li>
+                                                <li>Gerenciar todos os usuários</li>
+                                                <li>Configurações avançadas</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        <?php else: ?>
+                            <!-- Para administradores regulares, apenas mostra o tipo sem opção de alterar -->
+                            <?php if (isset($usuario['admin_tipo']) && $usuario['admin_tipo'] == 'master'): ?>
+                                <input type="hidden" name="admin_tipo" value="master">
+                                <div class="admin-tipo-info master">
+                                    <div class="info-icon">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </div>
+                                    <div class="info-content">
+                                        <h4>Administrador Master</h4>
+                                        <p>Este usuário tem acesso completo ao sistema, incluindo todas as configurações e gerenciamento de usuários.</p>
+                                    </div>
+                                </div>
+                            <?php else: ?>
+                                <input type="hidden" name="admin_tipo" value="regular">
+                                <div class="admin-tipo-info regular">
+                                    <div class="info-icon">
+                                        <i class="fas fa-user-cog"></i>
+                                    </div>
+                                    <div class="info-content">
+                                        <h4>Administrador Regular</h4>
+                                        <p>Este usuário terá permissões para gerenciar usuários comuns e acessar relatórios básicos.</p>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Botões de ação -->
                 <div class="form-actions">
-                    <a href="<?= base_url('usuarios') ?>" class="btn btn-outline-secondary">
+                    <a href="<?= base_url('usuarios') ?>" class="btn-outline">
                         <i class="fas fa-times"></i> Cancelar
                     </a>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn-primary">
                         <i class="fas fa-save"></i> <?= $acao == 'criar' ? 'Criar Usuário' : 'Salvar Alterações' ?>
                     </button>
                 </div>
@@ -148,29 +217,67 @@
         </div>
     </div>
 </div>
-
 <script>
-    function toggleAdminTipo() {
+    // Função para mostrar/ocultar as opções de administrador
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle de administrador
         var adminCheckbox = document.getElementById('admin');
         var adminTipoContainer = document.getElementById('adminTipoContainer');
 
-        if (adminTipoContainer) {
+        if (adminCheckbox && adminTipoContainer) {
+            // Configuração inicial
             adminTipoContainer.style.display = adminCheckbox.checked ? 'block' : 'none';
+
+            // Evento de mudança
+            adminCheckbox.addEventListener('change', function() {
+                adminTipoContainer.style.display = this.checked ? 'block' : 'none';
+
+                if (this.checked) {
+                    adminTipoContainer.classList.add('animate-fade');
+                } else {
+                    adminTipoContainer.classList.remove('animate-fade');
+                }
+            });
         }
-    }
 
-    // Mostrar/ocultar senha
-    document.addEventListener('DOMContentLoaded', function() {
-        const togglePassword = document.getElementById('togglePassword');
-        const senhaInput = document.getElementById('senha');
+        // Toggle de senha
+        var togglePassword = document.getElementById('togglePassword');
+        var senhaInput = document.getElementById('senha');
 
-        togglePassword.addEventListener('click', function() {
-            const type = senhaInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            senhaInput.setAttribute('type', type);
+        if (togglePassword && senhaInput) {
+            togglePassword.addEventListener('click', function() {
+                var type = senhaInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                senhaInput.setAttribute('type', type);
 
-            // Alterna o ícone
-            this.querySelector('i').classList.toggle('fa-eye');
-            this.querySelector('i').classList.toggle('fa-eye-slash');
+                // Alterna o ícone
+                this.querySelector('i').classList.toggle('fa-eye');
+                this.querySelector('i').classList.toggle('fa-eye-slash');
+            });
+        }
+
+        // Adiciona animações
+        var formGroups = document.querySelectorAll('.form-group');
+        formGroups.forEach(function(group, index) {
+            group.style.opacity = '0';
+            group.style.transform = 'translateY(20px)';
+
+            setTimeout(function() {
+                group.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                group.style.opacity = '1';
+                group.style.transform = 'translateY(0)';
+            }, 100 + (index * 50));
         });
+
+        var permissionsSection = document.querySelector('.permissions-section');
+        if (permissionsSection) {
+            permissionsSection.style.opacity = '0';
+            permissionsSection.style.transform = 'translateY(20px)';
+
+            setTimeout(function() {
+                permissionsSection.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                permissionsSection.style.opacity = '1';
+                permissionsSection.style.transform = 'translateY(0)';
+            }, 300);
+        }
     });
 </script>

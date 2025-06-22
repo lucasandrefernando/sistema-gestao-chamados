@@ -26,19 +26,32 @@ abstract class Model
     /**
      * Encontra todos os registros que correspondem à condição
      * 
-     * @param string|null $condition Condição WHERE
-     * @param array|null $params Parâmetros para a condição
+     * @param string|array $condition Condição WHERE
+     * @param array $params Parâmetros para a condição
      * @param string|null $orderBy Ordenação
      * @param int|null $limit Limite de registros
      * @return array Registros encontrados
      */
-    public function findAll($condition = null, $params = null, $orderBy = null, $limit = null)
+    public function findAll($condition = null, $params = [], $orderBy = null, $limit = null)
     {
         try {
             $sql = "SELECT * FROM {$this->table}";
 
+            // Processa a condição
             if ($condition) {
-                $sql .= " WHERE $condition";
+                // Se a condição for um array, converte para string
+                if (is_array($condition)) {
+                    $whereConditions = [];
+                    foreach ($condition as $field => $value) {
+                        $whereConditions[] = "$field = :$field";
+                        if (!isset($params[$field])) {
+                            $params[$field] = $value;
+                        }
+                    }
+                    $sql .= " WHERE " . implode(' AND ', $whereConditions);
+                } else {
+                    $sql .= " WHERE $condition";
+                }
             }
 
             if ($orderBy) {

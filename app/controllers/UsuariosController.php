@@ -120,18 +120,31 @@ class UsuariosController extends Controller
         // Verifica se deve mostrar usuários removidos
         $mostrarRemovidos = isset($_GET['mostrar_removidos']) && $_GET['mostrar_removidos'] == 1;
 
+        // Obtém o número da página atual da URL
+        $paginaAtual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+
+        // Define o número de registros por página
+        $registrosPorPagina = 4;
+
         // Condição para filtrar usuários
-        $condicao = 'empresa_id = :empresa_id';
+        $condicaoAdicional = '';
+        $parametrosAdicionais = [];
+
         if (!$mostrarRemovidos) {
-            $condicao .= ' AND (removido = 0 OR removido IS NULL)';
+            $condicaoAdicional = '(removido = 0 OR removido IS NULL)';
         }
 
-        // Obtém a lista de usuários
-        $usuarios = $this->usuarioModel->findAll(
-            $condicao,
-            ['empresa_id' => $empresaId],
-            'nome ASC'
+        // Obtém a lista de usuários com paginação
+        $resultado = $this->usuarioModel->findByEmpresaPaginado(
+            $empresaId,
+            $paginaAtual,
+            $registrosPorPagina,
+            $condicaoAdicional,
+            $parametrosAdicionais
         );
+
+        $usuarios = $resultado['usuarios'];
+        $paginacao = $resultado['paginacao'];
 
         // Formata o tempo decorrido desde o último acesso para cada usuário
         foreach ($usuarios as &$usuario) {
@@ -153,10 +166,15 @@ class UsuariosController extends Controller
             'disponiveis' => $licencasDisponiveis
         ];
 
+        // Obtém informações sobre usuários online
+        $usuariosOnlineInfo = $this->usuarioModel->getUsuariosOnline($empresaId);
+
         $this->render('usuarios/index', [
             'usuarios' => $usuarios,
             'mostrarRemovidos' => $mostrarRemovidos,
-            'licencasInfo' => $licencasInfo
+            'licencasInfo' => $licencasInfo,
+            'paginacao' => $paginacao,
+            'usuariosOnlineInfo' => $usuariosOnlineInfo
         ]);
     }
 

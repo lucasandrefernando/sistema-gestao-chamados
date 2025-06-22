@@ -577,4 +577,153 @@ class Usuario extends Model
 
         return $stats;
     }
+
+    /**
+     * Busca usuários por empresa com paginação
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $pagina Número da página atual
+     * @param int $porPagina Quantidade de registros por página
+     * @param string $condicaoAdicional Condição adicional para o WHERE (opcional)
+     * @param array $parametrosAdicionais Parâmetros adicionais para a condição (opcional)
+     * @return array Array contendo os usuários e informações de paginação
+     */
+    public function findByEmpresaPaginado($empresaId, $pagina = 1, $porPagina = 4, $condicaoAdicional = '', $parametrosAdicionais = [])
+    {
+        // Garante que a página é um número positivo
+        $pagina = max(1, (int)$pagina);
+
+        // Calcula o offset para a consulta SQL
+        $offset = ($pagina - 1) * $porPagina;
+
+        // Prepara a condição base
+        $condicao = 'empresa_id = :empresa_id';
+        $parametros = ['empresa_id' => $empresaId];
+
+        // Adiciona condição adicional se fornecida
+        if (!empty($condicaoAdicional)) {
+            $condicao .= ' AND ' . $condicaoAdicional;
+            $parametros = array_merge($parametros, $parametrosAdicionais);
+        }
+
+        // Conta o total de registros para a paginação
+        $totalRegistros = $this->count($condicao, $parametros);
+
+        // Calcula o total de páginas
+        $totalPaginas = ceil($totalRegistros / $porPagina);
+
+        // Busca os usuários para a página atual
+        $sql = "SELECT * FROM {$this->table} WHERE {$condicao} ORDER BY nome ASC LIMIT :offset, :limit";
+        $stmt = $this->db->prepare($sql);
+
+        // Vincula os parâmetros
+        foreach ($parametros as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $porPagina, PDO::PARAM_INT);
+
+        $stmt->execute();
+        $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Retorna os usuários e informações de paginação
+        return [
+            'usuarios' => $usuarios,
+            'paginacao' => [
+                'pagina_atual' => $pagina,
+                'total_paginas' => $totalPaginas,
+                'total_registros' => $totalRegistros,
+                'por_pagina' => $porPagina
+            ]
+        ];
+    }
+
+    /**
+     * Obtém a contagem e lista de usuários online da empresa
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $limit Limite de usuários a retornar (opcional)
+     * @return array Informações sobre usuários online
+     */
+    public function getUsuariosOnline($empresaId, $limit = 5)
+    {
+        // Busca usuários com sessão ativa
+        $sql = "SELECT id, nome, email, cargo, session_start, session_ip, session_user_agent 
+            FROM {$this->table} 
+            WHERE empresa_id = :empresa_id 
+            AND session_id IS NOT NULL 
+            AND session_start IS NOT NULL 
+            ORDER BY session_start DESC
+            LIMIT :limit";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $usuariosOnline = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Conta o total de usuários online (sem limite)
+        $sqlCount = "SELECT COUNT(*) as total 
+                FROM {$this->table} 
+                WHERE empresa_id = :empresa_id 
+                AND session_id IS NOT NULL 
+                AND session_start IS NOT NULL";
+
+        $stmtCount = $this->db->prepare($sqlCount);
+        $stmtCount->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+        $stmtCount->execute();
+
+        $totalOnline = $stmtCount->fetch(PDO::FETCH_ASSOC)['total'];
+
+        // Formata os dados de sessão para cada usuário
+        foreach ($usuariosOnline as &$usuario) {
+            // Formata o tempo online
+            if (isset($usuario['session_start'])) {
+                $sessionStart = new DateTime($usuario['session_start']);
+                $now = new DateTime();
+                $diff = $now->diff($sessionStart);
+
+                if ($diff->days > 0) {
+                    $usuario['tempo_online'] = $diff->days . 'd ' . $diff->h . 'h';
+                } elseif ($diff->h > 0) {
+                    $usuario['tempo_online'] = $diff->h . 'h ' . $diff->i . 'm';
+                } else {
+                    $usuario['tempo_online'] = $diff->i . 'm';
+                }
+            }
+
+            // Extrai informações do user agent
+            if (!empty($usuario['session_user_agent'])) {
+                // Detecta dispositivo/navegador básico
+                if (strpos($usuario['session_user_agent'], 'Mobile') !== false) {
+                    $usuario['dispositivo'] = 'mobile';
+                } elseif (strpos($usuario['session_user_agent'], 'Tablet') !== false) {
+                    $usuario['dispositivo'] = 'tablet';
+                } else {
+                    $usuario['dispositivo'] = 'desktop';
+                }
+
+                // Detecta navegador
+                if (strpos($usuario['session_user_agent'], 'Chrome') !== false) {
+                    $usuario['navegador'] = 'chrome';
+                } elseif (strpos($usuario['session_user_agent'], 'Firefox') !== false) {
+                    $usuario['navegador'] = 'firefox';
+                } elseif (strpos($usuario['session_user_agent'], 'Safari') !== false) {
+                    $usuario['navegador'] = 'safari';
+                } elseif (strpos($usuario['session_user_agent'], 'Edge') !== false) {
+                    $usuario['navegador'] = 'edge';
+                } else {
+                    $usuario['navegador'] = 'outro';
+                }
+            }
+        }
+
+        return [
+            'total' => $totalOnline,
+            'usuarios' => $usuariosOnline
+        ];
+    }
 }
+    

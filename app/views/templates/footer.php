@@ -22,7 +22,8 @@
     <script src="<?= base_url('public/js/relatorios.js') ?>"></script>
     <script src="<?= base_url('public/js/session-check.js') ?>"></script>
     <script src="<?= base_url('public/js/usuarios.js') ?>"></script>
-        <script src="<?= base_url('public/js/header.js') ?>"></script>
+    <script src="<?= base_url('public/js/header.js') ?>"></script>
+    <script src="<?= base_url('public/js/usuario-form.js') ?>"></script>
 
 
     <?php if (isset($page_scripts)): ?>
