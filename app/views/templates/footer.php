@@ -16,14 +16,30 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- JavaScript do Sistema -->
-    <script src="<?= base_url('public/js/charts.js') ?>"></script>
-    <script src="<?= base_url('public/js/chamados.js') ?>"></script>
-    <script src="<?= base_url('public/js/main.js') ?>"></script>
-    <script src="<?= base_url('public/js/relatorios.js') ?>"></script>
-    <script src="<?= base_url('public/js/session-check.js') ?>"></script>
-    <script src="<?= base_url('public/js/usuarios.js') ?>"></script>
+
     <script src="<?= base_url('public/js/header.js') ?>"></script>
+    <script src="<?= base_url('public/js/charts.js') ?>"></script>
+
+    <script src="<?= base_url('public/js/main.js') ?>"></script>
+
+    <script src="<?= base_url('public/js/relatorios.js') ?>"></script>
+
+    <script src="<?= base_url('public/js/session-check.js') ?>"></script>
+
+
+    <script src="<?= base_url('public/js/usuarios.js') ?>"></script>
     <script src="<?= base_url('public/js/usuario-form.js') ?>"></script>
+
+    <script src="<?= base_url('public/js/chamados.js') ?>"></script>
+    <script src="<?= base_url('public/js/chamados-dashboard.js') ?>"></script>
+    <script src="<?= base_url('public/js/chamado-visualizar.js') ?>"></script>
+    <script src="<?= base_url('public/js/chamados-listar.js') ?>"></script>
+    <script src="<?= base_url('public/js/chamados-index.js') ?>"></script>
+    <script src="<?= base_url('public/js/chamados-form.js') ?>"></script>
+    <script src="<?= base_url('public/js/chamados-imprimir.js') ?>"></script>
+    <script src="<?= base_url('public/js/chamados-relatorio.js') ?>"></script>
+
+
 
 
     <?php if (isset($page_scripts)): ?>

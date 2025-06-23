@@ -11,7 +11,7 @@ class Setor extends Model
      */
     public function __construct()
     {
-        parent::__construct('setores');
+        parent::__construct('setores'); 
     }
 
     /**

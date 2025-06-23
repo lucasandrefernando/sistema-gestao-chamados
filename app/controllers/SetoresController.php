@@ -11,7 +11,7 @@ class SetoresController extends Controller
     private $setorModel;
     private $chamadoModel;
 
-    /**
+    /** 
      * Construtor
      */
     public function __construct()

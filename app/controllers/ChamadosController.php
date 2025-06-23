@@ -7,7 +7,7 @@ require_once ROOT_DIR . '/app/models/Usuario.php';
 require_once ROOT_DIR . '/app/models/ChamadoComentario.php';
 require_once ROOT_DIR . '/app/models/ChamadoHistorico.php';
 
-/**
+/** 
  * Controlador para gerenciamento de chamados
  */
 class ChamadosController extends Controller

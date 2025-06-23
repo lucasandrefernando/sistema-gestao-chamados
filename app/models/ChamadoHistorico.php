@@ -12,7 +12,7 @@ class ChamadoHistorico extends Model
     public function __construct()
     {
         parent::__construct('historico_chamados');
-    }
+    } 
 
     /**
      * Obtém o histórico de um chamado com informações detalhadas

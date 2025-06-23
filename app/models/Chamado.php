@@ -12,7 +12,7 @@ class Chamado extends Model
     public function __construct()
     {
         parent::__construct('chamados');
-    }
+    } 
 
     /**
      * Obtém estatísticas para o dashboard

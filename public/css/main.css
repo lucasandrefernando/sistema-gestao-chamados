@@ -1,16 +1,30 @@
-@import "header.css";
-@import "auth.css";
-@import "base.css";
-@import "components.css";
-@import "dark-mode.css";
-@import "layout.css";
-@import "relatorios.css";
-@import "responsive.css";
-@import "utilities.css";
+/* 
+ * Arquivo de importação central de estilos CSS para o sistema.
+ * Organiza e agrupa todos os estilos utilizados em diferentes partes da aplicação.
+ * Essa estrutura modular permite fácil manutenção, reaproveitamento e clareza na organização dos estilos.
+ */
 
-@import "usuarios.css";
-@import "usuario-form.css";
-@import "usuario-restore.css";
-/*
-@import "usuarios/index.css";
-*/
+/* === ESTILOS GERAIS DO SISTEMA === */
+@import "header.css"; /* Estilização do cabeçalho, incluindo logo, menu e navegação principal */
+@import "auth.css"; /* Estilos específicos para as páginas de login, registro e autenticação */
+@import "base.css"; /* Estilos base compartilhados por toda a aplicação (tipografia, links, botões, etc) */
+@import "components.css"; /* Componentes reutilizáveis como modais, alertas, tooltips, etc */
+@import "dark-mode.css"; /* Tema escuro: define variações de cor e contraste quando o modo escuro está ativado */
+@import "layout.css"; /* Estrutura geral de layout: containers, grids, colunas, espaçamentos e organização das seções */
+@import "relatorios.css"; /* Estilização dos relatórios gerados pelo sistema (visual e impressão) */
+@import "responsive.css"; /* Responsividade: define regras para diferentes tamanhos de tela e dispositivos */
+@import "utilities.css"; /* Classes utilitárias auxiliares para espaçamentos, alinhamentos, ocultar/exibir elementos, etc */
+
+/* === MÓDULO: USUÁRIOS === */
+@import "usuarios.css"; /* Estilização da listagem de usuários, tabelas e ações */
+@import "usuario-form.css"; /* Estilos dos formulários de cadastro e edição de usuários */
+@import "usuario-restore.css"; /* Estilos específicos para a tela de recuperação ou restauração de usuários */
+
+/* === MÓDULO: CHAMADOS === */
+@import "chamados-dashboard.css"; /* Painel principal de chamados com gráficos, cards e indicadores */
+@import "chamado-visualizar.css"; /* Estilização da visualização detalhada de um chamado específico */
+@import "chamados-listar.css"; /* Estilos da tabela/listagem de todos os chamados do sistema */
+@import "chamados-index.css"; /* Página inicial dos chamados com atalhos e estatísticas */
+@import "chamados-form.css"; /* Formulários de abertura e edição de chamados */
+@import "chamados-imprimir.css"; /* Estilização otimizada para impressão de chamados */
+@import "chamados-relatorio.css"; /* Relatórios específicos dos chamados, com filtros e organização visual */

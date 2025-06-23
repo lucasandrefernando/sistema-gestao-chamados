@@ -13,7 +13,7 @@ class ChamadoComentario extends Model
     {
         parent::__construct('chamados_comentarios');
     }
-
+ 
     /**
      * Obtém comentários de um chamado com informações do usuário
      * 
