@@ -9,7 +9,6 @@
 @import "auth.css"; /* Estilos específicos para as páginas de login, registro e autenticação */
 @import "base.css"; /* Estilos base compartilhados por toda a aplicação (tipografia, links, botões, etc) */
 @import "components.css"; /* Componentes reutilizáveis como modais, alertas, tooltips, etc */
-@import "dark-mode.css"; /* Tema escuro: define variações de cor e contraste quando o modo escuro está ativado */
 @import "layout.css"; /* Estrutura geral de layout: containers, grids, colunas, espaçamentos e organização das seções */
 @import "relatorios.css"; /* Estilização dos relatórios gerados pelo sistema (visual e impressão) */
 @import "responsive.css"; /* Responsividade: define regras para diferentes tamanhos de tela e dispositivos */

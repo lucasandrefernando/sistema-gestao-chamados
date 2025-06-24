@@ -18,6 +18,18 @@ document.addEventListener('DOMContentLoaded', function () {
     // Adiciona funcionalidades à tabela
     enhanceTable();
 
+    // Configura a alternância de visualização (tabela/cards)
+    setupViewToggle();
+
+    // Configura os cards de estatísticas clicáveis
+    setupClickableStatCards();
+
+    // Inicializa os gráficos com dados reais
+    initChartsWithRealData();
+
+    // Configura o modal de exportação
+    setupExportModal();
+
     // Configura a responsividade
     setupResponsiveBehavior();
 });
@@ -50,6 +62,258 @@ function animateStatCards() {
 }
 
 /**
+ * Configura os cards de estatísticas para serem clicáveis e aplicarem filtros
+ */
+function setupClickableStatCards() {
+    const statCards = document.querySelectorAll('.chamados-listar-card-estatistica');
+
+    statCards.forEach(card => {
+        card.addEventListener('click', function () {
+            // Obtém o tipo de filtro do atributo data-filter do card
+            const filterType = this.getAttribute('data-filter');
+
+            if (filterType === 'todos') {
+                // Limpa todos os filtros
+                window.location.href = window.location.pathname;
+                return;
+            }
+
+            if (filterType === 'status') {
+                // Obtém o ID do status do atributo data-status do card
+                const statusId = this.getAttribute('data-status');
+                // Redireciona para a página com o filtro de status aplicado
+                window.location.href = `${window.location.pathname}?status=${statusId}`;
+            }
+        });
+
+        // Adiciona cursor de ponteiro e efeito de hover
+        card.style.cursor = 'pointer';
+
+        // Adiciona tooltip
+        const label = card.querySelector('.chamados-listar-label-estatistica').textContent;
+        card.setAttribute('title', `Filtrar por ${label}`);
+        card.setAttribute('data-bs-toggle', 'tooltip');
+        card.setAttribute('data-bs-placement', 'top');
+
+        // Verifica se o card está ativo (corresponde ao filtro atual)
+        const urlParams = new URLSearchParams(window.location.search);
+        const statusFilter = urlParams.get('status');
+
+        // Obtém o tipo de filtro e o status do card
+        const filterType = card.getAttribute('data-filter');
+        const statusId = card.getAttribute('data-status');
+
+        if (filterType === 'status' && statusFilter === statusId) {
+            card.classList.add('active');
+        } else if (filterType === 'todos' && !statusFilter) {
+            card.classList.add('active');
+        }
+    });
+}
+
+/**
+ * Inicializa os gráficos com dados reais do banco de dados
+ */
+function initChartsWithRealData() {
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js não está disponível. Os gráficos não serão renderizados.');
+        return;
+    }
+
+    // Obtém os dados dos gráficos
+    const dataElement = document.getElementById('chamados-listar-dados');
+    if (!dataElement) {
+        console.warn('Elemento de dados não encontrado.');
+        return;
+    }
+
+    // Configurações comuns para os gráficos
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.plugins.legend.position = 'bottom';
+    Chart.defaults.plugins.legend.labels.usePointStyle = true;
+    Chart.defaults.plugins.legend.labels.padding = 15;
+
+    // Gráfico de Status
+    try {
+        const statusData = JSON.parse(dataElement.dataset.status || '{}');
+        const ctxStatus = document.getElementById('graficoStatus');
+
+        if (ctxStatus && statusData.labels && statusData.data) {
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: statusData.labels,
+                    datasets: [{
+                        data: statusData.data,
+                        backgroundColor: statusData.backgroundColor || [
+                            'rgba(255, 99, 132, 0.7)',   // Vermelho
+                            'rgba(255, 206, 86, 0.7)',   // Amarelo
+                            'rgba(75, 192, 192, 0.7)',   // Verde
+                            'rgba(153, 102, 255, 0.7)',  // Roxo
+                            'rgba(54, 162, 235, 0.7)'    // Azul
+                        ],
+                        borderColor: 'white',
+                        borderWidth: 2,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao inicializar gráfico de status:', error);
+    }
+
+    // Gráfico de Setor
+    try {
+        const setorData = JSON.parse(dataElement.dataset.setor || '{}');
+        const ctxSetor = document.getElementById('graficoSetor');
+
+        if (ctxSetor && setorData.labels && setorData.data) {
+            new Chart(ctxSetor, {
+                type: 'pie',
+                data: {
+                    labels: setorData.labels,
+                    datasets: [{
+                        data: setorData.data,
+                        backgroundColor: setorData.backgroundColor || [
+                            'rgba(54, 162, 235, 0.7)',   // Azul
+                            'rgba(255, 99, 132, 0.7)',   // Vermelho
+                            'rgba(255, 206, 86, 0.7)',   // Amarelo
+                            'rgba(75, 192, 192, 0.7)',   // Verde
+                            'rgba(153, 102, 255, 0.7)',  // Roxo
+                            'rgba(255, 159, 64, 0.7)',   // Laranja
+                            'rgba(199, 199, 199, 0.7)'   // Cinza
+                        ],
+                        borderColor: 'white',
+                        borderWidth: 2,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 15
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao inicializar gráfico de setor:', error);
+    }
+
+    // Gráfico Mensal
+    try {
+        const mensalData = JSON.parse(dataElement.dataset.mensal || '{}');
+        const ctxMensal = document.getElementById('graficoMensal');
+
+        if (ctxMensal && mensalData.labels && mensalData.data) {
+            new Chart(ctxMensal, {
+                type: 'bar',
+                data: {
+                    labels: mensalData.labels,
+                    datasets: [{
+                        label: 'Chamados',
+                        data: mensalData.data,
+                        backgroundColor: 'rgba(67, 97, 238, 0.7)',
+                        borderColor: 'rgba(67, 97, 238, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        hoverBackgroundColor: 'rgba(67, 97, 238, 0.9)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao inicializar gráfico mensal:', error);
+    }
+
+    // Tempo Médio de Atendimento (exibido como valor numérico)
+    try {
+        const tempoData = JSON.parse(dataElement.dataset.tempo || '{}');
+        if (tempoData.data && tempoData.data.length > 0) {
+            // Calcula a média dos tempos
+            const tempoMedio = tempoData.data.reduce((a, b) => a + b, 0) / tempoData.data.length;
+
+            // Atualiza o elemento na página
+            const tempoElement = document.querySelector('.chamados-listar-resumo-tempo-valor');
+            if (tempoElement) {
+                // Formata o tempo médio
+                let tempoFormatado;
+                if (tempoMedio < 24) {
+                    tempoFormatado = tempoMedio.toFixed(1);
+                } else {
+                    const dias = Math.floor(tempoMedio / 24);
+                    const horas = (tempoMedio % 24).toFixed(1);
+                    tempoFormatado = `${dias}d ${horas}h`;
+                }
+
+                // Atualiza o texto
+                tempoElement.innerHTML = tempoFormatado + '<span>horas</span>';
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao processar dados de tempo médio:', error);
+    }
+}
+
+/**
  * Configura o comportamento do filtro avançado
  */
 function setupAdvancedFilter() {
@@ -58,9 +322,19 @@ function setupAdvancedFilter() {
     const filterCollapse = document.getElementById('filtrosCollapse');
 
     if (filterHeader && filterToggle && filterCollapse) {
-        // Verifica se há filtros ativos para expandir automaticamente
-        const filterBadge = document.querySelector('.chamados-listar-filtros-badge');
-        if (filterBadge) {
+        // Verifica se há filtros ativos
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasActiveFilters = urlParams.toString() !== '' &&
+            (urlParams.has('status') ||
+                urlParams.has('setor') ||
+                urlParams.has('busca') ||
+                urlParams.has('data_inicio') ||
+                urlParams.has('data_fim') ||
+                urlParams.has('solicitante') ||
+                urlParams.has('tipo_servico'));
+
+        // Expande o filtro apenas se houver filtros ativos
+        if (hasActiveFilters) {
             const bsCollapse = new bootstrap.Collapse(filterCollapse, {
                 toggle: true
             });
@@ -70,6 +344,11 @@ function setupAdvancedFilter() {
             if (icon) {
                 icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
             }
+        } else {
+            // Garante que o filtro esteja recolhido por padrão
+            const bsCollapse = new bootstrap.Collapse(filterCollapse, {
+                toggle: false
+            });
         }
 
         // Adiciona evento de clique no cabeçalho
@@ -121,6 +400,11 @@ function setupAdvancedFilter() {
                     this.style.borderColor = 'var(--chamados-listar-light-gray)';
                 }
             });
+
+            // Aplica estilo inicial se já tiver valor
+            if (select.value) {
+                select.style.borderColor = 'var(--chamados-listar-primary)';
+            }
         });
 
         // Adiciona efeito de loading ao botão de aplicar filtros
@@ -130,13 +414,6 @@ function setupAdvancedFilter() {
                 const originalText = submitBtn.innerHTML;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aplicando...';
                 submitBtn.disabled = true;
-
-                // Restaura o botão após 2 segundos (para demonstração)
-                // Em produção, isso seria tratado pelo servidor
-                setTimeout(() => {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }, 2000);
             }
         });
     }
@@ -164,6 +441,13 @@ function setupDatePickers() {
             if (dataFim.value && dataFim.value < this.value) {
                 dataFim.value = this.value;
             }
+
+            // Aplica estilo visual
+            if (this.value) {
+                this.style.borderColor = 'var(--chamados-listar-primary)';
+            } else {
+                this.style.borderColor = 'var(--chamados-listar-light-gray)';
+            }
         });
 
         // Atualiza a data máxima do campo de data inicial quando a data final mudar
@@ -174,7 +458,23 @@ function setupDatePickers() {
             if (dataInicio.value && dataInicio.value > this.value) {
                 dataInicio.value = this.value;
             }
+
+            // Aplica estilo visual
+            if (this.value) {
+                this.style.borderColor = 'var(--chamados-listar-primary)';
+            } else {
+                this.style.borderColor = 'var(--chamados-listar-light-gray)';
+            }
         });
+
+        // Aplica estilo inicial se já tiver valor
+        if (dataInicio.value) {
+            dataInicio.style.borderColor = 'var(--chamados-listar-primary)';
+        }
+
+        if (dataFim.value) {
+            dataFim.style.borderColor = 'var(--chamados-listar-primary)';
+        }
     }
 }
 
@@ -219,7 +519,7 @@ function enhanceTable() {
         row.style.cursor = 'pointer';
     });
 
-    // Adiciona ordenação nas colunas (exemplo básico)
+    // Adiciona ordenação nas colunas
     const headers = table.querySelectorAll('thead th');
     headers.forEach((header, index) => {
         if (index === 7) return; // Ignora a coluna de ações
@@ -227,41 +527,321 @@ function enhanceTable() {
         header.style.cursor = 'pointer';
         header.title = 'Clique para ordenar';
 
-        // Adiciona ícone de ordenação
-        const sortIcon = document.createElement('span');
-        sortIcon.innerHTML = ' <i class="fas fa-sort"></i>';
-        sortIcon.style.opacity = '0.5';
-        sortIcon.style.marginLeft = '0.25rem';
-        header.appendChild(sortIcon);
-
         // Adiciona evento de clique para ordenação
         header.addEventListener('click', function () {
-            // Esta é uma implementação básica para demonstração
-            // Em produção, isso seria tratado pelo servidor ou por uma biblioteca de ordenação
-
-            // Atualiza os ícones
+            // Remove classes de ordenação de todos os cabeçalhos
             headers.forEach(h => {
-                const icon = h.querySelector('i');
-                if (icon) {
-                    icon.className = 'fas fa-sort';
-                    icon.style.opacity = '0.5';
-                }
+                h.classList.remove('asc', 'desc');
             });
 
-            const icon = this.querySelector('i');
-            if (icon.classList.contains('fa-sort')) {
-                icon.className = 'fas fa-sort-up';
-                icon.style.opacity = '1';
-            } else if (icon.classList.contains('fa-sort-up')) {
-                icon.className = 'fas fa-sort-down';
-                icon.style.opacity = '1';
-            } else {
-                icon.className = 'fas fa-sort';
-                icon.style.opacity = '0.5';
+            // Determina a direção da ordenação
+            let direction = 'asc';
+            if (this.classList.contains('asc')) {
+                direction = 'desc';
             }
+
+            // Adiciona classe de ordenação ao cabeçalho clicado
+            this.classList.add(direction);
+
+            // Ordena as linhas da tabela
+            sortTable(table, index, direction);
         });
     });
 }
+
+/**
+ * Ordena a tabela com base na coluna e direção especificadas
+ * @param {HTMLElement} table - Elemento da tabela
+ * @param {number} columnIndex - Índice da coluna a ser ordenada
+ * @param {string} direction - Direção da ordenação ('asc' ou 'desc')
+ */
+function sortTable(table, columnIndex, direction) {
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    // Função para obter o valor da célula
+    const getCellValue = (row, index) => {
+        const cell = row.querySelector(`td:nth-child(${index + 1})`);
+
+        // Verifica se é uma coluna de data
+        if (index === 6) { // Coluna de data
+            // Converte a data para timestamp para ordenação
+            const dateText = cell.textContent.trim();
+            const dateParts = dateText.split('/');
+            if (dateParts.length === 3) {
+                const day = parseInt(dateParts[0]);
+                const month = parseInt(dateParts[1]) - 1;
+                const yearTimeParts = dateParts[2].split(' ');
+                const year = parseInt(yearTimeParts[0]);
+
+                // Se tiver hora
+                if (yearTimeParts.length > 1) {
+                    const timeParts = yearTimeParts[1].split(':');
+                    const hour = parseInt(timeParts[0]);
+                    const minute = parseInt(timeParts[1]);
+                    return new Date(year, month, day, hour, minute).getTime();
+                }
+
+                return new Date(year, month, day).getTime();
+            }
+        }
+
+        // Para outras colunas, retorna o texto
+        return cell.textContent.trim().toLowerCase();
+    };
+
+    // Ordena as linhas
+    rows.sort((a, b) => {
+        const aValue = getCellValue(a, columnIndex);
+        const bValue = getCellValue(b, columnIndex);
+
+        if (aValue < bValue) {
+            return direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+            return direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+    });
+
+    // Adiciona efeito de animação
+    rows.forEach(row => {
+        row.style.opacity = '0';
+        row.style.transform = 'translateY(10px)';
+    });
+
+    // Reordena as linhas no DOM
+    rows.forEach(row => tbody.appendChild(row));
+
+    // Anima as linhas reordenadas
+    setTimeout(() => {
+        rows.forEach((row, index) => {
+            setTimeout(() => {
+                row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                row.style.opacity = '1';
+                row.style.transform = 'translateY(0)';
+            }, index * 30);
+        });
+    }, 50);
+}
+
+/**
+ * Configura a alternância de visualização (tabela/cards)
+ */
+function setupViewToggle() {
+    const btnTabela = document.getElementById('visualizacaoTabela');
+    const btnCards = document.getElementById('visualizacaoCards');
+    const containerTabela = document.getElementById('visualizacaoTabelaContainer');
+    const containerCards = document.getElementById('visualizacaoCardsContainer');
+
+    if (btnTabela && btnCards && containerTabela && containerCards) {
+        btnTabela.addEventListener('click', function () {
+            containerTabela.style.display = 'block';
+            containerCards.style.display = 'none';
+
+            btnTabela.classList.add('chamados-listar-tabela-btn-ativo');
+            btnCards.classList.remove('chamados-listar-tabela-btn-ativo');
+
+            // Salva a preferência do usuário
+            localStorage.setItem('chamados-visualizacao', 'tabela');
+        });
+
+        btnCards.addEventListener('click', function () {
+            containerTabela.style.display = 'none';
+            containerCards.style.display = 'block';
+
+            btnTabela.classList.remove('chamados-listar-tabela-btn-ativo');
+            btnCards.classList.add('chamados-listar-tabela-btn-ativo');
+
+            // Salva a preferência do usuário
+            localStorage.setItem('chamados-visualizacao', 'cards');
+        });
+
+        // Verifica se há uma preferência salva
+        const visualizacaoSalva = localStorage.getItem('chamados-visualizacao');
+        if (visualizacaoSalva === 'cards') {
+            btnCards.click();
+        }
+    }
+}
+
+/**
+ * Configura o modal de exportação
+ */
+function setupExportModal() {
+    const exportarCsv = document.getElementById('exportarCsv');
+    const exportarModal = document.getElementById('exportarModal');
+    const fecharModal = document.getElementById('fecharModal');
+    const cancelarExportacao = document.getElementById('cancelarExportacao');
+    const confirmarExportacao = document.getElementById('confirmarExportacao');
+    const exportarCsvBtn = document.getElementById('exportarCsvBtn');
+    const exportarExcelBtn = document.getElementById('exportarExcelBtn');
+    const exportarPdfBtn = document.getElementById('exportarPdfBtn');
+
+    if (exportarCsv && exportarModal) {
+        // Abre o modal
+        exportarCsv.addEventListener('click', function () {
+            exportarModal.classList.add('ativo');
+            document.body.style.overflow = 'hidden';
+        });
+
+        // Fecha o modal
+        const fecharModalFn = function () {
+            exportarModal.classList.remove('ativo');
+            document.body.style.overflow = '';
+        };
+
+        if (fecharModal) {
+            fecharModal.addEventListener('click', fecharModalFn);
+        }
+
+        if (cancelarExportacao) {
+            cancelarExportacao.addEventListener('click', fecharModalFn);
+        }
+
+        // Clique fora do modal para fechar
+        exportarModal.addEventListener('click', function (e) {
+            if (e.target === exportarModal) {
+                fecharModalFn();
+            }
+        });
+
+        // Tecla ESC para fechar
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && exportarModal.classList.contains('ativo')) {
+                fecharModalFn();
+            }
+        });
+
+        // Seleciona o formato de exportação
+        const opcoes = [exportarCsvBtn, exportarExcelBtn, exportarPdfBtn];
+        let formatoSelecionado = 'csv';
+
+        opcoes.forEach(opcao => {
+            if (opcao) {
+                opcao.addEventListener('click', function () {
+                    // Remove a classe ativa de todas as opções
+                    opcoes.forEach(op => op.classList.remove('ativo'));
+
+                    // Adiciona a classe ativa à opção clicada
+                    this.classList.add('ativo');
+
+                    // Armazena o formato selecionado
+                    formatoSelecionado = this.id.replace('exportar', '').replace('Btn', '').toLowerCase();
+                });
+            }
+        });
+
+        // Confirma a exportação
+        if (confirmarExportacao) {
+            confirmarExportacao.addEventListener('click', function () {
+                // Adiciona efeito de loading
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exportando...';
+                this.disabled = true;
+
+                // Simula a exportação (em produção, isso seria uma chamada AJAX)
+                setTimeout(() => {
+                    // Exporta os dados
+                    exportData(formatoSelecionado);
+
+                    // Fecha o modal
+                    fecharModalFn();
+
+                    // Restaura o botão
+                    this.innerHTML = '<i class="fas fa-download"></i> Exportar';
+                    this.disabled = false;
+                }, 1500);
+            });
+        }
+    }
+}
+
+/**
+ * Exporta os dados da tabela para o formato especificado
+ * @param {string} formato - Formato de exportação ('csv', 'excel', 'pdf')
+ */
+function exportData(formato) {
+    const table = document.querySelector('.chamados-listar-tabela');
+    if (!table) return;
+
+    // Obtém os dados da tabela
+    const headers = [];
+    const data = [];
+
+    // Obtém os cabeçalhos
+    table.querySelectorAll('thead th').forEach(th => {
+        if (th.cellIndex !== 7) { // Ignora a coluna de ações
+            headers.push(th.textContent.trim());
+        }
+    });
+
+    // Obtém os dados das linhas
+    table.querySelectorAll('tbody tr').forEach(tr => {
+        const rowData = [];
+        tr.querySelectorAll('td').forEach(td => {
+            if (td.cellIndex !== 7) { // Ignora a coluna de ações
+                rowData.push(td.textContent.trim());
+            }
+        });
+        data.push(rowData);
+    });
+
+    // Exporta os dados no formato especificado
+    switch (formato) {
+        case 'csv':
+            exportToCSV(headers, data);
+            break;
+        case 'excel':
+            // Em produção, isso seria uma chamada para uma biblioteca de exportação para Excel
+            alert('Exportação para Excel não implementada nesta demonstração.');
+            break;
+        case 'pdf':
+            // Em produção, isso seria uma chamada para uma biblioteca de exportação para PDF
+            alert('Exportação para PDF não implementada nesta demonstração.');
+            break;
+    }
+}
+
+/**
+ * Exporta os dados para CSV
+ * @param {Array} headers - Cabeçalhos da tabela
+ * @param {Array} data - Dados da tabela
+ */
+function exportToCSV(headers, data) {
+    // Cria o conteúdo CSV
+    let csvContent = headers.join(',') + '\n';
+
+    data.forEach(row => {
+        // Processa cada célula para lidar com vírgulas e aspas
+        const processedRow = row.map(cell => {
+            // Se a célula contém vírgulas, aspas ou quebras de linha, coloca entre aspas
+            if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
+                // Substitui aspas por aspas duplas
+                return '"' + cell.replace(/"/g, '""') + '"';
+            }
+            return cell;
+        });
+
+        csvContent += processedRow.join(',') + '\n';
+    });
+
+    // Cria um blob com o conteúdo CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+    // Cria um link para download
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'chamados_' + new Date().toISOString().slice(0, 10) + '.csv');
+    link.style.visibility = 'hidden';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+
 
 /**
  * Configura comportamentos responsivos específicos
@@ -288,8 +868,11 @@ function setupResponsiveBehavior() {
                     // Esconde o indicador após alguns segundos
                     setTimeout(() => {
                         scrollIndicator.style.opacity = '0';
+                        scrollIndicator.style.transition = 'opacity 0.5s ease';
                         setTimeout(() => {
-                            scrollIndicator.remove();
+                            if (scrollIndicator.parentNode) {
+                                scrollIndicator.parentNode.removeChild(scrollIndicator);
+                            }
                         }, 500);
                     }, 3000);
                 }
@@ -302,6 +885,28 @@ function setupResponsiveBehavior() {
 
     // Adiciona listener para redimensionamento da janela
     window.addEventListener('resize', adjustTableForSmallScreens);
+
+    // Ajusta os gráficos em telas pequenas
+    function adjustChartsForSmallScreens() {
+        const chartContainers = document.querySelectorAll('.chamados-listar-resumo-card-body');
+        if (chartContainers.length === 0) return;
+
+        if (window.innerWidth < 768) {
+            chartContainers.forEach(container => {
+                container.style.height = '250px';
+            });
+        } else {
+            chartContainers.forEach(container => {
+                container.style.height = '200px';
+            });
+        }
+    }
+
+    // Executa o ajuste inicial dos gráficos
+    adjustChartsForSmallScreens();
+
+    // Adiciona listener para redimensionamento da janela
+    window.addEventListener('resize', adjustChartsForSmallScreens);
 }
 
 /**
@@ -358,50 +963,53 @@ function updateStatCounters(stats) {
     if (stats.concluidos !== undefined && elements.concluidos) {
         animateCounter(elements.concluidos, stats.concluidos);
     }
+
+    // Atualiza as barras de progresso
+    updateProgressBars(stats);
 }
 
 /**
- * Função para exportar os dados da tabela para CSV
- * Pode ser adicionada como funcionalidade extra
+ * Atualiza as barras de progresso das estatísticas
+ * @param {Object} stats - Estatísticas atualizadas
  */
-function exportToCSV() {
-    const table = document.querySelector('.chamados-listar-tabela');
-    if (!table) return;
+function updateProgressBars(stats) {
+    if (!stats || !stats.total || stats.total === 0) return;
 
-    let csv = [];
-    const rows = table.querySelectorAll('tr');
+    const total = stats.total;
 
-    for (let i = 0; i < rows.length; i++) {
-        let row = [], cols = rows[i].querySelectorAll('td, th');
-
-        for (let j = 0; j < cols.length; j++) {
-            // Ignora a coluna de ações
-            if (j === 7) continue;
-
-            // Obtém o texto da célula
-            let text = cols[j].innerText;
-
-            // Remove quebras de linha e aspas
-            text = text.replace(/(\r\n|\n|\r)/gm, '').replace(/"/g, '""');
-
-            // Adiciona aspas ao redor do texto
-            row.push('"' + text + '"');
+    // Barra de progresso de abertos
+    if (stats.abertos !== undefined) {
+        const percentualAbertos = (stats.abertos / total) * 100;
+        const barraAbertos = document.querySelector('.chamados-listar-abertos .chamados-listar-estatistica-barra');
+        if (barraAbertos) {
+            barraAbertos.style.width = '0%';
+            setTimeout(() => {
+                barraAbertos.style.width = percentualAbertos + '%';
+            }, 100);
         }
-
-        csv.push(row.join(','));
     }
 
-    // Cria o arquivo CSV
-    const csvString = csv.join('\n');
-    const filename = 'chamados_' + new Date().toISOString().slice(0, 10) + '.csv';
+    // Barra de progresso de em andamento
+    if (stats.em_andamento !== undefined) {
+        const percentualAndamento = (stats.em_andamento / total) * 100;
+        const barraAndamento = document.querySelector('.chamados-listar-andamento .chamados-listar-estatistica-barra');
+        if (barraAndamento) {
+            barraAndamento.style.width = '0%';
+            setTimeout(() => {
+                barraAndamento.style.width = percentualAndamento + '%';
+            }, 200);
+        }
+    }
 
-    // Cria um link para download
-    const link = document.createElement('a');
-    link.style.display = 'none';
-    link.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvString));
-    link.setAttribute('download', filename);
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
+    // Barra de progresso de concluídos
+    if (stats.concluidos !== undefined) {
+        const percentualConcluidos = (stats.concluidos / total) * 100;
+        const barraConcluidos = document.querySelector('.chamados-listar-concluidos .chamados-listar-estatistica-barra');
+        if (barraConcluidos) {
+            barraConcluidos.style.width = '0%';
+            setTimeout(() => {
+                barraConcluidos.style.width = percentualConcluidos + '%';
+            }, 300);
+        }
+    }
+}   

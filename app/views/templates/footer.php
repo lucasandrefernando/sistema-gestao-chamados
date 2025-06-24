@@ -22,7 +22,7 @@
 
     <script src="<?= base_url('public/js/main.js') ?>"></script>
 
-    <script src="<?= base_url('public/js/relatorios.js') ?>"></script>
+    
 
     <script src="<?= base_url('public/js/session-check.js') ?>"></script>
 

@@ -258,12 +258,35 @@ class ChamadosController extends Controller
             // Obtém os solicitantes únicos
             $solicitantes = $this->chamadoModel->getSolicitantes($empresaId);
 
+            // Obtém as estatísticas gerais
+            $estatisticas = $this->chamadoModel->getEstatisticas($empresaId);
+
+            // Obtém dados para os gráficos
+            $anoAtual = date('Y');
+
+            // Gráfico de chamados por status
+            $chamadosPorStatus = $this->chamadoModel->getChamadosPorStatus($empresaId);
+
+            // Gráfico de chamados por setor
+            $chamadosPorSetor = $this->chamadoModel->getChamadosPorSetorRelatorio($empresaId);
+
+            // Gráfico de chamados por mês
+            $chamadosPorMes = $this->chamadoModel->getChamadosPorMes($empresaId, $anoAtual);
+
+            // Tempo médio de atendimento
+            $tempoMedioAtendimento = $this->chamadoModel->getTempoMedioAtendimento($empresaId);
+
             $this->render('chamados/listar', [
                 'chamados' => $chamados,
                 'setores' => $setores,
                 'statusList' => $statusList,
                 'tiposServico' => $tiposServico,
                 'solicitantes' => $solicitantes,
+                'estatisticas' => $estatisticas,
+                'chamadosPorStatus' => $chamadosPorStatus,
+                'chamadosPorSetor' => $chamadosPorSetor,
+                'chamadosPorMes' => $chamadosPorMes,
+                'tempoMedioAtendimento' => $tempoMedioAtendimento,
                 'filtros' => [
                     'status' => $status,
                     'setor' => $setor,
@@ -1158,5 +1181,69 @@ class ChamadosController extends Controller
         }
 
         return $filtros;
+    }
+    /**
+     * Busca chamados com filtros aplicados
+     * 
+     * @param Chamado $chamadoModel Modelo de chamados
+     * @param int $empresaId ID da empresa
+     * @param array $filtros Filtros a serem aplicados
+     * @return array Lista de chamados filtrados
+     */
+    private function buscarChamadosComFiltros($chamadoModel, $empresaId, $filtros)
+    {
+        // Constrói a condição SQL
+        $condicao = "empresa_id = :empresa_id";
+        $params = ['empresa_id' => $empresaId];
+
+        // Aplica os filtros
+        if (!empty($filtros['status'])) {
+            $condicao .= " AND status_id = :status_id";
+            $params['status_id'] = $filtros['status'];
+        }
+
+        if (!empty($filtros['setor'])) {
+            $condicao .= " AND setor_id = :setor_id";
+            $params['setor_id'] = $filtros['setor'];
+        }
+
+        if (!empty($filtros['tipo_servico'])) {
+            $condicao .= " AND tipo_servico = :tipo_servico";
+            $params['tipo_servico'] = $filtros['tipo_servico'];
+        }
+
+        if (!empty($filtros['solicitante'])) {
+            $condicao .= " AND solicitante LIKE :solicitante";
+            $params['solicitante'] = '%' . $filtros['solicitante'] . '%';
+        }
+
+        if (!empty($filtros['data_inicio'])) {
+            $condicao .= " AND data_solicitacao >= :data_inicio";
+            $params['data_inicio'] = $filtros['data_inicio'] . ' 00:00:00';
+        }
+
+        if (!empty($filtros['data_fim'])) {
+            $condicao .= " AND data_solicitacao <= :data_fim";
+            $params['data_fim'] = $filtros['data_fim'] . ' 23:59:59';
+        }
+
+        if (!empty($filtros['busca'])) {
+            $condicao .= " AND (descricao LIKE :busca OR solicitante LIKE :busca OR paciente LIKE :busca)";
+            $params['busca'] = '%' . $filtros['busca'] . '%';
+        }
+
+        // Define a ordenação
+        $orderBy = 'data_solicitacao DESC'; // Padrão: mais recentes
+
+        if ($filtros['ordenacao'] === 'antigos') {
+            $orderBy = 'data_solicitacao ASC';
+        } else if ($filtros['ordenacao'] === 'status') {
+            $orderBy = 'status_id ASC, data_solicitacao DESC';
+        } else if ($filtros['ordenacao'] === 'setor') {
+            $orderBy = 'setor_id ASC, data_solicitacao DESC';
+        }
+
+        // Busca os chamados
+        return $chamadoModel->findAll($condicao, $params, $orderBy);
     }
 }

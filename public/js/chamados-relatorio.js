@@ -1,23 +1,33 @@
-/**
- * chamados-relatorio.js - Script específico para a página de relatório de chamados
- */
+// Verifica se estamos na página de relatório antes de executar o script
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        // Verifica se estamos na página de relatório
+        const isReportPage = document.getElementById('relatorio-data') !== null;
 
-document.addEventListener('DOMContentLoaded', function () {
-    // Inicializa a página
-    initPage();
+        if (!isReportPage) {
+            // Se não estamos na página de relatório, não executa o resto do script
+            console.log('Não estamos na página de relatório. Script chamados-relatorio.js não será executado.');
+            return;
+        }
 
-    // Configura os filtros
-    setupFilters();
+        // Inicializa a página
+        initPage();
 
-    // Configura os gráficos
-    setupCharts();
+        // Configura os filtros
+        setupFilters();
 
-    // Configura o modal de visualização expandida
-    setupChartModal();
+        // Configura os gráficos
+        setupCharts();
 
-    // Configura os botões de download de gráficos
-    setupChartDownload();
-});
+        // Configura o modal de visualização expandida
+        setupChartModal();
+
+        // Configura os botões de download de gráficos
+        setupChartDownload();
+    });
+
+    // Resto do código do script...
+})();
 
 /**
  * Inicializa a página com configurações básicas
@@ -239,14 +249,16 @@ function adicionarIconesFiltroAtivo() {
 function setupCharts() {
     // Verifica se o Chart.js está carregado
     if (typeof Chart === 'undefined') {
-        console.error('Chart.js não está carregado. Verifique se a biblioteca está incluída.');
+        console.warn('Chart.js não está carregado. Verifique se a biblioteca está incluída.');
         return;
     }
 
     // Obtém os dados dos gráficos
     const dataElement = document.getElementById('relatorio-data');
+
+    // Verifica se estamos na página de relatório
     if (!dataElement) {
-        console.error('Elemento de dados não encontrado.');
+        console.warn('Elemento de dados não encontrado. Isso é esperado se não estivermos na página de relatório.');
         return;
     }
 
