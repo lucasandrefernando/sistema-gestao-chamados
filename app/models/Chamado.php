@@ -350,38 +350,56 @@ class Chamado extends Model
     }
 
     /**
-     * Obtém chamados por status e setor
+     * Obtém a contagem de chamados por status para um setor específico
      * 
      * @param int $empresaId ID da empresa
      * @param int $setorId ID do setor
-     * @return array Dados para gráfico
+     * @return array Array com contagem de chamados por status
      */
     public function getChamadosPorStatusESetor($empresaId, $setorId)
     {
         try {
-            $sql = "SELECT 
-                s.id as status_id,
-                s.nome as nome,
-                LOWER(REPLACE(s.nome, ' ', '_')) as status,
-                COUNT(*) as total,
-                (COUNT(*) * 100.0 / (
-                    SELECT COUNT(*) 
-                    FROM {$this->table} 
-                    WHERE empresa_id = :empresa_id AND setor_id = :setor_id
-                )) as percentual
-            FROM {$this->table} c
-            JOIN status_chamados s ON c.status_id = s.id
-            WHERE c.empresa_id = :empresa_id AND c.setor_id = :setor_id
-            GROUP BY s.id, s.nome";
+            // Primeiro, tenta obter dados usando a tabela status_chamados
+            $sql = "SELECT sc.id as status_id, sc.nome, COUNT(c.id) as total
+                FROM status_chamados sc
+                LEFT JOIN chamados c ON sc.id = c.status_id AND c.empresa_id = :empresa_id AND c.setor_id = :setor_id
+                WHERE sc.ativo = 1
+                GROUP BY sc.id, sc.nome
+                ORDER BY sc.id ASC";
 
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([
+            $result = $this->executeQuery($sql, [
                 'empresa_id' => $empresaId,
                 'setor_id' => $setorId
             ]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Se não retornar resultados, tenta uma abordagem alternativa
+            if (empty($result)) {
+                // Abordagem alternativa: contar diretamente da tabela chamados
+                $sql = "SELECT status_id, COUNT(*) as total
+                    FROM chamados
+                    WHERE empresa_id = :empresa_id AND setor_id = :setor_id
+                    GROUP BY status_id
+                    ORDER BY status_id ASC";
+
+                $result = $this->executeQuery($sql, [
+                    'empresa_id' => $empresaId,
+                    'setor_id' => $setorId
+                ]);
+
+                // Adiciona os nomes dos status
+                foreach ($result as &$item) {
+                    $item['nome'] = formatarStatusById($item['status_id']);
+                }
+            }
+
+            // Filtra para remover status com contagem zero
+            $result = array_filter($result, function ($item) {
+                return $item['total'] > 0;
+            });
+
+            return array_values($result); // Reindexar o array
         } catch (Exception $e) {
-            error_log('Erro ao obter chamados por status e setor: ' . $e->getMessage());
+            error_log("Erro ao obter chamados por status: " . $e->getMessage());
             return [];
         }
     }

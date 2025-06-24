@@ -26,3 +26,10 @@
 @import "chamados-form.css"; /* Formulários de abertura e edição de chamados */
 @import "chamados-imprimir.css"; /* Estilização otimizada para impressão de chamados */
 @import "chamados-relatorio.css"; /* Relatórios específicos dos chamados, com filtros e organização visual */
+
+@import "setores.css";
+@import "usuarios-setor.css";
+@import "setores-visualizacao.css";
+
+@import "setores-form.css";
+@import "setores-detalhes.css";

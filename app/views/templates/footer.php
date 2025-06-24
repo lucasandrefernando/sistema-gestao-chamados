@@ -38,6 +38,12 @@
     <script src="<?= base_url('public/js/chamados-imprimir.js') ?>"></script>
     <script src="<?= base_url('public/js/chamados-relatorio.js') ?>"></script>
 
+    <script src="<?= base_url('public/js/setores.js') ?>"></script>
+    <script src="<?= base_url('public/js/usuarios-setor.js') ?>"></script>
+    <script src="<?= base_url('public/js/setores-visualizacao.js') ?>"></script>
+    <script src="<?= base_url('public/js/setores-form.js') ?>"></script>
+    <script src="<?= base_url('public/js/setores-detalhes.js') ?>"></script>
+
 
 
 

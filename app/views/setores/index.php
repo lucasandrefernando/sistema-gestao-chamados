@@ -1,148 +1,162 @@
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Setores</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm <?= !isset($mostrarRemovidos) || !$mostrarRemovidos ? 'btn-primary' : 'btn-outline-secondary' ?>" onclick="window.location.href='<?= base_url('setores') ?>'">
-                <i class="fas fa-check-circle me-1"></i> Ativos
-            </button>
-            <button type="button" class="btn btn-sm <?= isset($mostrarRemovidos) && $mostrarRemovidos ? 'btn-danger' : 'btn-outline-secondary' ?>" onclick="window.location.href='<?= base_url('setores?mostrar_removidos=1') ?>'">
-                <i class="fas fa-trash me-1"></i> Removidos
-            </button>
-        </div>
-        <a href="<?= base_url('setores/criar') ?>" class="btn btn-sm btn-success">
-            <i class="fas fa-plus me-1"></i> Novo Setor
-        </a>
-    </div>
-</div>
-
-<?php if (isset($mostrarRemovidos) && $mostrarRemovidos): ?>
-    <div class="alert alert-info bg-light border-info">
-        <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-                <i class="fas fa-info-circle fa-2x text-info me-3"></i>
+<div class="setores-container">
+    <div class="setores-header">
+        <h1 class="setores-title">Gestão de Setores</h1>
+        <div class="setores-actions">
+            <div class="setores-filter-group">
+                <button type="button" class="setores-btn filter-btn <?= !isset($mostrarRemovidos) || !$mostrarRemovidos ? 'active' : '' ?>"
+                    onclick="window.location.href='<?= base_url('setores') ?>'">
+                    <i class="fas fa-check-circle"></i> Ativos
+                </button>
+                <button type="button" class="setores-btn filter-btn <?= isset($mostrarRemovidos) && $mostrarRemovidos ? 'active-danger' : '' ?>"
+                    onclick="window.location.href='<?= base_url('setores?mostrar_removidos=1') ?>'">
+                    <i class="fas fa-trash"></i> Removidos
+                </button>
             </div>
-            <div class="flex-grow-1">
-                <h5 class="alert-heading mb-1">Visualizando setores removidos</h5>
-                <p class="mb-0">Estes setores foram removidos do sistema, mas seus dados ainda estão armazenados. Você pode restaurá-los se necessário.</p>
-            </div>
+            <a href="<?= base_url('setores/criar') ?>" class="setores-btn create-btn">
+                <i class="fas fa-plus"></i> Novo Setor
+            </a>
         </div>
     </div>
-<?php endif; ?>
 
-<div class="card shadow-sm">
-    <div class="card-header bg-light">
-        <div class="d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">
+    <?php if (isset($mostrarRemovidos) && $mostrarRemovidos): ?>
+        <div class="setores-alert info-alert">
+            <div class="alert-icon">
+                <i class="fas fa-info-circle"></i>
+            </div>
+            <div class="alert-content">
+                <h5>Visualizando setores removidos</h5>
+                <p>Estes setores foram removidos do sistema, mas seus dados ainda estão armazenados. Você pode restaurá-los se necessário.</p>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <div class="setores-card">
+        <div class="setores-card-header">
+            <h5 class="setores-card-title">
                 <?= isset($mostrarRemovidos) && $mostrarRemovidos ? 'Setores Removidos' : 'Setores Ativos' ?>
             </h5>
+            <div class="setores-search">
+                <div class="search-input-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="setoresSearch" class="search-input" placeholder="Buscar setores...">
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 50px;" class="text-center">#</th>
-                        <th style="width: 30%;">Nome</th>
-                        <th style="width: 40%;">Descrição</th>
-                        <th style="width: 100px;" class="text-center">Status</th>
-                        <th style="width: 100px;" class="text-center">Chamados</th>
-                        <th style="width: 100px;" class="text-center">Usuários</th>
-                        <?php if (isset($mostrarRemovidos) && $mostrarRemovidos): ?>
-                            <th style="width: 150px;" class="text-center">Removido em</th>
-                        <?php endif; ?>
-                        <th style="width: 150px;" class="text-center">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (isset($setores) && !empty($setores)): ?>
-                        <?php foreach ($setores as $setor): ?>
-                            <tr <?= isset($setor['removido']) && $setor['removido'] ? 'class="table-danger bg-opacity-50"' : '' ?>>
-                                <td class="text-center"><?= $setor['id'] ?></td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar-circle bg-primary text-white me-2">
-                                            <?= strtoupper(substr($setor['nome'], 0, 1)) ?>
+        <div class="setores-card-body">
+            <div class="setores-table-container">
+                <table class="setores-table" id="setoresTable">
+                    <thead>
+                        <tr>
+                            <th class="col-id">#</th>
+                            <th class="col-nome">Nome</th>
+                            <th class="col-descricao">Descrição</th>
+                            <th class="col-status">Status</th>
+                            <th class="col-chamados">Chamados</th>
+                            <th class="col-usuarios">Usuários</th>
+                            <?php if (isset($mostrarRemovidos) && $mostrarRemovidos): ?>
+                                <th class="col-data">Removido em</th>
+                            <?php endif; ?>
+                            <th class="col-acoes">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (isset($setores) && !empty($setores)): ?>
+                            <?php foreach ($setores as $setor): ?>
+                                <tr class="<?= isset($setor['removido']) && $setor['removido'] ? 'row-removed' : '' ?>">
+                                    <td class="col-id"><?= $setor['id'] ?></td>
+                                    <td class="col-nome">
+                                        <div class="setor-info">
+                                            <div class="setor-avatar" style="background-color: <?= gerarCorAvatar($setor['nome']) ?>">
+                                                <?= strtoupper(substr($setor['nome'], 0, 1)) ?>
+                                            </div>
+                                            <span class="setor-nome"><?= $setor['nome'] ?></span>
                                         </div>
-                                        <?= $setor['nome'] ?>
-                                    </div>
-                                </td>
-                                <td><?= $setor['descricao'] ?? '<span class="text-muted">-</span>' ?></td>
-                                <td class="text-center">
-                                    <?php if (isset($setor['removido']) && $setor['removido']): ?>
-                                        <span class="badge rounded-pill bg-danger px-3 py-2">Removido</span>
-                                    <?php elseif ($setor['ativo']): ?>
-                                        <span class="badge rounded-pill bg-success px-3 py-2">Ativo</span>
-                                    <?php else: ?>
-                                        <span class="badge rounded-pill bg-warning px-3 py-2">Inativo</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge bg-info rounded-pill"><?= $setor['total_chamados'] ?></span>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge bg-secondary rounded-pill"><?= $setor['total_usuarios'] ?></span>
-                                </td>
-                                <?php if (isset($mostrarRemovidos) && $mostrarRemovidos): ?>
-                                    <td class="text-center">
-                                        <?php if (isset($setor['removido']) && $setor['removido'] && isset($setor['data_remocao'])): ?>
-                                            <span class="text-danger">
-                                                <i class="far fa-calendar-times me-1"></i>
-                                                <?= date('d/m/Y H:i', strtotime($setor['data_remocao'])) ?>
-                                            </span>
+                                    </td>
+                                    <td class="col-descricao"><?= $setor['descricao'] ?? '<span class="text-muted">Sem descrição</span>' ?></td>
+                                    <td class="col-status">
+                                        <?php if (isset($setor['removido']) && $setor['removido']): ?>
+                                            <span class="status-badge removed">Removido</span>
+                                        <?php elseif ($setor['ativo']): ?>
+                                            <span class="status-badge active">Ativo</span>
                                         <?php else: ?>
-                                            <span class="text-muted">-</span>
+                                            <span class="status-badge inactive">Inativo</span>
                                         <?php endif; ?>
                                     </td>
-                                <?php endif; ?>
-                                <td class="text-center">
-                                    <div class="btn-group">
-                                        <?php if (isset($setor['removido']) && $setor['removido']): ?>
-                                            <button type="button" class="btn btn-success"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#restaurarModal"
-                                                data-id="<?= $setor['id'] ?>"
-                                                data-nome="<?= $setor['nome'] ?>"
-                                                data-data="<?= date('d/m/Y H:i', strtotime($setor['data_remocao'])) ?>">
-                                                <i class="fas fa-trash-restore"></i>
-                                            </button>
-                                        <?php else: ?>
-                                            <a href="<?= base_url('setores/editar/' . $setor['id']) ?>" class="btn btn-info" title="Editar">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="<?= base_url('setores/toggle/' . $setor['id']) ?>" class="btn <?= $setor['ativo'] ? 'btn-warning' : 'btn-success' ?>" title="<?= $setor['ativo'] ? 'Desativar' : 'Ativar' ?>">
-                                                <i class="fas <?= $setor['ativo'] ? 'fa-ban' : 'fa-check' ?>"></i>
-                                            </a>
-                                            <?php if ($setor['total_chamados'] == 0 && $setor['total_usuarios'] == 0): ?>
-                                                <button type="button" class="btn btn-danger"
+                                    <td class="col-chamados">
+                                        <div class="counter-badge info"><?= $setor['total_chamados'] ?></div>
+                                    </td>
+                                    <td class="col-usuarios">
+                                        <div class="counter-badge secondary"><?= $setor['total_usuarios'] ?></div>
+                                    </td>
+                                    <?php if (isset($mostrarRemovidos) && $mostrarRemovidos): ?>
+                                        <td class="col-data">
+                                            <?php if (isset($setor['removido']) && $setor['removido'] && isset($setor['data_remocao'])): ?>
+                                                <div class="data-remocao">
+                                                    <i class="far fa-calendar-times"></i>
+                                                    <?= date('d/m/Y H:i', strtotime($setor['data_remocao'])) ?>
+                                                </div>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    <?php endif; ?>
+                                    <td class="col-acoes">
+                                        <div class="acoes-grupo">
+                                            <?php if (isset($setor['removido']) && $setor['removido']): ?>
+                                                <button type="button" class="acao-btn restaurar"
                                                     data-bs-toggle="modal"
-                                                    data-bs-target="#removerModal"
+                                                    data-bs-target="#restaurarModal"
                                                     data-id="<?= $setor['id'] ?>"
-                                                    data-nome="<?= $setor['nome'] ?>">
-                                                    <i class="fas fa-trash"></i>
+                                                    data-nome="<?= $setor['nome'] ?>"
+                                                    data-data="<?= date('d/m/Y H:i', strtotime($setor['data_remocao'])) ?>">
+                                                    <i class="fas fa-trash-restore"></i>
+                                                    <span class="tooltip-text">Restaurar</span>
                                                 </button>
                                             <?php else: ?>
-                                                <button type="button" class="btn btn-danger" disabled title="Não é possível remover este setor pois existem chamados ou usuários associados a ele">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <a href="<?= base_url('setores/editar/' . $setor['id']) ?>" class="acao-btn editar">
+                                                    <i class="fas fa-edit"></i>
+                                                    <span class="tooltip-text">Editar</span>
+                                                </a>
+                                                <a href="<?= base_url('setores/toggle/' . $setor['id']) ?>" class="acao-btn <?= $setor['ativo'] ? 'desativar' : 'ativar' ?>">
+                                                    <i class="fas <?= $setor['ativo'] ? 'fa-ban' : 'fa-check' ?>"></i>
+                                                    <span class="tooltip-text"><?= $setor['ativo'] ? 'Desativar' : 'Ativar' ?></span>
+                                                </a>
+                                                <?php if ($setor['total_chamados'] == 0 && $setor['total_usuarios'] == 0): ?>
+                                                    <button type="button" class="acao-btn remover"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#removerModal"
+                                                        data-id="<?= $setor['id'] ?>"
+                                                        data-nome="<?= $setor['nome'] ?>">
+                                                        <i class="fas fa-trash"></i>
+                                                        <span class="tooltip-text">Remover</span>
+                                                    </button>
+                                                <?php else: ?>
+                                                    <button type="button" class="acao-btn remover disabled"
+                                                        title="Não é possível remover este setor pois existem chamados ou usuários associados a ele">
+                                                        <i class="fas fa-trash"></i>
+                                                        <span class="tooltip-text">Não pode remover</span>
+                                                    </button>
+                                                <?php endif; ?>
                                             <?php endif; ?>
-                                        <?php endif; ?>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr class="empty-row">
+                                <td colspan="<?= isset($mostrarRemovidos) && $mostrarRemovidos ? '8' : '7' ?>">
+                                    <div class="empty-state">
+                                        <div class="empty-icon">
+                                            <i class="fas fa-search"></i>
+                                        </div>
+                                        <p>Nenhum setor <?= isset($mostrarRemovidos) && $mostrarRemovidos ? 'removido' : '' ?> encontrado.</p>
                                     </div>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="<?= isset($mostrarRemovidos) && $mostrarRemovidos ? '8' : '7' ?>" class="text-center py-4">
-                                <div class="text-muted">
-                                    <i class="fas fa-search fa-3x mb-3"></i>
-                                    <p class="mb-0">Nenhum setor <?= isset($mostrarRemovidos) && $mostrarRemovidos ? 'removido' : '' ?> encontrado.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -151,28 +165,31 @@
 <div class="modal fade" id="removerModal" tabindex="-1" aria-labelledby="removerModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
+            <div class="modal-header modal-danger">
                 <h5 class="modal-title" id="removerModalLabel">Confirmar Remoção</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="text-center mb-4">
-                    <i class="fas fa-exclamation-triangle text-danger fa-4x mb-3"></i>
-                    <h5>Tem certeza que deseja remover este setor?</h5>
+                <div class="modal-icon-container">
+                    <div class="modal-icon danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
                 </div>
-                <div class="alert alert-warning">
-                    <i class="fas fa-info-circle me-2"></i>
-                    O setor será marcado como removido, mas seus dados permanecerão no sistema. Você poderá restaurá-lo posteriormente se necessário.
+                <h5 class="modal-message">Tem certeza que deseja remover este setor?</h5>
+                <div class="modal-alert warning">
+                    <i class="fas fa-info-circle"></i>
+                    <span>O setor será marcado como removido, mas seus dados permanecerão no sistema. Você poderá restaurá-lo posteriormente se necessário.</span>
                 </div>
-                <div class="card bg-light mb-3">
-                    <div class="card-body">
-                        <p class="mb-0"><strong>Nome:</strong> <span id="removerNome"></span></p>
+                <div class="modal-info-card">
+                    <div class="info-item">
+                        <span class="info-label">Nome:</span>
+                        <span class="info-value" id="removerNome"></span>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <a href="#" id="confirmarRemover" class="btn btn-danger">Confirmar Remoção</a>
+                <button type="button" class="modal-btn cancel" data-bs-dismiss="modal">Cancelar</button>
+                <a href="#" id="confirmarRemover" class="modal-btn confirm-danger">Confirmar Remoção</a>
             </div>
         </div>
     </div>
@@ -182,74 +199,55 @@
 <div class="modal fade" id="restaurarModal" tabindex="-1" aria-labelledby="restaurarModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
+            <div class="modal-header modal-success">
                 <h5 class="modal-title" id="restaurarModalLabel">Confirmar Restauração</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="text-center mb-4">
-                    <i class="fas fa-trash-restore text-success fa-4x mb-3"></i>
-                    <h5>Tem certeza que deseja restaurar este setor?</h5>
+                <div class="modal-icon-container">
+                    <div class="modal-icon success">
+                        <i class="fas fa-trash-restore"></i>
+                    </div>
                 </div>
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    O setor será restaurado e poderá ser utilizado novamente.
+                <h5 class="modal-message">Tem certeza que deseja restaurar este setor?</h5>
+                <div class="modal-alert info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>O setor será restaurado e poderá ser utilizado novamente.</span>
                 </div>
-                <div class="card bg-light mb-3">
-                    <div class="card-body">
-                        <p class="mb-1"><strong>Nome:</strong> <span id="restaurarNome"></span></p>
-                        <p class="mb-0"><strong>Removido em:</strong> <span id="restaurarData"></span></p>
+                <div class="modal-info-card">
+                    <div class="info-item">
+                        <span class="info-label">Nome:</span>
+                        <span class="info-value" id="restaurarNome"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Removido em:</span>
+                        <span class="info-value" id="restaurarData"></span>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <a href="#" id="confirmarRestaurar" class="btn btn-success">Confirmar Restauração</a>
+                <button type="button" class="modal-btn cancel" data-bs-dismiss="modal">Cancelar</button>
+                <a href="#" id="confirmarRestaurar" class="modal-btn confirm-success">Confirmar Restauração</a>
             </div>
         </div>
     </div>
 </div>
 
-<style>
-    .avatar-circle {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-    }
-</style>
+<!-- Adicione esta função PHP no arquivo apropriado -->
+<?php
+function gerarCorAvatar($nome)
+{
+    // Gera uma cor baseada no nome do setor
+    $hash = md5($nome);
+    $r = hexdec(substr($hash, 0, 2));
+    $g = hexdec(substr($hash, 2, 2));
+    $b = hexdec(substr($hash, 4, 2));
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Modal de remoção
-        var removerModal = document.getElementById('removerModal');
-        if (removerModal) {
-            removerModal.addEventListener('show.bs.modal', function(event) {
-                var button = event.relatedTarget;
-                var id = button.getAttribute('data-id');
-                var nome = button.getAttribute('data-nome');
+    // Ajusta para garantir cores mais vibrantes
+    $r = min(max(intval($r * 0.7 + 80), 100), 220);
+    $g = min(max(intval($g * 0.7 + 80), 100), 220);
+    $b = min(max(intval($b * 0.7 + 80), 100), 220);
 
-                document.getElementById('removerNome').textContent = nome;
-                document.getElementById('confirmarRemover').href = '<?= base_url('setores/remover/') ?>' + id;
-            });
-        }
-
-        // Modal de restauração
-        var restaurarModal = document.getElementById('restaurarModal');
-        if (restaurarModal) {
-            restaurarModal.addEventListener('show.bs.modal', function(event) {
-                var button = event.relatedTarget;
-                var id = button.getAttribute('data-id');
-                var nome = button.getAttribute('data-nome');
-                var data = button.getAttribute('data-data');
-
-                document.getElementById('restaurarNome').textContent = nome;
-                document.getElementById('restaurarData').textContent = data;
-                document.getElementById('confirmarRestaurar').href = '<?= base_url('setores/restaurar/') ?>' + id;
-            });
-        }
-    });
-</script>
+    return "rgb($r, $g, $b)";
+}
+?>
