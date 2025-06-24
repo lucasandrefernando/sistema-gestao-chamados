@@ -22,7 +22,7 @@
 
     <script src="<?= base_url('public/js/main.js') ?>"></script>
 
-    
+
 
     <script src="<?= base_url('public/js/session-check.js') ?>"></script>
 
@@ -31,7 +31,6 @@
     <script src="<?= base_url('public/js/usuario-form.js') ?>"></script>
 
     <script src="<?= base_url('public/js/chamados.js') ?>"></script>
-    <script src="<?= base_url('public/js/chamados-dashboard.js') ?>"></script>
     <script src="<?= base_url('public/js/chamado-visualizar.js') ?>"></script>
     <script src="<?= base_url('public/js/chamados-listar.js') ?>"></script>
     <script src="<?= base_url('public/js/chamados-index.js') ?>"></script>

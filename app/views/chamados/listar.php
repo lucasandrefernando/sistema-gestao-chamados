@@ -441,29 +441,54 @@
     </div>
 
     <!-- Paginação -->
-    <?php if (!empty($chamados) && count($chamados) > 20): ?>
-        <div class="chamados-listar-paginacao">
+    <?php if (!empty($chamados) && isset($paginacao) && $paginacao['total_paginas'] > 1): ?>
+        <div class="chamados-listar-paginacao" data-total-pages="<?= $paginacao['total_paginas'] ?>">
             <ul class="chamados-listar-paginacao-lista">
                 <li class="chamados-listar-paginacao-item">
-                    <a href="#" class="chamados-listar-paginacao-link chamados-listar-paginacao-link-anterior">
+                    <a href="#" class="chamados-listar-paginacao-link chamados-listar-paginacao-link-anterior<?= $paginacao['pagina_atual'] <= 1 ? ' chamados-listar-paginacao-link-desabilitado' : '' ?>">
                         <i class="fas fa-chevron-left"></i>
                     </a>
                 </li>
+
+                <?php
+                // Determina quais páginas mostrar
+                $pagina_atual = $paginacao['pagina_atual'];
+                $total_paginas = $paginacao['total_paginas'];
+
+                // Sempre mostra a primeira página
+                if ($pagina_atual > 1) {
+                    echo '<li class="chamados-listar-paginacao-item">';
+                    echo '<a href="#" class="chamados-listar-paginacao-link">1</a>';
+                    echo '</li>';
+                }
+
+                // Adiciona reticências se necessário
+                if ($pagina_atual > 3) {
+                    echo '<li class="chamados-listar-paginacao-item chamados-listar-paginacao-item-ellipsis">...</li>';
+                }
+
+                // Mostra páginas ao redor da página atual
+                for ($i = max(2, $pagina_atual - 1); $i <= min($total_paginas - 1, $pagina_atual + 1); $i++) {
+                    echo '<li class="chamados-listar-paginacao-item">';
+                    echo '<a href="#" class="chamados-listar-paginacao-link' . ($i == $pagina_atual ? ' chamados-listar-paginacao-link-ativo' : '') . '">' . $i . '</a>';
+                    echo '</li>';
+                }
+
+                // Adiciona reticências se necessário
+                if ($pagina_atual < $total_paginas - 2) {
+                    echo '<li class="chamados-listar-paginacao-item chamados-listar-paginacao-item-ellipsis">...</li>';
+                }
+
+                // Sempre mostra a última página
+                if ($pagina_atual < $total_paginas) {
+                    echo '<li class="chamados-listar-paginacao-item">';
+                    echo '<a href="#" class="chamados-listar-paginacao-link">' . $total_paginas . '</a>';
+                    echo '</li>';
+                }
+                ?>
+
                 <li class="chamados-listar-paginacao-item">
-                    <a href="#" class="chamados-listar-paginacao-link chamados-listar-paginacao-link-ativo">1</a>
-                </li>
-                <li class="chamados-listar-paginacao-item">
-                    <a href="#" class="chamados-listar-paginacao-link">2</a>
-                </li>
-                <li class="chamados-listar-paginacao-item">
-                    <a href="#" class="chamados-listar-paginacao-link">3</a>
-                </li>
-                <li class="chamados-listar-paginacao-item chamados-listar-paginacao-item-ellipsis">...</li>
-                <li class="chamados-listar-paginacao-item">
-                    <a href="#" class="chamados-listar-paginacao-link">10</a>
-                </li>
-                <li class="chamados-listar-paginacao-item">
-                    <a href="#" class="chamados-listar-paginacao-link chamados-listar-paginacao-link-proximo">
+                    <a href="#" class="chamados-listar-paginacao-link chamados-listar-paginacao-link-proximo<?= $paginacao['pagina_atual'] >= $paginacao['total_paginas'] ? ' chamados-listar-paginacao-link-desabilitado' : '' ?>">
                         <i class="fas fa-chevron-right"></i>
                     </a>
                 </li>

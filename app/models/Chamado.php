@@ -12,7 +12,7 @@ class Chamado extends Model
     public function __construct()
     {
         parent::__construct('chamados');
-    } 
+    }
 
     /**
      * Obtém estatísticas para o dashboard
@@ -2633,5 +2633,568 @@ class Chamado extends Model
         $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Obtém registros com paginação
+     * 
+     * @param string $condicao Condição WHERE
+     * @param array $params Parâmetros para a condição
+     * @param string $ordenacao Ordenação
+     * @param int $limite Limite de registros
+     * @param int $offset Offset para paginação
+     * @return array Registros encontrados
+     */
+    public function findAllPaginated($condicao = '', $params = [], $ordenacao = '', $limite = 20, $offset = 0)
+    {
+        try {
+            $sql = "SELECT * FROM {$this->table}";
+
+            if (!empty($condicao)) {
+                $sql .= " WHERE {$condicao}";
+            }
+
+            if (!empty($ordenacao)) {
+                $sql .= " ORDER BY {$ordenacao}";
+            }
+
+            $sql .= " LIMIT :limite OFFSET :offset";
+
+            $stmt = $this->db->prepare($sql);
+
+            // Bind dos parâmetros da condição
+            foreach ($params as $key => $value) {
+                $type = PDO::PARAM_STR;
+                if (is_int($value)) {
+                    $type = PDO::PARAM_INT;
+                } elseif (is_bool($value)) {
+                    $type = PDO::PARAM_BOOL;
+                } elseif (is_null($value)) {
+                    $type = PDO::PARAM_NULL;
+                }
+
+                $stmt->bindValue(':' . $key, $value, $type);
+            }
+
+            // Bind dos parâmetros de paginação
+            $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log('Erro ao buscar registros paginados: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtém os tipos de serviço únicos filtrados por setores
+     * 
+     * @param int $empresaId ID da empresa
+     * @param array $setoresIds IDs dos setores permitidos
+     * @return array Lista de tipos de serviço
+     */
+    public function getTiposServicoPorSetores($empresaId, $setoresIds)
+    {
+        try {
+            if (empty($setoresIds)) {
+                return [];
+            }
+
+            // Cria placeholders para os setores
+            $placeholders = [];
+            foreach ($setoresIds as $index => $id) {
+                $placeholders[] = ':setor_id_' . $index;
+            }
+
+            $sql = "SELECT DISTINCT tipo_servico FROM {$this->table} 
+                WHERE empresa_id = :empresa_id AND setor_id IN (" . implode(',', $placeholders) . ") 
+                AND tipo_servico IS NOT NULL AND tipo_servico != '' 
+                ORDER BY tipo_servico ASC";
+
+            $stmt = $this->db->prepare($sql);
+
+            // Bind dos parâmetros
+            $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            foreach ($setoresIds as $index => $id) {
+                $stmt->bindValue(':setor_id_' . $index, $id, PDO::PARAM_INT);
+            }
+
+            $stmt->execute();
+
+            $tipos = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $tipos[] = $row['tipo_servico'];
+            }
+
+            return $tipos;
+        } catch (Exception $e) {
+            error_log('Erro ao obter tipos de serviço: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtém os solicitantes únicos filtrados por setores
+     * 
+     * @param int $empresaId ID da empresa
+     * @param array $setoresIds IDs dos setores permitidos
+     * @return array Lista de solicitantes
+     */
+    public function getSolicitantesPorSetores($empresaId, $setoresIds)
+    {
+        try {
+            if (empty($setoresIds)) {
+                return [];
+            }
+
+            // Cria placeholders para os setores
+            $placeholders = [];
+            foreach ($setoresIds as $index => $id) {
+                $placeholders[] = ':setor_id_' . $index;
+            }
+
+            $sql = "SELECT DISTINCT solicitante FROM {$this->table} 
+                WHERE empresa_id = :empresa_id AND setor_id IN (" . implode(',', $placeholders) . ") 
+                AND solicitante IS NOT NULL AND solicitante != '' 
+                ORDER BY solicitante ASC";
+
+            $stmt = $this->db->prepare($sql);
+
+            // Bind dos parâmetros
+            $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            foreach ($setoresIds as $index => $id) {
+                $stmt->bindValue(':setor_id_' . $index, $id, PDO::PARAM_INT);
+            }
+
+            $stmt->execute();
+
+            $solicitantes = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $solicitantes[] = $row['solicitante'];
+            }
+
+            return $solicitantes;
+        } catch (Exception $e) {
+            error_log('Erro ao obter solicitantes: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtém estatísticas gerais filtradas por setores
+     * 
+     * @param int $empresaId ID da empresa
+     * @param array $setoresIds IDs dos setores permitidos
+     * @return array Estatísticas gerais
+     */
+    public function getEstatisticasPorSetores($empresaId, $setoresIds)
+    {
+        try {
+            if (empty($setoresIds)) {
+                return [
+                    'total' => 0,
+                    'abertos' => 0,
+                    'em_andamento' => 0,
+                    'concluidos' => 0
+                ];
+            }
+
+            // Cria placeholders para os setores
+            $placeholders = [];
+            foreach ($setoresIds as $index => $id) {
+                $placeholders[] = ':setor_id_' . $index;
+            }
+
+            $placeholdersStr = implode(',', $placeholders);
+
+            // Total de chamados
+            $sqlTotal = "SELECT COUNT(*) as total FROM {$this->table} 
+                    WHERE empresa_id = :empresa_id AND setor_id IN ($placeholdersStr)";
+
+            $stmtTotal = $this->db->prepare($sqlTotal);
+            $stmtTotal->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            foreach ($setoresIds as $index => $id) {
+                $stmtTotal->bindValue(':setor_id_' . $index, $id, PDO::PARAM_INT);
+            }
+            $stmtTotal->execute();
+            $total = $stmtTotal->fetch(PDO::FETCH_ASSOC)['total'];
+
+            // Chamados abertos
+            $sqlAbertos = "SELECT COUNT(*) as total FROM {$this->table} 
+                      WHERE empresa_id = :empresa_id AND setor_id IN ($placeholdersStr) AND status_id = 1";
+
+            $stmtAbertos = $this->db->prepare($sqlAbertos);
+            $stmtAbertos->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            foreach ($setoresIds as $index => $id) {
+                $stmtAbertos->bindValue(':setor_id_' . $index, $id, PDO::PARAM_INT);
+            }
+            $stmtAbertos->execute();
+            $abertos = $stmtAbertos->fetch(PDO::FETCH_ASSOC)['total'];
+
+            // Chamados em andamento
+            $sqlAndamento = "SELECT COUNT(*) as total FROM {$this->table} 
+                        WHERE empresa_id = :empresa_id AND setor_id IN ($placeholdersStr) AND status_id = 2";
+
+            $stmtAndamento = $this->db->prepare($sqlAndamento);
+            $stmtAndamento->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            foreach ($setoresIds as $index => $id) {
+                $stmtAndamento->bindValue(':setor_id_' . $index, $id, PDO::PARAM_INT);
+            }
+            $stmtAndamento->execute();
+            $emAndamento = $stmtAndamento->fetch(PDO::FETCH_ASSOC)['total'];
+
+            // Chamados concluídos
+            $sqlConcluidos = "SELECT COUNT(*) as total FROM {$this->table} 
+                         WHERE empresa_id = :empresa_id AND setor_id IN ($placeholdersStr) AND status_id = 4";
+
+            $stmtConcluidos = $this->db->prepare($sqlConcluidos);
+            $stmtConcluidos->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            foreach ($setoresIds as $index => $id) {
+                $stmtConcluidos->bindValue(':setor_id_' . $index, $id, PDO::PARAM_INT);
+            }
+            $stmtConcluidos->execute();
+            $concluidos = $stmtConcluidos->fetch(PDO::FETCH_ASSOC)['total'];
+
+            return [
+                'total' => $total,
+                'abertos' => $abertos,
+                'em_andamento' => $emAndamento,
+                'concluidos' => $concluidos
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter estatísticas: ' . $e->getMessage());
+            return [
+                'total' => 0,
+                'abertos' => 0,
+                'em_andamento' => 0,
+                'concluidos' => 0
+            ];
+        }
+    }
+
+    /**
+     * Obtém chamados por status filtrados por setores
+     * 
+     * @param int $empresaId ID da empresa
+     * @param array $setoresIds IDs dos setores permitidos
+     * @return array Dados para o gráfico de chamados por status
+     */
+    public function getChamadosPorStatusPorSetores($empresaId, $setoresIds)
+    {
+        try {
+            if (empty($setoresIds)) {
+                return [
+                    'labels' => [],
+                    'data' => [],
+                    'raw' => []
+                ];
+            }
+
+            // Cria placeholders para os setores
+            $placeholders = [];
+            foreach ($setoresIds as $index => $id) {
+                $placeholders[] = ':setor_id_' . $index;
+            }
+
+            $sql = "SELECT s.id as status_id, s.nome as status_nome, COUNT(*) as total 
+                FROM {$this->table} c 
+                INNER JOIN status_chamados s ON c.status_id = s.id 
+                WHERE c.empresa_id = :empresa_id AND c.setor_id IN (" . implode(',', $placeholders) . ") 
+                GROUP BY s.id, s.nome 
+                ORDER BY s.id ASC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            foreach ($setoresIds as $index => $id) {
+                $stmt->bindValue(':setor_id_' . $index, $id, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $labels = [];
+            $data = [];
+
+            foreach ($result as $row) {
+                $labels[] = $row['status_nome'];
+                $data[] = (int)$row['total'];
+            }
+
+            return [
+                'labels' => $labels,
+                'data' => $data,
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter chamados por status: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'data' => [],
+                'raw' => []
+            ];
+        }
+    }
+
+    /**
+     * Obtém chamados por setor filtrados por setores permitidos
+     * 
+     * @param int $empresaId ID da empresa
+     * @param array $setoresIds IDs dos setores permitidos
+     * @return array Dados para o gráfico de chamados por setor
+     */
+    public function getChamadosPorSetorRelatorioPorSetores($empresaId, $setoresIds)
+    {
+        try {
+            if (empty($setoresIds)) {
+                return [
+                    'labels' => [],
+                    'data' => [],
+                    'raw' => []
+                ];
+            }
+
+            // Cria placeholders para os setores
+            $placeholders = [];
+            foreach ($setoresIds as $index => $id) {
+                $placeholders[] = ':setor_id_' . $index;
+            }
+
+            $sql = "SELECT s.id as setor_id, s.nome as setor_nome, COUNT(*) as total 
+                FROM {$this->table} c 
+                INNER JOIN setores s ON c.setor_id = s.id 
+                WHERE c.empresa_id = :empresa_id AND c.setor_id IN (" . implode(',', $placeholders) . ") 
+                GROUP BY s.id, s.nome 
+                ORDER BY total DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            foreach ($setoresIds as $index => $id) {
+                $stmt->bindValue(':setor_id_' . $index, $id, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $labels = [];
+            $data = [];
+
+            foreach ($result as $row) {
+                $labels[] = $row['setor_nome'];
+                $data[] = (int)$row['total'];
+            }
+
+            return [
+                'labels' => $labels,
+                'data' => $data,
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter chamados por setor: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'data' => [],
+                'raw' => []
+            ];
+        }
+    }
+
+    /**
+     * Obtém chamados por mês filtrados por setores
+     * 
+     * @param int $empresaId ID da empresa
+     * @param int $ano Ano para filtrar
+     * @param array $setoresIds IDs dos setores permitidos
+     * @return array Dados para o gráfico de chamados por mês
+     */
+    public function getChamadosPorMesPorSetores($empresaId, $ano, $setoresIds)
+    {
+        try {
+            if (empty($setoresIds)) {
+                return [
+                    'labels' => [],
+                    'data' => [],
+                    'raw' => []
+                ];
+            }
+
+            // Cria placeholders para os setores
+            $placeholders = [];
+            foreach ($setoresIds as $index => $id) {
+                $placeholders[] = ':setor_id_' . $index;
+            }
+
+            $sql = "SELECT MONTH(data_solicitacao) as mes, COUNT(*) as total 
+                FROM {$this->table} 
+                WHERE empresa_id = :empresa_id AND YEAR(data_solicitacao) = :ano 
+                AND setor_id IN (" . implode(',', $placeholders) . ") 
+                GROUP BY MONTH(data_solicitacao) 
+                ORDER BY MONTH(data_solicitacao) ASC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            $stmt->bindValue(':ano', $ano, PDO::PARAM_INT);
+            foreach ($setoresIds as $index => $id) {
+                $stmt->bindValue(':setor_id_' . $index, $id, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Inicializa todos os meses com zero
+            $meses = [
+                1 => 'Janeiro',
+                2 => 'Fevereiro',
+                3 => 'Março',
+                4 => 'Abril',
+                5 => 'Maio',
+                6 => 'Junho',
+                7 => 'Julho',
+                8 => 'Agosto',
+                9 => 'Setembro',
+                10 => 'Outubro',
+                11 => 'Novembro',
+                12 => 'Dezembro'
+            ];
+
+            $data = array_fill(1, 12, 0);
+
+            // Preenche com os dados reais
+            foreach ($result as $row) {
+                $mes = (int)$row['mes'];
+                $data[$mes] = (int)$row['total'];
+            }
+
+            // Converte para arrays sequenciais para o gráfico
+            $labels = array_values($meses);
+            $dataValues = array_values($data);
+
+            return [
+                'labels' => $labels,
+                'data' => $dataValues,
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter chamados por mês: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'data' => [],
+                'raw' => []
+            ];
+        }
+    }
+
+    /**
+     * Obtém tempo médio de atendimento filtrado por setores
+     * 
+     * @param int $empresaId ID da empresa
+     * @param array $setoresIds IDs dos setores permitidos
+     * @return array Dados para o gráfico de tempo médio de atendimento
+     */
+    public function getTempoMedioAtendimentoPorSetores($empresaId, $setoresIds)
+    {
+        try {
+            if (empty($setoresIds)) {
+                return [
+                    'labels' => [],
+                    'data' => [],
+                    'raw' => []
+                ];
+            }
+
+            // Cria placeholders para os setores
+            $placeholders = [];
+            foreach ($setoresIds as $index => $id) {
+                $placeholders[] = ':setor_id_' . $index;
+            }
+
+            $sql = "SELECT s.id as status_id, s.nome as status_nome, 
+                AVG(TIMESTAMPDIFF(HOUR, data_solicitacao, IFNULL(data_conclusao, NOW()))) as tempo_medio 
+                FROM {$this->table} c 
+                INNER JOIN status_chamados s ON c.status_id = s.id 
+                WHERE c.empresa_id = :empresa_id AND c.setor_id IN (" . implode(',', $placeholders) . ") 
+                GROUP BY s.id, s.nome 
+                ORDER BY s.id ASC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            foreach ($setoresIds as $index => $id) {
+                $stmt->bindValue(':setor_id_' . $index, $id, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $labels = [];
+            $data = [];
+
+            foreach ($result as $row) {
+                $labels[] = $row['status_nome'];
+                $data[] = round((float)$row['tempo_medio'], 1);
+            }
+
+            return [
+                'labels' => $labels,
+                'data' => $data,
+                'raw' => $result
+            ];
+        } catch (Exception $e) {
+            error_log('Erro ao obter tempo médio de atendimento: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'data' => [],
+                'raw' => []
+            ];
+        }
+    }
+
+    /**
+     * Obtém os anos disponíveis para filtro, filtrados por setores
+     * 
+     * @param int $empresaId ID da empresa
+     * @param array $setoresIds IDs dos setores permitidos
+     * @return array Anos disponíveis
+     */
+    public function getAnosDisponiveisPorSetores($empresaId, $setoresIds)
+    {
+        try {
+            if (empty($setoresIds)) {
+                return [date('Y')];
+            }
+
+            // Cria placeholders para os setores
+            $placeholders = [];
+            foreach ($setoresIds as $index => $id) {
+                $placeholders[] = ':setor_id_' . $index;
+            }
+
+            $sql = "SELECT DISTINCT YEAR(data_solicitacao) as ano 
+                FROM {$this->table} 
+                WHERE empresa_id = :empresa_id AND setor_id IN (" . implode(',', $placeholders) . ") 
+                ORDER BY ano DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':empresa_id', $empresaId, PDO::PARAM_INT);
+            foreach ($setoresIds as $index => $id) {
+                $stmt->bindValue(':setor_id_' . $index, $id, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+
+            $anos = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $anos[] = $row['ano'];
+            }
+
+            // Se não houver anos, retorna o ano atual
+            if (empty($anos)) {
+                $anos[] = date('Y');
+            }
+
+            return $anos;
+        } catch (Exception $e) {
+            error_log('Erro ao obter anos disponíveis: ' . $e->getMessage());
+            return [date('Y')];
+        }
     }
 }

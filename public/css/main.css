@@ -20,7 +20,6 @@
 @import "usuario-restore.css"; /* Estilos específicos para a tela de recuperação ou restauração de usuários */
 
 /* === MÓDULO: CHAMADOS === */
-@import "chamados-dashboard.css"; /* Painel principal de chamados com gráficos, cards e indicadores */
 @import "chamado-visualizar.css"; /* Estilização da visualização detalhada de um chamado específico */
 @import "chamados-listar.css"; /* Estilos da tabela/listagem de todos os chamados do sistema */
 @import "chamados-index.css"; /* Página inicial dos chamados com atalhos e estatísticas */

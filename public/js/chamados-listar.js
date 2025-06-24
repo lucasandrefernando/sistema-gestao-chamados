@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Configura o modal de exportação
     setupExportModal();
 
+    // Configura a paginação
+    setupPagination();
+
     // Configura a responsividade
     setupResponsiveBehavior();
 });
@@ -1012,4 +1015,148 @@ function updateProgressBars(stats) {
             }, 300);
         }
     }
-}   
+}
+
+/**
+ * Configura a paginação da tabela de chamados
+ */
+function setupPagination() {
+    const paginationContainer = document.querySelector('.chamados-listar-paginacao');
+    if (!paginationContainer) return;
+
+    const paginationLinks = paginationContainer.querySelectorAll('.chamados-listar-paginacao-link');
+    const previousLink = paginationContainer.querySelector('.chamados-listar-paginacao-link-anterior');
+    const nextLink = paginationContainer.querySelector('.chamados-listar-paginacao-link-proximo');
+
+    // Obtém a página atual da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentPage = parseInt(urlParams.get('pagina')) || 1;
+
+    // Configura os links de paginação
+    paginationLinks.forEach(link => {
+        if (!link.classList.contains('chamados-listar-paginacao-link-anterior') &&
+            !link.classList.contains('chamados-listar-paginacao-link-proximo')) {
+
+            const pageNumber = parseInt(link.textContent);
+            if (isNaN(pageNumber)) return; // Ignora links que não são números (como reticências)
+
+            // Adiciona o evento de clique
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                navigateToPage(pageNumber);
+            });
+
+            // Marca a página atual como ativa
+            if (pageNumber === currentPage) {
+                link.classList.add('chamados-listar-paginacao-link-ativo');
+            } else {
+                link.classList.remove('chamados-listar-paginacao-link-ativo');
+            }
+        }
+    });
+
+    // Configura o link "Anterior"
+    if (previousLink && !previousLink.classList.contains('chamados-listar-paginacao-link-desabilitado')) {
+        previousLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            navigateToPage(currentPage - 1);
+        });
+    }
+
+    // Configura o link "Próximo"
+    if (nextLink && !nextLink.classList.contains('chamados-listar-paginacao-link-desabilitado')) {
+        nextLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            navigateToPage(currentPage + 1);
+        });
+    }
+
+    /**
+   * Navega para a página especificada mantendo os filtros atuais
+   * @param {number} page - Número da página
+   */
+    function navigateToPage(page) {
+        // Obtém os parâmetros atuais da URL
+        const params = new URLSearchParams(window.location.search);
+
+        // Atualiza ou adiciona o parâmetro de página
+        params.set('pagina', page);
+
+        // Redireciona para a nova URL
+        window.location.href = `${window.location.pathname}?${params.toString()}`;
+    }
+
+    // Adiciona efeito de hover aos links de paginação
+    paginationLinks.forEach(link => {
+        if (!link.classList.contains('chamados-listar-paginacao-link-desabilitado')) {
+            link.addEventListener('mouseenter', function () {
+                this.style.backgroundColor = 'var(--chamados-listar-primary)';
+                this.style.color = 'var(--chamados-listar-white)';
+                this.style.transform = 'translateY(-2px)';
+            });
+
+            link.addEventListener('mouseleave', function () {
+                if (!this.classList.contains('chamados-listar-paginacao-link-ativo')) {
+                    this.style.backgroundColor = '';
+                    this.style.color = '';
+                }
+                this.style.transform = 'translateY(0)';
+            });
+        }
+    });
+
+    // Adiciona contador de resultados
+    const totalItems = paginationContainer.dataset.totalItems;
+    const itemsPerPage = paginationContainer.dataset.itemsPerPage;
+
+    if (totalItems && itemsPerPage) {
+        const startItem = (currentPage - 1) * parseInt(itemsPerPage) + 1;
+        const endItem = Math.min(startItem + parseInt(itemsPerPage) - 1, parseInt(totalItems));
+
+        const paginationInfo = document.createElement('div');
+        paginationInfo.className = 'chamados-listar-paginacao-info';
+        paginationInfo.textContent = `Mostrando ${startItem}-${endItem} de ${totalItems} chamados`;
+
+        // Insere o contador antes da paginação
+        paginationContainer.parentNode.insertBefore(paginationInfo, paginationContainer);
+    }
+
+    // Adiciona comportamento responsivo
+    function adjustPaginationForSmallScreens() {
+        if (window.innerWidth < 576) {
+            // Em telas pequenas, mostra menos links de página
+            const pageItems = paginationContainer.querySelectorAll('.chamados-listar-paginacao-item');
+
+            pageItems.forEach(item => {
+                const link = item.querySelector('.chamados-listar-paginacao-link');
+                if (link) {
+                    const pageNumber = parseInt(link.textContent);
+
+                    // Esconde páginas que não são a atual, a primeira, a última ou adjacentes à atual
+                    if (!isNaN(pageNumber) &&
+                        pageNumber !== 1 &&
+                        pageNumber !== parseInt(paginationContainer.dataset.totalPages) &&
+                        pageNumber !== currentPage &&
+                        pageNumber !== currentPage - 1 &&
+                        pageNumber !== currentPage + 1) {
+
+                        item.style.display = 'none';
+                    }
+                }
+            });
+        } else {
+            // Em telas maiores, restaura a visibilidade
+            const pageItems = paginationContainer.querySelectorAll('.chamados-listar-paginacao-item');
+            pageItems.forEach(item => {
+                item.style.display = '';
+            });
+        }
+    }
+
+    // Executa o ajuste inicial
+    adjustPaginationForSmallScreens();
+
+    // Adiciona listener para redimensionamento da janela
+    window.addEventListener('resize', adjustPaginationForSmallScreens);
+
+}

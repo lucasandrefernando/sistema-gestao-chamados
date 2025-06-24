@@ -7,14 +7,12 @@
                 <a href="<?= base_url('chamados/listar') ?>" class="chamados-relatorio-btn chamados-relatorio-btn-secundario">
                     <i class="fas fa-list"></i> Listar Chamados
                 </a>
-                <a href="<?= base_url('chamados') ?>" class="chamados-relatorio-btn chamados-relatorio-btn-secundario">
+                <a href="<?= base_url('dashboard') ?>" class="chamados-relatorio-btn chamados-relatorio-btn-secundario">
                     <i class="fas fa-tachometer-alt"></i> Dashboard
                 </a>
             </div>
             <div class="chamados-relatorio-acoes-grupo">
-                <a href="<?= base_url('chamados/exportar-relatorio?' . http_build_query($filtros)) ?>" class="chamados-relatorio-btn chamados-relatorio-btn-sucesso">
-                    <i class="fas fa-file-pdf"></i> Exportar PDF
-                </a>
+
                 <a href="<?= base_url('chamados/criar') ?>" class="chamados-relatorio-btn chamados-relatorio-btn-primario">
                     <i class="fas fa-plus"></i> Novo Chamado
                 </a>

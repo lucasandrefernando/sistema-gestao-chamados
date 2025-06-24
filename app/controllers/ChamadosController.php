@@ -151,11 +151,12 @@ class ChamadosController extends Controller
     }
 
     /**
-     * Lista de chamados com filtros avançados
+     * Lista de chamados com filtros avançados e paginação
      */
     public function listar()
     {
         $empresaId = get_empresa_id();
+        $usuarioId = get_user_id();
 
         // Obtém os filtros da URL
         $status = isset($_GET['status']) && $_GET['status'] !== '' ? $_GET['status'] : null;
@@ -167,20 +168,67 @@ class ChamadosController extends Controller
         $tipoServico = isset($_GET['tipo_servico']) && $_GET['tipo_servico'] !== '' ? $_GET['tipo_servico'] : null;
         $ordenacao = isset($_GET['ordenacao']) ? $_GET['ordenacao'] : 'recentes';
 
+        // Parâmetros de paginação
+        $paginaAtual = isset($_GET['pagina']) && is_numeric($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+        $itensPorPagina = 10; // Número de chamados por página
+
         try {
             // Log dos filtros recebidos
             error_log('Filtros recebidos: ' . print_r($_GET, true));
+
+            // Busca diretamente na tabela usuarios_setores
+            $sqlSetores = "SELECT setor_id FROM usuarios_setores WHERE usuario_id = :usuario_id";
+            $stmtSetores = $this->usuarioModel->getDb()->prepare($sqlSetores);
+            $stmtSetores->bindValue(':usuario_id', $usuarioId);
+            $stmtSetores->execute();
+
+            $setoresIds = [];
+            while ($row = $stmtSetores->fetch(PDO::FETCH_ASSOC)) {
+                $setoresIds[] = $row['setor_id'];
+            }
+
+            // Log para depuração
+            error_log('Setores permitidos para o usuário: ' . implode(', ', $setoresIds));
+
+            if (empty($setoresIds)) {
+                // Se não tiver nenhum setor vinculado, não mostra nenhum chamado
+                set_flash_message('warning', 'Você não tem permissão para visualizar chamados. Entre em contato com o administrador.');
+                redirect('dashboard');
+                return;
+            }
 
             // Constrói a condição de filtro
             $condicao = 'empresa_id = :empresa_id';
             $params = ['empresa_id' => $empresaId];
 
+            // Restringe aos setores permitidos para todos os usuários
+            $placeholders = [];
+            foreach ($setoresIds as $index => $id) {
+                $paramName = 'setor_id_' . $index;
+                $placeholders[] = ':' . $paramName;
+                $params[$paramName] = $id;
+            }
+
+            $condicao .= " AND setor_id IN (" . implode(',', $placeholders) . ")";
+
+            // Log para depuração
+            error_log('Condição de restrição de setores: ' . $condicao);
+            error_log('Parâmetros: ' . print_r($params, true));
+
+            // Aplica os filtros adicionais
             if ($status) {
                 $condicao .= ' AND status_id = :status_id';
                 $params['status_id'] = $status;
             }
 
             if ($setor) {
+                // Verifica se o usuário tem permissão para o setor selecionado
+                if (!in_array($setor, $setoresIds)) {
+                    set_flash_message('warning', 'Você não tem permissão para visualizar chamados deste setor.');
+                    redirect('chamados/listar');
+                    return;
+                }
+
                 $condicao .= ' AND setor_id = :setor_id';
                 $params['setor_id'] = $setor;
             }
@@ -222,14 +270,15 @@ class ChamadosController extends Controller
             }
 
             // Log para depuração
-            error_log('Condição SQL: ' . $condicao);
-            error_log('Parâmetros: ' . print_r($params, true));
+            error_log('Condição SQL final: ' . $condicao);
+            error_log('Parâmetros finais: ' . print_r($params, true));
             error_log('Ordenação: ' . $ordenacaoSql);
 
-            // Obtém os chamados usando SQL direto para evitar problemas com o método findAll
-            $sql = "SELECT * FROM chamados WHERE $condicao ORDER BY $ordenacaoSql";
-            $stmt = $this->chamadoModel->getDb()->prepare($sql);
+            // Obtém o total de chamados para a paginação
+            $sqlCount = "SELECT COUNT(*) as total FROM chamados WHERE $condicao";
+            $stmtCount = $this->chamadoModel->getDb()->prepare($sqlCount);
 
+            // Bind dos parâmetros (todos nomeados agora)
             foreach ($params as $key => $value) {
                 $type = PDO::PARAM_STR;
                 if (is_int($value)) {
@@ -239,42 +288,88 @@ class ChamadosController extends Controller
                 } elseif (is_null($value)) {
                     $type = PDO::PARAM_NULL;
                 }
+                $stmtCount->bindValue(':' . $key, $value, $type);
+            }
 
+            $stmtCount->execute();
+            $totalChamados = $stmtCount->fetch(PDO::FETCH_ASSOC)['total'];
+
+            // Calcula o total de páginas
+            $totalPaginas = ceil($totalChamados / $itensPorPagina);
+
+            // Ajusta a página atual se necessário
+            if ($paginaAtual < 1) {
+                $paginaAtual = 1;
+            } elseif ($paginaAtual > $totalPaginas && $totalPaginas > 0) {
+                $paginaAtual = $totalPaginas;
+            }
+
+            // Calcula o offset para a consulta
+            $offset = ($paginaAtual - 1) * $itensPorPagina;
+
+            // Obtém os chamados com paginação
+            $sql = "SELECT * FROM chamados WHERE $condicao ORDER BY $ordenacaoSql LIMIT $itensPorPagina OFFSET $offset";
+            $stmt = $this->chamadoModel->getDb()->prepare($sql);
+
+            // Bind dos parâmetros (todos nomeados agora)
+            foreach ($params as $key => $value) {
+                $type = PDO::PARAM_STR;
+                if (is_int($value)) {
+                    $type = PDO::PARAM_INT;
+                } elseif (is_bool($value)) {
+                    $type = PDO::PARAM_BOOL;
+                } elseif (is_null($value)) {
+                    $type = PDO::PARAM_NULL;
+                }
                 $stmt->bindValue(':' . $key, $value, $type);
             }
 
             $stmt->execute();
             $chamados = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Obtém os setores para o filtro
-            $setores = $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
+            // Obtém os setores para o filtro (apenas os que o usuário tem permissão)
+            $setores = [];
+            foreach ($setoresIds as $setorId) {
+                $setor = $this->setorModel->findById($setorId);
+                if ($setor && $setor['ativo']) {
+                    $setores[] = $setor;
+                }
+            }
 
             // Obtém os status para o filtro
             $statusList = $this->statusModel->findAll(null, null, 'nome ASC');
 
-            // Obtém os tipos de serviço únicos
-            $tiposServico = $this->chamadoModel->getTiposServico($empresaId);
+            // Obtém os tipos de serviço únicos (filtrados por setores permitidos)
+            $tiposServico = $this->chamadoModel->getTiposServicoPorSetores($empresaId, $setoresIds);
 
-            // Obtém os solicitantes únicos
-            $solicitantes = $this->chamadoModel->getSolicitantes($empresaId);
+            // Obtém os solicitantes únicos (filtrados por setores permitidos)
+            $solicitantes = $this->chamadoModel->getSolicitantesPorSetores($empresaId, $setoresIds);
 
-            // Obtém as estatísticas gerais
-            $estatisticas = $this->chamadoModel->getEstatisticas($empresaId);
+            // Obtém as estatísticas gerais (filtradas por setores permitidos)
+            $estatisticas = $this->chamadoModel->getEstatisticasPorSetores($empresaId, $setoresIds);
 
-            // Obtém dados para os gráficos
+            // Obtém dados para os gráficos (filtrados por setores permitidos)
             $anoAtual = date('Y');
 
-            // Gráfico de chamados por status
-            $chamadosPorStatus = $this->chamadoModel->getChamadosPorStatus($empresaId);
+            // Gráfico de chamados por status (filtrado por setores permitidos)
+            $chamadosPorStatus = $this->chamadoModel->getChamadosPorStatusPorSetores($empresaId, $setoresIds);
 
-            // Gráfico de chamados por setor
-            $chamadosPorSetor = $this->chamadoModel->getChamadosPorSetorRelatorio($empresaId);
+            // Gráfico de chamados por setor (filtrado por setores permitidos)
+            $chamadosPorSetor = $this->chamadoModel->getChamadosPorSetorRelatorioPorSetores($empresaId, $setoresIds);
 
-            // Gráfico de chamados por mês
-            $chamadosPorMes = $this->chamadoModel->getChamadosPorMes($empresaId, $anoAtual);
+            // Gráfico de chamados por mês (filtrado por setores permitidos)
+            $chamadosPorMes = $this->chamadoModel->getChamadosPorMesPorSetores($empresaId, $anoAtual, $setoresIds);
 
-            // Tempo médio de atendimento
-            $tempoMedioAtendimento = $this->chamadoModel->getTempoMedioAtendimento($empresaId);
+            // Tempo médio de atendimento (filtrado por setores permitidos)
+            $tempoMedioAtendimento = $this->chamadoModel->getTempoMedioAtendimentoPorSetores($empresaId, $setoresIds);
+
+            // Informações de paginação
+            $paginacao = [
+                'pagina_atual' => $paginaAtual,
+                'total_paginas' => $totalPaginas,
+                'itens_por_pagina' => $itensPorPagina,
+                'total_itens' => $totalChamados
+            ];
 
             $this->render('chamados/listar', [
                 'chamados' => $chamados,
@@ -287,6 +382,7 @@ class ChamadosController extends Controller
                 'chamadosPorSetor' => $chamadosPorSetor,
                 'chamadosPorMes' => $chamadosPorMes,
                 'tempoMedioAtendimento' => $tempoMedioAtendimento,
+                'paginacao' => $paginacao,
                 'filtros' => [
                     'status' => $status,
                     'setor' => $setor,
@@ -306,10 +402,13 @@ class ChamadosController extends Controller
             // Mensagem para o usuário
             set_flash_message('error', 'Erro ao listar chamados: ' . $e->getMessage());
 
-            // Redireciona para o dashboard
-            redirect('chamados');
+            // Redireciona para a página de listagem
+            redirect('chamados/listar');
         }
     }
+
+
+    
 
     /**
      * Visualiza um chamado
@@ -317,6 +416,7 @@ class ChamadosController extends Controller
     public function visualizar($id)
     {
         $empresaId = get_empresa_id();
+        $usuarioId = get_user_id();
 
         // Obtém o chamado
         $chamado = $this->chamadoModel->findById($id);
@@ -325,6 +425,13 @@ class ChamadosController extends Controller
         if (!$chamado || $chamado['empresa_id'] != $empresaId) {
             set_flash_message('error', 'Chamado não encontrado.');
             redirect('chamados');
+            return;
+        }
+
+        // Verifica se o usuário tem permissão para visualizar este chamado
+        if (!$this->verificarPermissaoSetor($usuarioId, $chamado['setor_id'])) {
+            set_flash_message('error', 'Você não tem permissão para visualizar este chamado.');
+            redirect('chamados/listar');
             return;
         }
 
@@ -343,8 +450,9 @@ class ChamadosController extends Controller
         // Obtém os status disponíveis para transição
         $statusDisponiveis = $this->statusModel->findAll(null, null, 'nome ASC');
 
-        // Obtém os setores disponíveis para transferência
-        $setoresDisponiveis = $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
+        // Obtém os setores disponíveis para transferência (apenas os que o usuário tem permissão)
+        $setoresPermitidos = $this->verificarPermissaoSetor($usuarioId);
+        $setoresDisponiveis = is_array($setoresPermitidos) ? $setoresPermitidos : $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
 
         $this->render('chamados/visualizar', [
             'chamado' => $chamado,
@@ -489,6 +597,7 @@ class ChamadosController extends Controller
     public function editar($id)
     {
         $empresaId = get_empresa_id();
+        $usuarioId = get_user_id();
 
         // Obtém o chamado
         $chamado = $this->chamadoModel->findById($id);
@@ -500,8 +609,16 @@ class ChamadosController extends Controller
             return;
         }
 
-        // Obtém os setores disponíveis
-        $setores = $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
+        // Verifica se o usuário tem permissão para editar este chamado
+        if (!$this->verificarPermissaoSetor($usuarioId, $chamado['setor_id'])) {
+            set_flash_message('error', 'Você não tem permissão para editar este chamado.');
+            redirect('chamados/listar');
+            return;
+        }
+
+        // Obtém os setores disponíveis (apenas os que o usuário tem permissão)
+        $setoresPermitidos = $this->verificarPermissaoSetor($usuarioId);
+        $setores = is_array($setoresPermitidos) ? $setoresPermitidos : $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
 
         // Obtém os tipos de serviço únicos
         $tiposServico = $this->chamadoModel->getTiposServico($empresaId);
@@ -532,6 +649,13 @@ class ChamadosController extends Controller
             return;
         }
 
+        // Verifica se o usuário tem permissão para atualizar este chamado
+        if (!$this->verificarPermissaoSetor($usuarioId, $chamado['setor_id'])) {
+            set_flash_message('error', 'Você não tem permissão para atualizar este chamado.');
+            redirect('chamados/listar');
+            return;
+        }
+
         // Valida os dados do formulário
         $setor_id = isset($_POST['setor_id']) ? (int)$_POST['setor_id'] : 0;
         $solicitante = isset($_POST['solicitante']) ? sanitize_input($_POST['solicitante']) : '';
@@ -555,6 +679,13 @@ class ChamadosController extends Controller
             return;
         }
 
+        // Verifica se o usuário tem permissão para o novo setor
+        if (!$this->verificarPermissaoSetor($usuarioId, $setor_id)) {
+            set_flash_message('error', 'Você não tem permissão para transferir o chamado para este setor.');
+            redirect('chamados/editar/' . $id);
+            return;
+        }
+
         // Prepara os dados para atualização
         $data = [
             'setor_id' => $setor_id,
@@ -573,14 +704,14 @@ class ChamadosController extends Controller
             // Registra no histórico se o setor foi alterado
             if ($chamado['setor_id'] != $setor_id) {
                 $historicoSql = "INSERT INTO historico_chamados (
-                    chamado_id, setor_id_anterior, setor_id_novo, 
-                    status_id_anterior, status_id_novo, usuario_id, 
-                    observacao, data_criacao
-                ) VALUES (
-                    :chamado_id, :setor_id_anterior, :setor_id_novo, 
-                    :status_id_anterior, :status_id_novo, :usuario_id, 
-                    :observacao, :data_criacao
-                )";
+                chamado_id, setor_id_anterior, setor_id_novo, 
+                status_id_anterior, status_id_novo, usuario_id, 
+                observacao, data_criacao
+            ) VALUES (
+                :chamado_id, :setor_id_anterior, :setor_id_novo, 
+                :status_id_anterior, :status_id_novo, :usuario_id, 
+                :observacao, :data_criacao
+            )";
 
                 $historicoStmt = $this->historicoModel->getDb()->prepare($historicoSql);
                 $historicoStmt->bindValue(':chamado_id', $id, PDO::PARAM_INT);
@@ -619,6 +750,13 @@ class ChamadosController extends Controller
         if (!$chamado || $chamado['empresa_id'] != $empresaId) {
             set_flash_message('error', 'Chamado não encontrado.');
             redirect('chamados');
+            return;
+        }
+
+        // Verifica se o usuário tem permissão para alterar o status deste chamado
+        if (!$this->verificarPermissaoSetor($usuarioId, $chamado['setor_id'])) {
+            set_flash_message('error', 'Você não tem permissão para alterar o status deste chamado.');
+            redirect('chamados/listar');
             return;
         }
 
@@ -661,14 +799,14 @@ class ChamadosController extends Controller
 
             // Registra no histórico
             $historicoSql = "INSERT INTO historico_chamados (
-                chamado_id, setor_id_anterior, setor_id_novo, 
-                status_id_anterior, status_id_novo, usuario_id, 
-                observacao, data_criacao
-            ) VALUES (
-                :chamado_id, :setor_id_anterior, :setor_id_novo, 
-                :status_id_anterior, :status_id_novo, :usuario_id, 
-                :observacao, :data_criacao
-            )";
+            chamado_id, setor_id_anterior, setor_id_novo, 
+            status_id_anterior, status_id_novo, usuario_id, 
+            observacao, data_criacao
+        ) VALUES (
+            :chamado_id, :setor_id_anterior, :setor_id_novo, 
+            :status_id_anterior, :status_id_novo, :usuario_id, 
+            :observacao, :data_criacao
+        )";
 
             $historicoStmt = $this->historicoModel->getDb()->prepare($historicoSql);
             $historicoStmt->bindValue(':chamado_id', $id, PDO::PARAM_INT);
@@ -709,6 +847,13 @@ class ChamadosController extends Controller
             return;
         }
 
+        // Verifica se o usuário tem permissão para transferir este chamado
+        if (!$this->verificarPermissaoSetor($usuarioId, $chamado['setor_id'])) {
+            set_flash_message('error', 'Você não tem permissão para transferir este chamado.');
+            redirect('chamados/listar');
+            return;
+        }
+
         // Valida os dados do formulário
         $setor_id = isset($_POST['setor_id']) ? (int)$_POST['setor_id'] : 0;
         $observacao = isset($_POST['observacao']) ? sanitize_input($_POST['observacao']) : '';
@@ -728,6 +873,13 @@ class ChamadosController extends Controller
             return;
         }
 
+        // Verifica se o usuário tem permissão para o novo setor
+        if (!$this->verificarPermissaoSetor($usuarioId, $setor_id)) {
+            set_flash_message('error', 'Você não tem permissão para transferir o chamado para este setor.');
+            redirect('chamados/visualizar/' . $id);
+            return;
+        }
+
         // Prepara os dados para atualização
         $data = [
             'setor_id' => $setor_id,
@@ -740,14 +892,14 @@ class ChamadosController extends Controller
 
             // Registra no histórico usando SQL direto
             $historicoSql = "INSERT INTO historico_chamados (
-                chamado_id, setor_id_anterior, setor_id_novo, 
-                status_id_anterior, status_id_novo, usuario_id, 
-                observacao, data_criacao
-            ) VALUES (
-                :chamado_id, :setor_id_anterior, :setor_id_novo, 
-                :status_id_anterior, :status_id_novo, :usuario_id, 
-                :observacao, :data_criacao
-            )";
+            chamado_id, setor_id_anterior, setor_id_novo, 
+            status_id_anterior, status_id_novo, usuario_id, 
+            observacao, data_criacao
+        ) VALUES (
+            :chamado_id, :setor_id_anterior, :setor_id_novo, 
+            :status_id_anterior, :status_id_novo, :usuario_id, 
+            :observacao, :data_criacao
+        )";
 
             $historicoStmt = $this->historicoModel->getDb()->prepare($historicoSql);
             $historicoStmt->bindValue(':chamado_id', $id, PDO::PARAM_INT);
@@ -788,6 +940,13 @@ class ChamadosController extends Controller
             return;
         }
 
+        // Verifica se o usuário tem permissão para adicionar comentários a este chamado
+        if (!$this->verificarPermissaoSetor($usuarioId, $chamado['setor_id'])) {
+            set_flash_message('error', 'Você não tem permissão para adicionar comentários a este chamado.');
+            redirect('chamados/listar');
+            return;
+        }
+
         // Valida os dados do formulário
         $comentario = isset($_POST['comentario']) ? sanitize_input($_POST['comentario']) : '';
 
@@ -801,10 +960,10 @@ class ChamadosController extends Controller
         // Insere o comentário usando SQL direto
         try {
             $comentarioSql = "INSERT INTO chamados_comentarios (
-                chamado_id, usuario_id, comentario, data_criacao
-            ) VALUES (
-                :chamado_id, :usuario_id, :comentario, :data_criacao
-            )";
+            chamado_id, usuario_id, comentario, data_criacao
+        ) VALUES (
+            :chamado_id, :usuario_id, :comentario, :data_criacao
+        )";
 
             $comentarioStmt = $this->comentarioModel->getDb()->prepare($comentarioSql);
             $comentarioStmt->bindValue(':chamado_id', $id, PDO::PARAM_INT);
@@ -829,6 +988,7 @@ class ChamadosController extends Controller
     public function exportar()
     {
         $empresaId = get_empresa_id();
+        $usuarioId = get_user_id();
 
         // Obtém os filtros da URL
         $status = isset($_GET['status']) ? $_GET['status'] : null;
@@ -837,9 +997,34 @@ class ChamadosController extends Controller
         $dataInicio = isset($_GET['data_inicio']) ? $_GET['data_inicio'] : null;
         $dataFim = isset($_GET['data_fim']) ? $_GET['data_fim'] : null;
 
+        // Obtém os setores aos quais o usuário tem acesso
+        $setoresPermitidos = $this->verificarPermissaoSetor($usuarioId);
+
         // Constrói a condição de filtro
         $condicao = 'empresa_id = :empresa_id';
         $params = ['empresa_id' => $empresaId];
+
+        // Se o usuário não for admin, restringe aos setores permitidos
+        if (is_array($setoresPermitidos) && !empty($setoresPermitidos)) {
+            $setoresIds = array_column($setoresPermitidos, 'id');
+
+            if (empty($setoresIds)) {
+                // Se não tiver nenhum setor vinculado, não exporta nenhum chamado
+                set_flash_message('warning', 'Você não tem permissão para exportar chamados. Entre em contato com o administrador.');
+                redirect('chamados/listar');
+                return;
+            }
+
+            // Adiciona a restrição de setores à condição usando parâmetros nomeados
+            $placeholders = [];
+            foreach ($setoresIds as $index => $id) {
+                $paramName = 'setor_id_' . $index;
+                $placeholders[] = ':' . $paramName;
+                $params[$paramName] = $id;
+            }
+
+            $condicao .= " AND setor_id IN (" . implode(',', $placeholders) . ")";
+        }
 
         if ($status) {
             $condicao .= ' AND status_id = :status_id';
@@ -847,6 +1032,13 @@ class ChamadosController extends Controller
         }
 
         if ($setor) {
+            // Verifica se o usuário tem permissão para o setor selecionado
+            if (!$this->verificarPermissaoSetor($usuarioId, $setor)) {
+                set_flash_message('warning', 'Você não tem permissão para exportar chamados deste setor.');
+                redirect('chamados/listar');
+                return;
+            }
+
             $condicao .= ' AND setor_id = :setor_id';
             $params['setor_id'] = $setor;
         }
@@ -939,6 +1131,7 @@ class ChamadosController extends Controller
     public function relatorio()
     {
         $empresaId = get_empresa_id();
+        $usuarioId = get_user_id();
 
         // Obtém os filtros da URL
         $anoFiltro = isset($_GET['ano']) ? (int)$_GET['ano'] : (int)date('Y');
@@ -953,11 +1146,21 @@ class ChamadosController extends Controller
         $dataFimFiltro = isset($_GET['data_fim']) && $_GET['data_fim'] !== '' ? $_GET['data_fim'] : null;
 
         try {
+            // Obtém os setores aos quais o usuário tem acesso
+            $setoresPermitidos = $this->verificarPermissaoSetor($usuarioId);
+
+            // Se o usuário não for admin e não tiver setores vinculados, não mostra nenhum relatório
+            if (!is_array($setoresPermitidos) && empty($setoresPermitidos)) {
+                set_flash_message('warning', 'Você não tem permissão para visualizar relatórios. Entre em contato com o administrador.');
+                redirect('dashboard');
+                return;
+            }
+
             // Obtém os anos disponíveis para filtro
             $anosDisponiveis = $this->chamadoModel->getAnosDisponiveis($empresaId);
 
-            // Obtém os setores para filtro
-            $setores = $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
+            // Obtém os setores para filtro (apenas os que o usuário tem permissão)
+            $setores = is_array($setoresPermitidos) ? $setoresPermitidos : $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
 
             // Obtém os status para filtro
             $statusList = $this->statusModel->findAll(null, null, 'nome ASC');
@@ -972,6 +1175,28 @@ class ChamadosController extends Controller
             $condicaoBase = "empresa_id = :empresa_id";
             $paramsBase = ['empresa_id' => $empresaId];
 
+            // Se o usuário não for admin, restringe aos setores permitidos
+            if (is_array($setoresPermitidos) && !empty($setoresPermitidos)) {
+                $setoresIds = array_column($setoresPermitidos, 'id');
+
+                if (empty($setoresIds)) {
+                    // Se não tiver nenhum setor vinculado, não mostra nenhum relatório
+                    set_flash_message('warning', 'Você não tem permissão para visualizar relatórios. Entre em contato com o administrador.');
+                    redirect('dashboard');
+                    return;
+                }
+
+                // Adiciona a restrição de setores à condição usando parâmetros nomeados
+                $placeholders = [];
+                foreach ($setoresIds as $index => $id) {
+                    $paramName = 'setor_id_' . $index;
+                    $placeholders[] = ':' . $paramName;
+                    $paramsBase[$paramName] = $id;
+                }
+
+                $condicaoBase .= " AND setor_id IN (" . implode(',', $placeholders) . ")";
+            }
+
             if ($anoFiltro) {
                 $condicaoBase .= " AND YEAR(data_solicitacao) = :ano";
                 $paramsBase['ano'] = $anoFiltro;
@@ -983,6 +1208,13 @@ class ChamadosController extends Controller
             }
 
             if ($setorFiltro) {
+                // Verifica se o usuário tem permissão para o setor selecionado
+                if (!$this->verificarPermissaoSetor($usuarioId, $setorFiltro)) {
+                    set_flash_message('warning', 'Você não tem permissão para visualizar relatórios deste setor.');
+                    redirect('chamados/relatorio');
+                    return;
+                }
+
                 $condicaoBase .= " AND setor_id = :setor_id";
                 $paramsBase['setor_id'] = $setorFiltro;
             }
@@ -1245,5 +1477,191 @@ class ChamadosController extends Controller
 
         // Busca os chamados
         return $chamadoModel->findAll($condicao, $params, $orderBy);
+    }
+
+    /**
+     * Verifica se o usuário tem permissão para acessar um setor
+     * 
+     * @param int $usuarioId ID do usuário
+     * @param int $setorId ID do setor (opcional, se não fornecido verifica todos os setores do usuário)
+     * @return array|bool Array de setores permitidos ou true/false se um setor específico for fornecido
+     */
+    private function verificarPermissaoSetor($usuarioId, $setorId = null)
+    {
+        // Removemos a verificação de admin - todos os usuários seguem a mesma regra
+
+        // Busca os setores vinculados ao usuário na tabela usuarios_setores
+        $sql = "SELECT s.* FROM setores s 
+            INNER JOIN usuarios_setores us ON s.id = us.setor_id 
+            WHERE us.usuario_id = :usuario_id AND s.ativo = 1";
+
+        $params = ['usuario_id' => $usuarioId];
+
+        // Log para depuração
+        error_log('SQL para buscar setores do usuário: ' . $sql);
+        error_log('Parâmetros: ' . print_r($params, true));
+
+        // Se um setor específico for fornecido, verifica apenas esse setor
+        if ($setorId) {
+            $sql .= " AND s.id = :setor_id";
+            $params['setor_id'] = $setorId;
+
+            $stmt = $this->setorModel->getDb()->prepare($sql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue(':' . $key, $value);
+            }
+            $stmt->execute();
+
+            $result = $stmt->rowCount() > 0;
+
+            // Log para depuração
+            error_log('Verificando permissão para setor específico ID: ' . $setorId);
+            error_log('Usuário tem permissão? ' . ($result ? 'Sim' : 'Não'));
+
+            // Retorna true se o usuário tem acesso ao setor, false caso contrário
+            return $result;
+        }
+
+        // Busca todos os setores do usuário
+        $stmt = $this->setorModel->getDb()->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->execute();
+
+        $setores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Log para depuração
+        error_log('Setores encontrados para o usuário: ' . count($setores));
+        error_log('Setores: ' . print_r($setores, true));
+
+        return $setores;
+    }
+
+
+    /**
+     * Adiciona permissão de setor para o usuário atual
+     */
+    public function adicionarPermissaoSetor()
+    {
+        $usuarioId = get_user_id();
+        $setorId = 4; // ID do setor de Nutrição
+
+        try {
+            // Verifica se já existe a permissão
+            $sql = "SELECT * FROM usuarios_setores WHERE usuario_id = :usuario_id AND setor_id = :setor_id";
+            $stmt = $this->usuarioModel->getDb()->prepare($sql);
+            $stmt->bindValue(':usuario_id', $usuarioId, PDO::PARAM_INT);
+            $stmt->bindValue(':setor_id', $setorId, PDO::PARAM_INT);
+            $stmt->execute();
+
+            if ($stmt->rowCount() > 0) {
+                echo "Permissão já existe para o usuário ID $usuarioId no setor ID $setorId.";
+            } else {
+                // Adiciona a permissão
+                $sql = "INSERT INTO usuarios_setores (usuario_id, setor_id, principal, criado_por, criado_em) 
+                    VALUES (:usuario_id, :setor_id, 1, :criado_por, NOW())";
+                $stmt = $this->usuarioModel->getDb()->prepare($sql);
+                $stmt->bindValue(':usuario_id', $usuarioId, PDO::PARAM_INT);
+                $stmt->bindValue(':setor_id', $setorId, PDO::PARAM_INT);
+                $stmt->bindValue(':criado_por', $usuarioId, PDO::PARAM_INT);
+
+                if ($stmt->execute()) {
+                    echo "Permissão adicionada com sucesso para o usuário ID $usuarioId no setor ID $setorId.";
+                } else {
+                    echo "Erro ao adicionar permissão.";
+                }
+            }
+        } catch (Exception $e) {
+            echo "Erro: " . $e->getMessage();
+        }
+
+        exit;
+    }
+
+    /**
+     * Verifica as permissões de setor do usuário atual
+     */
+    public function verificarPermissoesSetor()
+    {
+        $usuarioId = get_user_id();
+
+        try {
+            // Obtém informações do usuário
+            $usuario = $this->usuarioModel->findById($usuarioId);
+
+            echo "<h1>Informações do Usuário</h1>";
+            echo "<p>ID: " . $usuario['id'] . "</p>";
+            echo "<p>Nome: " . $usuario['nome'] . "</p>";
+            echo "<p>Email: " . $usuario['email'] . "</p>";
+            echo "<p>Admin: " . ($usuario['admin'] ? 'Sim' : 'Não') . "</p>";
+
+            // Obtém os setores vinculados ao usuário
+            $sql = "SELECT us.*, s.nome as setor_nome 
+                FROM usuarios_setores us 
+                INNER JOIN setores s ON us.setor_id = s.id 
+                WHERE us.usuario_id = :usuario_id";
+
+            $stmt = $this->usuarioModel->getDb()->prepare($sql);
+            $stmt->bindValue(':usuario_id', $usuarioId, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $permissoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo "<h1>Permissões de Setor</h1>";
+            if (empty($permissoes)) {
+                echo "<p>Nenhuma permissão de setor encontrada.</p>";
+            } else {
+                echo "<table border='1'>";
+                echo "<tr><th>ID</th><th>Setor ID</th><th>Setor Nome</th><th>Principal</th></tr>";
+                foreach ($permissoes as $permissao) {
+                    echo "<tr>";
+                    echo "<td>" . $permissao['id'] . "</td>";
+                    echo "<td>" . $permissao['setor_id'] . "</td>";
+                    echo "<td>" . $permissao['setor_nome'] . "</td>";
+                    echo "<td>" . ($permissao['principal'] ? 'Sim' : 'Não') . "</td>";
+                    echo "</tr>";
+                }
+                echo "</table>";
+            }
+
+            // Obtém todos os setores
+            $sql = "SELECT * FROM setores WHERE empresa_id = :empresa_id AND ativo = 1 ORDER BY nome ASC";
+            $stmt = $this->usuarioModel->getDb()->prepare($sql);
+            $stmt->bindValue(':empresa_id', $usuario['empresa_id'], PDO::PARAM_INT);
+            $stmt->execute();
+
+            $setores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo "<h1>Todos os Setores</h1>";
+            echo "<table border='1'>";
+            echo "<tr><th>ID</th><th>Nome</th><th>Tem Permissão?</th><th>Ação</th></tr>";
+            foreach ($setores as $setor) {
+                $temPermissao = false;
+                foreach ($permissoes as $permissao) {
+                    if ($permissao['setor_id'] == $setor['id']) {
+                        $temPermissao = true;
+                        break;
+                    }
+                }
+                echo "<tr>";
+                echo "<td>" . $setor['id'] . "</td>";
+                echo "<td>" . $setor['nome'] . "</td>";
+                echo "<td>" . ($temPermissao ? 'Sim' : 'Não') . "</td>";
+                echo "<td>";
+                if (!$temPermissao) {
+                    echo "<a href='adicionar-permissao-setor?setor_id=" . $setor['id'] . "'>Adicionar Permissão</a>";
+                } else {
+                    echo "<a href='remover-permissao-setor?setor_id=" . $setor['id'] . "'>Remover Permissão</a>";
+                }
+                echo "</td>";
+                echo "</tr>";
+            }
+            echo "</table>";
+        } catch (Exception $e) {
+            echo "Erro: " . $e->getMessage();
+        }
+
+        exit;
     }
 }

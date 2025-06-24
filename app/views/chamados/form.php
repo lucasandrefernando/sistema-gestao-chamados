@@ -5,7 +5,7 @@
             <?= $acao == 'criar' ? 'Novo Chamado' : 'Editar Chamado #' . $chamado['id'] ?>
         </h1>
         <div class="chamados-form-acoes">
-            <a href="<?= $acao == 'criar' ? base_url('chamados') : base_url('chamados/visualizar/' . $chamado['id']) ?>" class="chamados-form-btn-voltar">
+            <a href="<?= $acao == 'criar' ? base_url('chamados/listar') : base_url('chamados/visualizar/' . $chamado['id']) ?>" class="chamados-form-btn-voltar">
                 <i class="fas fa-arrow-left"></i> Voltar
             </a>
         </div>
@@ -89,7 +89,7 @@
                 </div>
 
                 <div class="chamados-form-acoes-form">
-                    <a href="<?= $acao == 'criar' ? base_url('chamados') : base_url('chamados/visualizar/' . $chamado['id']) ?>" class="chamados-form-btn-cancelar">Cancelar</a>
+                    <a href="<?= $acao == 'criar' ? base_url('chamados/listar') : base_url('chamados/visualizar/' . $chamado['id']) ?>" class="chamados-form-btn-cancelar">Cancelar</a>
                     <button type="submit" class="chamados-form-btn-salvar">
                         <?= $acao == 'criar' ? 'Criar Chamado' : 'Salvar Alterações' ?>
                     </button>
