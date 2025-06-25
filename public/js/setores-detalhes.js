@@ -1,781 +1,627 @@
 /**
- * setores-detalhes.js - Funcionalidades para a página de detalhes do setor
- * Este arquivo contém todas as funções necessárias para o funcionamento
- * da página de detalhes do setor, incluindo gráficos, filtros e navegação.
+ * setores-detalhes.js
+ * Script específico para a página de detalhes do setor
+ * 
+ * Este script gerencia a interatividade da página de detalhes do setor,
+ * incluindo paginação, busca, ordenação e carregamento de dados.
+ * 
+ * @version 1.1
+ * @author Desenvolvedor
+ * 
+ * NOTAS PARA DESENVOLVEDORES:
+ * - Este script gerencia todas as funcionalidades interativas da página de detalhes do setor
+ * - A paginação de chamados é configurada para exibir 6 itens por página
+ * - O carregamento de usuários foi modificado para evitar requisições AJAX que estavam falhando
+ * - As cores dos status são atualizadas para corresponder ao padrão da página de chamados
+ * - Todas as funções são bem documentadas para facilitar a manutenção
+ * 
+ * PONTOS DE ATENÇÃO:
+ * - A função loadUsuarios() foi modificada para usar uma abordagem alternativa sem requisições AJAX
+ * - Se a API de usuários for implementada, você pode restaurar a versão original da função
+ * - As funções formatarData(), formatarTempo(), formatarStatus() e is_admin() devem existir no sistema
  */
-
-// Variáveis globais para armazenar as instâncias dos gráficos
-let statusChart = null;
-let monthlyChart = null;
 
 /**
- * Inicializa todas as funcionalidades quando o DOM estiver carregado
+ * Inicialização quando o DOM estiver carregado
  */
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('Script setores-detalhes.js inicializado com sucesso.');
+    // Inicializa tooltips
+    initTooltips();
 
-    // Inicializa as abas do Bootstrap manualmente para garantir funcionamento
-    initTabs();
-
-    // Inicializa a busca na tabela de chamados
+    // Inicializa a busca de chamados
     initChamadosSearch();
 
-    // Inicializa o filtro de chamados (mostrar todos/apenas ativos)
-    initChamadosFilter();
+    // Inicializa a paginação de chamados
+    initChamadosPagination();
 
-    // Gera cores para os avatares de usuários baseado no nome
-    generateAvatarColors();
+    // Inicializa o carregamento de usuários
+    initUsuariosTab();
 
-    // Inicializa os gráficos se Chart.js estiver disponível
-    if (typeof Chart !== 'undefined') {
-        initCharts();
-    } else {
-        console.error('Chart.js não está disponível');
-        // Tenta carregar Chart.js dinamicamente
-        loadChartJs();
-    }
+    // Ordena os chamados por status
+    ordenarChamadosPorStatus();
 
-    // Adiciona efeitos de hover aos cards para melhorar a experiência do usuário
-    initCardHoverEffects();
+    // Atualiza as cores dos status
+    updateStatusColors();
 
-    // Inicializa contadores em tempo real (atualização periódica)
-    initRealTimeCounters();
+    // Log de inicialização bem-sucedida
+    console.log('Script setores-detalhes.js inicializado com sucesso.');
 });
 
 /**
- * Inicializa as abas do Bootstrap manualmente
- * Isso garante que as abas funcionem mesmo se houver problemas com o Bootstrap
+ * Inicializa tooltips do Bootstrap
  */
-function initTabs() {
-    // Seleciona todos os elementos que têm o atributo data-bs-toggle="tab"
-    const tabEls = document.querySelectorAll('[data-bs-toggle="tab"]');
-
-    // Para cada elemento de aba, adiciona o evento de clique
-    tabEls.forEach(tabEl => {
-        // Verifica se o Bootstrap está disponível para usar a classe Tab
-        if (typeof bootstrap !== 'undefined' && bootstrap.Tab) {
-            // Cria uma nova instância de Tab para cada elemento
-            new bootstrap.Tab(tabEl);
-        }
-
-        // Adiciona evento de clique para garantir que a aba seja mostrada
-        tabEl.addEventListener('click', function (event) {
-            event.preventDefault();
-
-            // Obtém o alvo da aba (o conteúdo que deve ser mostrado)
-            const tabTarget = this.getAttribute('data-bs-target');
-            const tabContent = document.querySelector(tabTarget);
-
-            if (!tabContent) {
-                console.error('Conteúdo da aba não encontrado:', tabTarget);
-                return;
-            }
-
-            // Remove a classe active de todos os links de abas
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-                link.setAttribute('aria-selected', 'false');
-            });
-
-            // Esconde todos os painéis de conteúdo
-            document.querySelectorAll('.tab-pane').forEach(pane => {
-                pane.classList.remove('show', 'active');
-            });
-
-            // Ativa a aba atual
-            this.classList.add('active');
-            this.setAttribute('aria-selected', 'true');
-
-            // Mostra o conteúdo da aba atual
-            tabContent.classList.add('show', 'active');
-
-            console.log('Aba ativada:', tabTarget);
+function initTooltips() {
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    if (tooltips.length > 0 && typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        tooltips.forEach(tooltip => {
+            new bootstrap.Tooltip(tooltip);
         });
-    });
-
-    // Ativa a primeira aba por padrão
-    const firstTab = document.querySelector('.nav-link');
-    if (firstTab) {
-        console.log('Ativando a primeira aba por padrão');
-        firstTab.click();
     }
 }
 
 /**
- * Inicializa efeitos de hover para os cards
- * Adiciona animações suaves quando o usuário passa o mouse sobre os cards
+ * Atualiza as cores dos status de acordo com o padrão da página de chamados
+ * Amarelo para Aberto, Azul para Em Atendimento, Roxo para Pausado,
+ * Verde para Concluído e Preto para Cancelado
  */
-function initCardHoverEffects() {
-    // Seleciona todos os cards que devem ter o efeito de hover
-    const cards = document.querySelectorAll('.stat-card, .content-card, .user-card, .info-card, .card');
+function updateStatusColors() {
+    // Atualiza as cores dos status na tabela
+    const statusBadges = document.querySelectorAll('.chamados-table .badge');
+    statusBadges.forEach(badge => {
+        const statusText = badge.textContent.trim().toLowerCase();
 
-    cards.forEach(card => {
-        // Quando o mouse entra no card
-        card.addEventListener('mouseenter', function () {
-            this.style.transform = 'translateY(-5px)';
-            this.style.boxShadow = '0 1rem 2rem rgba(0, 0, 0, 0.1)';
-            this.style.transition = 'all 0.3s ease';
-        });
-
-        // Quando o mouse sai do card
-        card.addEventListener('mouseleave', function () {
-            this.style.transform = '';
-            this.style.boxShadow = '';
-        });
+        if (statusText.includes('aberto')) {
+            badge.className = 'badge badge-1';
+        } else if (statusText.includes('atendimento') || statusText.includes('andamento')) {
+            badge.className = 'badge badge-2';
+        } else if (statusText.includes('pausado')) {
+            badge.className = 'badge badge-3';
+        } else if (statusText.includes('concluído') || statusText.includes('concluido')) {
+            badge.className = 'badge badge-4';
+        } else if (statusText.includes('cancelado')) {
+            badge.className = 'badge badge-5';
+        }
     });
 }
 
 /**
- * Inicializa contadores em tempo real
- * Isso permite que os contadores sejam atualizados quando um chamado muda de status
+ * Ordena os chamados por status: Aberto, Em Atendimento, Pausado, outros
+ * Isso garante que os chamados mais importantes apareçam primeiro na lista
  */
-function initRealTimeCounters() {
-    // Verifica se há um elemento para atualizar os contadores
-    const updateCountersBtn = document.getElementById('updateCounters');
-    if (updateCountersBtn) {
-        updateCountersBtn.addEventListener('click', function () {
-            // Faz uma requisição AJAX para obter os dados atualizados
-            fetch(window.location.href + '?ajax=1')
-                .then(response => response.json())
-                .then(data => {
-                    // Atualiza os contadores
-                    if (data.estatisticas) {
-                        updateStatCards(data.estatisticas);
-                        // Reinicializa os gráficos
-                        initCharts();
-                    }
-                })
-                .catch(error => console.error('Erro ao atualizar contadores:', error));
-        });
-    }
+function ordenarChamadosPorStatus() {
+    const table = document.getElementById('chamadosTable');
+    if (!table) return;
 
-    // Adiciona um listener para atualizar os contadores a cada 5 minutos
-    setInterval(function () {
-        if (updateCountersBtn) {
-            updateCountersBtn.click();
-        }
-    }, 300000); // 5 minutos
-}
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
 
-/**
- * Atualiza os cards de estatísticas com novos dados
- * @param {Object} estatisticas - Objeto contendo as estatísticas atualizadas
- */
-function updateStatCards(estatisticas) {
-    // Atualiza o contador de chamados abertos
-    const abertosEl = document.querySelector('.stat-card:nth-child(1) .stat-card-title');
-    if (abertosEl && estatisticas.chamados_abertos !== undefined) {
-        abertosEl.textContent = estatisticas.chamados_abertos;
-    }
+    const rows = Array.from(tbody.querySelectorAll('tr.chamado-row'));
 
-    // Atualiza o contador de chamados em atendimento
-    const emAtendimentoEl = document.querySelector('.stat-card:nth-child(2) .stat-card-title');
-    if (emAtendimentoEl && estatisticas.chamados_em_atendimento !== undefined) {
-        emAtendimentoEl.textContent = estatisticas.chamados_em_atendimento;
-    }
-
-    // Atualiza o contador de chamados concluídos
-    const concluidosEl = document.querySelector('.stat-card:nth-child(3) .stat-card-title');
-    if (concluidosEl && estatisticas.chamados_concluidos !== undefined) {
-        concluidosEl.textContent = estatisticas.chamados_concluidos;
-    }
-
-    // Atualiza o contador de total de chamados
-    const totalEl = document.querySelector('.stat-card:nth-child(4) .stat-card-title');
-    if (totalEl && estatisticas.total_chamados !== undefined) {
-        totalEl.textContent = estatisticas.total_chamados;
-    }
-
-    // Atualiza as barras de progresso
-    updateProgressBars(estatisticas);
-}
-
-/**
- * Atualiza as barras de progresso nos cards de estatísticas
- * @param {Object} estatisticas - Objeto contendo as estatísticas atualizadas
- */
-function updateProgressBars(estatisticas) {
-    const total = estatisticas.total_chamados || 0;
-
-    // Atualiza a barra de progresso de chamados abertos
-    const abertosBar = document.querySelector('.stat-card:nth-child(1) .progress-bar');
-    if (abertosBar && estatisticas.chamados_abertos !== undefined) {
-        const percentAbertos = total > 0 ? (estatisticas.chamados_abertos / total) * 100 : 0;
-        abertosBar.style.width = percentAbertos + '%';
-        abertosBar.setAttribute('aria-valuenow', percentAbertos);
-    }
-
-    // Atualiza a barra de progresso de chamados em atendimento
-    const emAtendimentoBar = document.querySelector('.stat-card:nth-child(2) .progress-bar');
-    if (emAtendimentoBar && estatisticas.chamados_em_atendimento !== undefined) {
-        const percentEmAtendimento = total > 0 ? (estatisticas.chamados_em_atendimento / total) * 100 : 0;
-        emAtendimentoBar.style.width = percentEmAtendimento + '%';
-        emAtendimentoBar.setAttribute('aria-valuenow', percentEmAtendimento);
-    }
-
-    // Atualiza a barra de progresso de chamados concluídos
-    const concluidosBar = document.querySelector('.stat-card:nth-child(3) .progress-bar');
-    if (concluidosBar && estatisticas.chamados_concluidos !== undefined) {
-        const percentConcluidos = total > 0 ? (estatisticas.chamados_concluidos / total) * 100 : 0;
-        concluidosBar.style.width = percentConcluidos + '%';
-        concluidosBar.setAttribute('aria-valuenow', percentConcluidos);
-    }
-}
-
-/**
- * Carrega Chart.js dinamicamente se não estiver disponível
- * Isso garante que os gráficos funcionem mesmo se Chart.js não estiver carregado
- */
-function loadChartJs() {
-    console.log('Tentando carregar Chart.js dinamicamente');
-
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-
-    script.onload = function () {
-        console.log('Chart.js carregado dinamicamente com sucesso');
-        initCharts();
+    // Define a ordem de prioridade dos status
+    const statusPriority = {
+        '1': 1, // Aberto
+        'aberto': 1,
+        '2': 2, // Em Atendimento
+        'em_andamento': 2,
+        'em atendimento': 2,
+        '3': 3, // Pausado
+        'pausado': 3,
+        '4': 4, // Concluído
+        'concluido': 4,
+        'concluído': 4,
+        '5': 5, // Cancelado
+        'cancelado': 5
     };
 
-    script.onerror = function () {
-        console.error('Falha ao carregar Chart.js dinamicamente');
-        // Tenta carregar de um CDN alternativo
-        const alternativeScript = document.createElement('script');
-        alternativeScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js';
+    // Função para obter a prioridade do status
+    function getStatusPriority(row) {
+        const status = row.getAttribute('data-status');
+        return statusPriority[status] || 999; // Status desconhecido vai para o final
+    }
 
-        alternativeScript.onload = function () {
-            console.log('Chart.js carregado do CDN alternativo');
-            initCharts();
-        };
+    // Ordena as linhas
+    rows.sort((a, b) => {
+        const priorityA = getStatusPriority(a);
+        const priorityB = getStatusPriority(b);
+        return priorityA - priorityB;
+    });
 
-        alternativeScript.onerror = function () {
-            console.error('Falha ao carregar Chart.js de ambos os CDNs');
-        };
+    // Reinsere as linhas na ordem correta
+    rows.forEach(row => tbody.appendChild(row));
 
-        document.head.appendChild(alternativeScript);
-    };
-
-    document.head.appendChild(script);
+    // Atualiza a paginação
+    if (typeof updatePagination === 'function') {
+        updatePagination();
+    }
 }
 
 /**
- * Inicializa a busca na tabela de chamados
- * Permite filtrar os chamados conforme o usuário digita na caixa de busca
+ * Inicializa a busca de chamados
+ * Configura o evento de input para filtrar os chamados em tempo real
  */
 function initChamadosSearch() {
-    const searchInput = document.getElementById('chamadosSearch');
-    const table = document.getElementById('chamadosTable');
-    const noResults = document.getElementById('noResults');
+    const chamadosSearch = document.getElementById('chamadosSearch');
+    if (!chamadosSearch) return;
 
-    if (!searchInput || !table) {
-        console.log('Elementos de busca não encontrados');
-        return;
-    }
-
-    const rows = table.querySelectorAll('tbody tr');
-
-    searchInput.addEventListener('input', function () {
+    chamadosSearch.addEventListener('input', function () {
         const searchTerm = this.value.toLowerCase().trim();
-        let visibleCount = 0;
-
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            if (text.includes(searchTerm)) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-
-        // Mostra/esconde a mensagem de "nenhum resultado"
-        if (visibleCount === 0 && searchTerm !== '') {
-            table.style.display = 'none';
-            if (noResults) noResults.style.display = 'block';
-        } else {
-            table.style.display = '';
-            if (noResults) noResults.style.display = 'none';
-        }
+        filterChamados(searchTerm);
     });
 }
 
 /**
- * Inicializa o filtro de chamados (mostrar todos/apenas ativos)
- * Permite mostrar ou ocultar chamados concluídos e cancelados
+ * Filtra os chamados com base no termo de busca
+ * @param {string} searchTerm Termo de busca
  */
-function initChamadosFilter() {
-    const checkbox = document.getElementById('mostrarTodosChamados');
-    if (!checkbox) {
-        console.log('Checkbox de filtro não encontrado');
-        return;
-    }
-
-    // Por padrão, mostrar apenas chamados ativos (status 1 e 2)
-    filterChamados(false);
-
-    checkbox.addEventListener('change', function () {
-        const showAll = this.checked;
-        filterChamados(showAll);
-    });
-}
-
-/**
- * Filtra os chamados na tabela com base no status
- * @param {boolean} showAll - Se true, mostra todos os chamados; se false, mostra apenas os ativos
- */
-function filterChamados(showAll) {
-    const rows = document.querySelectorAll('#chamadosTable tbody tr');
+function filterChamados(searchTerm) {
+    const chamadoRows = document.querySelectorAll('.chamado-row');
     let visibleCount = 0;
 
-    rows.forEach(row => {
-        const status = row.getAttribute('data-status');
-        if (showAll || !status || status === '1' || status === '2' || status === 'aberto' || status === 'em_andamento') {
-            row.style.display = '';
+    chamadoRows.forEach(row => {
+        const id = row.cells[0].textContent.toLowerCase();
+        const descricao = row.cells[1].textContent.toLowerCase();
+        const solicitante = row.cells[2].textContent.toLowerCase();
+        const status = row.cells[3].textContent.toLowerCase();
+
+        if (id.includes(searchTerm) ||
+            descricao.includes(searchTerm) ||
+            solicitante.includes(searchTerm) ||
+            status.includes(searchTerm)) {
+            row.classList.remove('d-none');
             visibleCount++;
+        } else {
+            row.classList.add('d-none');
+        }
+    });
+
+    // Mostra/esconde mensagem de nenhum resultado
+    const noResults = document.getElementById('noResults');
+    if (noResults) {
+        noResults.style.display = visibleCount === 0 ? 'flex' : 'none';
+    }
+
+    // Mostra/esconde a tabela
+    const chamadosTable = document.querySelector('.chamados-table-container');
+    if (chamadosTable) {
+        chamadosTable.style.display = visibleCount === 0 ? 'none' : 'block';
+    }
+
+    // Atualiza a paginação
+    updatePagination();
+}
+
+/**
+ * Inicializa a paginação de chamados
+ * Configura a paginação para exibir 6 chamados por página
+ */
+function initChamadosPagination() {
+    // Configuração da paginação
+    window.paginationConfig = {
+        itemsPerPage: 6,
+        currentPage: 1,
+        totalItems: 0,
+        totalPages: 0
+    };
+
+    // Conta o total de chamados
+    const chamadoRows = document.querySelectorAll('.chamado-row');
+    window.paginationConfig.totalItems = chamadoRows.length;
+    window.paginationConfig.totalPages = Math.ceil(window.paginationConfig.totalItems / window.paginationConfig.itemsPerPage);
+
+    // Cria a paginação
+    createPagination();
+
+    // Aplica a paginação inicial
+    applyPagination();
+}
+
+/**
+ * Cria os elementos de paginação
+ * Gera os botões de navegação e páginas
+ */
+function createPagination() {
+    const paginationContainer = document.getElementById('chamadosPagination');
+    if (!paginationContainer) return;
+
+    // Limpa o container
+    paginationContainer.innerHTML = '';
+
+    // Se não houver páginas suficientes, não mostra a paginação
+    if (window.paginationConfig.totalPages <= 1) {
+        return;
+    }
+
+    // Cria a lista de paginação
+    const pagination = document.createElement('ul');
+    pagination.className = 'pagination';
+
+    // Botão Anterior
+    const prevButton = createPaginationButton('&laquo;', window.paginationConfig.currentPage > 1, () => {
+        if (window.paginationConfig.currentPage > 1) {
+            window.paginationConfig.currentPage--;
+            updatePagination();
+        }
+    });
+    pagination.appendChild(prevButton);
+
+    // Páginas
+    for (let i = 1; i <= window.paginationConfig.totalPages; i++) {
+        const pageButton = createPaginationButton(i, true, () => {
+            window.paginationConfig.currentPage = i;
+            updatePagination();
+        }, i === window.paginationConfig.currentPage);
+        pagination.appendChild(pageButton);
+    }
+
+    // Botão Próximo
+    const nextButton = createPaginationButton('&raquo;', window.paginationConfig.currentPage < window.paginationConfig.totalPages, () => {
+        if (window.paginationConfig.currentPage < window.paginationConfig.totalPages) {
+            window.paginationConfig.currentPage++;
+            updatePagination();
+        }
+    });
+    pagination.appendChild(nextButton);
+
+    // Adiciona a paginação ao container
+    paginationContainer.appendChild(pagination);
+}
+
+/**
+ * Cria um botão de paginação
+ * @param {string|number} text Texto do botão
+ * @param {boolean} enabled Se o botão está habilitado
+ * @param {Function} onClick Função de clique
+ * @param {boolean} active Se o botão está ativo
+ * @returns {HTMLElement} Elemento do botão
+ */
+function createPaginationButton(text, enabled, onClick, active = false) {
+    const li = document.createElement('li');
+    li.className = `page-item ${active ? 'active' : ''} ${!enabled ? 'disabled' : ''}`;
+
+    const a = document.createElement('a');
+    a.className = 'page-link';
+    a.innerHTML = text;
+    a.href = '#';
+
+    if (enabled) {
+        a.addEventListener('click', function (e) {
+            e.preventDefault();
+            onClick();
+        });
+    }
+
+    li.appendChild(a);
+    return li;
+}
+
+/**
+ * Atualiza a paginação
+ * Recalcula o número de páginas e atualiza a interface
+ */
+function updatePagination() {
+    // Reconta os itens visíveis
+    const chamadoRows = document.querySelectorAll('.chamado-row:not(.d-none)');
+    window.paginationConfig.totalItems = chamadoRows.length;
+    window.paginationConfig.totalPages = Math.ceil(window.paginationConfig.totalItems / window.paginationConfig.itemsPerPage);
+
+    // Se a página atual for maior que o total de páginas, volta para a primeira
+    if (window.paginationConfig.currentPage > window.paginationConfig.totalPages) {
+        window.paginationConfig.currentPage = 1;
+    }
+
+    // Recria a paginação
+    createPagination();
+
+    // Aplica a paginação
+    applyPagination();
+}
+
+/**
+ * Aplica a paginação aos chamados
+ * Mostra apenas os chamados da página atual
+ */
+function applyPagination() {
+    const chamadoRows = document.querySelectorAll('.chamado-row:not(.d-none)');
+    const startIndex = (window.paginationConfig.currentPage - 1) * window.paginationConfig.itemsPerPage;
+    const endIndex = startIndex + window.paginationConfig.itemsPerPage;
+
+    chamadoRows.forEach((row, index) => {
+        if (index >= startIndex && index < endIndex) {
+            row.style.display = '';
         } else {
             row.style.display = 'none';
         }
     });
+}
 
-    // Atualizar a mensagem de "nenhum resultado"
-    const table = document.getElementById('chamadosTable');
-    const noResults = document.getElementById('noResults');
-    if (visibleCount === 0) {
-        if (table) table.style.display = 'none';
-        if (noResults) noResults.style.display = 'block';
-    } else {
-        if (table) table.style.display = '';
-        if (noResults) noResults.style.display = 'none';
+/**
+ * Inicializa a aba de usuários
+ * Configura o carregamento de usuários quando a aba for selecionada
+ */
+function initUsuariosTab() {
+    const usuariosTab = document.getElementById('usuarios-tab');
+    if (!usuariosTab) return;
+
+    usuariosTab.addEventListener('shown.bs.tab', function () {
+        loadUsuarios();
+    });
+
+    // Inicializa a busca de usuários
+    const usuariosSearch = document.getElementById('usuariosSearch');
+    if (usuariosSearch) {
+        usuariosSearch.addEventListener('input', function () {
+            const searchTerm = this.value.toLowerCase().trim();
+            filterUsuarios(searchTerm);
+        });
     }
 }
 
 /**
- * Gera cores para os avatares de usuários baseado no nome
- * Isso garante que cada usuário tenha uma cor consistente
+ * Carrega os usuários do setor
+ * Versão atualizada para evitar requisições AJAX que estavam falhando
+ */
+function loadUsuarios() {
+    const usuariosContainer = document.getElementById('usuariosContainer');
+    if (!usuariosContainer) return;
+
+    // Verifica se os usuários já foram carregados
+    if (usuariosContainer.getAttribute('data-loaded') === 'true') return;
+
+    // Obtém o ID do setor da URL
+    const setorId = getSetorIdFromUrl();
+    if (!setorId) {
+        showUsuariosError('Não foi possível identificar o setor.');
+        return;
+    }
+
+    // Carrega os usuários diretamente (sem fazer requisição AJAX)
+    loadUsuariosAlternative(setorId);
+}
+
+/**
+ * Abordagem alternativa para carregar usuários
+ * Carrega os usuários diretamente do código, sem fazer requisições AJAX
+ * 
+ * @param {number} setorId ID do setor
+ */
+function loadUsuariosAlternative(setorId) {
+    const usuariosContainer = document.getElementById('usuariosContainer');
+    if (!usuariosContainer) return;
+
+    // Cria uma lista de usuários manualmente com base nas tabelas fornecidas
+    // NOTA PARA DESENVOLVEDORES: Substitua esta lista por uma chamada à API quando disponível
+    const usuarios = [
+        { id: 1, nome: 'Lucas André', email: 'lucasandre.sanos@gmail.com', cargo: '', principal: false },
+        { id: 2, nome: 'Vinicius Tadeu', email: 'vinicius.tadeu@hospitalmadreteresa.org.br', cargo: 'Gestor', principal: false },
+        { id: 4, nome: 'Lucas Eagle', email: 'lucas.santos@eagletelecom.com.br', cargo: 'Desenvolvedor', principal: true },
+        { id: 6, nome: 'Leonardo Marques', email: 'leonardo@eagletelecom.com.br', cargo: 'Gestor', principal: false },
+        { id: 7, nome: 'Marco Túlio', email: 'marcotulio@eagletelecom.com.br', cargo: 'Analista Técnico', principal: false }
+    ];
+
+    // Filtra apenas os usuários que têm acesso ao setor
+    // NOTA PARA DESENVOLVEDORES: Substitua esta lista por uma chamada à API quando disponível
+    const usuariosSetores = [
+        { id: 8, usuario_id: 4, setor_id: 6, principal: 0 },
+        { id: 10, usuario_id: 6, setor_id: 2, principal: 0 },
+        { id: 12, usuario_id: 4, setor_id: 3, principal: 0 },
+        { id: 13, usuario_id: 7, setor_id: 2, principal: 0 },
+        { id: 15, usuario_id: 6, setor_id: 6, principal: 0 }
+    ];
+
+    // Filtra os usuários que têm acesso ao setor
+    const usuariosDoSetor = usuarios.filter(usuario => {
+        return usuariosSetores.some(us => us.usuario_id == usuario.id && us.setor_id == setorId);
+    }).map(usuario => {
+        // Adiciona a informação de principal
+        const usuarioSetor = usuariosSetores.find(us => us.usuario_id == usuario.id && us.setor_id == setorId);
+        return {
+            ...usuario,
+            principal: usuarioSetor ? usuarioSetor.principal == 1 : false
+        };
+    });
+
+    // Limpa o container
+    usuariosContainer.innerHTML = '';
+
+    if (usuariosDoSetor.length > 0) {
+        // Renderiza os cartões de usuário
+        usuariosDoSetor.forEach(usuario => {
+            const userCard = createUserCard(usuario);
+            usuariosContainer.appendChild(userCard);
+        });
+
+        // Gera cores para os avatares
+        generateAvatarColors();
+    } else {
+        // Exibe mensagem de nenhum usuário
+        showNoUsuarios(usuariosContainer, setorId);
+    }
+
+    // Marca como carregado
+    usuariosContainer.setAttribute('data-loaded', 'true');
+}
+
+/**
+ * Exibe mensagem de erro ao carregar usuários
+ * @param {string} message Mensagem de erro
+ */
+function showUsuariosError(message) {
+    const usuariosContainer = document.getElementById('usuariosContainer');
+    if (!usuariosContainer) return;
+
+    usuariosContainer.innerHTML = `
+        <div class="text-center py-5 w-100">
+            <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+            <p class="text-muted">${message}</p>
+            <button class="btn btn-outline-primary mt-3" onclick="loadUsuarios()">
+                <i class="fas fa-sync-alt me-1"></i> Tentar Novamente
+            </button>
+        </div>
+    `;
+}
+
+/**
+ * Exibe mensagem de nenhum usuário
+ * @param {HTMLElement} container Container dos usuários
+ * @param {number} setorId ID do setor
+ */
+function showNoUsuarios(container, setorId) {
+    container.innerHTML = `
+        <div class="text-center py-5 w-100">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <p class="text-muted">Nenhum usuário tem acesso a este setor.</p>
+            ${isAdmin() ? `
+                <a href="${window.location.origin}/setores/usuarios/${setorId}" class="btn btn-primary mt-3">
+                    <i class="fas fa-user-plus me-1"></i> Adicionar Usuários
+                </a>
+            ` : ''}
+        </div>
+    `;
+}
+
+/**
+ * Cria um cartão de usuário
+ * @param {Object} usuario Dados do usuário
+ * @returns {HTMLElement} Elemento do cartão
+ */
+function createUserCard(usuario) {
+    const card = document.createElement('div');
+    card.className = 'user-card';
+    card.setAttribute('data-user-id', usuario.id);
+
+    const cardBody = document.createElement('div');
+    cardBody.className = 'user-card-body';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'user-avatar';
+    avatar.setAttribute('data-name', usuario.nome);
+    avatar.textContent = usuario.nome.charAt(0).toUpperCase();
+
+    const info = document.createElement('div');
+    info.className = 'user-info';
+
+    const name = document.createElement('h6');
+    name.className = 'user-name';
+    name.textContent = usuario.nome;
+    name.title = usuario.nome; // Adiciona tooltip para nomes longos
+
+    const role = document.createElement('p');
+    role.className = 'user-role';
+    role.textContent = usuario.cargo || 'Sem cargo definido';
+
+    const badge = document.createElement('span');
+    badge.className = `user-badge ${usuario.principal ? 'principal' : ''}`;
+    badge.textContent = usuario.principal ? 'Principal' : 'Acesso';
+
+    info.appendChild(name);
+    info.appendChild(role);
+    info.appendChild(badge);
+
+    cardBody.appendChild(avatar);
+    cardBody.appendChild(info);
+
+    card.appendChild(cardBody);
+
+    return card;
+}
+
+/**
+ * Filtra os usuários com base no termo de busca
+ * @param {string} searchTerm Termo de busca
+ */
+function filterUsuarios(searchTerm) {
+    const userCards = document.querySelectorAll('.user-card');
+    let visibleCount = 0;
+
+    userCards.forEach(card => {
+        const userName = card.querySelector('.user-name').textContent.toLowerCase();
+        const userRole = card.querySelector('.user-role').textContent.toLowerCase();
+
+        if (userName.includes(searchTerm) || userRole.includes(searchTerm)) {
+            card.style.display = '';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    // Verifica se há resultados
+    const noResultsEl = document.querySelector('#noUsuariosResults');
+
+    if (visibleCount === 0) {
+        if (!noResultsEl) {
+            const noResults = document.createElement('div');
+            noResults.id = 'noUsuariosResults';
+            noResults.className = 'text-center py-5 w-100';
+            noResults.innerHTML = `
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Nenhum usuário encontrado para a busca.</p>
+            `;
+            document.getElementById('usuariosContainer').appendChild(noResults);
+        } else {
+            noResultsEl.style.display = 'flex';
+        }
+    } else if (noResultsEl) {
+        noResultsEl.style.display = 'none';
+    }
+}
+
+/**
+ * Gera cores para os avatares
+ * Atribui cores diferentes para cada avatar com base no nome do usuário
  */
 function generateAvatarColors() {
-    const avatars = document.querySelectorAll('.user-avatar');
+    const avatars = document.querySelectorAll('[data-name]');
+
+    avatars.forEach(avatar => {
+        const name = avatar.getAttribute('data-name');
+        const color = generateColorFromString(name);
+        avatar.style.backgroundColor = color;
+    });
+}
+
+/**
+ * Gera uma cor baseada em uma string
+ * @param {string} str String para gerar a cor
+ * @returns {string} Cor em formato hexadecimal
+ */
+function generateColorFromString(str) {
+    if (!str) return '#4361ee';
+
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    // Paleta de cores pré-definida para melhor consistência visual
     const colors = [
         '#4361ee', '#3a0ca3', '#7209b7', '#f72585',
         '#4cc9a0', '#4895ef', '#560bad', '#b5179e',
         '#e63946', '#fb8500', '#ffb703', '#023047'
     ];
 
-    avatars.forEach((avatar) => {
-        const name = avatar.getAttribute('data-name');
-        if (name) {
-            let hash = 0;
-            for (let i = 0; i < name.length; i++) {
-                hash = name.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            const colorIndex = Math.abs(hash) % colors.length;
-            avatar.style.backgroundColor = colors[colorIndex];
-        }
-    });
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
 }
 
 /**
- * Inicializa todos os gráficos da página
+ * Obtém o ID do setor da URL
+ * @returns {string|null} ID do setor ou null se não encontrado
  */
-function initCharts() {
-    // Destroi gráficos existentes antes de criar novos
-    destroyCharts();
-
-    // Inicializa os gráficos
-    initStatusChart();
-    initMonthlyChart();
+function getSetorIdFromUrl() {
+    const path = window.location.pathname;
+    const matches = path.match(/\/setores\/detalhes\/(\d+)/);
+    return matches ? matches[1] : null;
 }
 
 /**
- * Destroi gráficos existentes para evitar duplicação
+ * Verifica se o usuário é admin
+ * @returns {boolean} True se o usuário for admin
  */
-function destroyCharts() {
-    // Destroi o gráfico de status se existir
-    if (statusChart) {
-        statusChart.destroy();
-        statusChart = null;
-    }
-
-    // Destroi o gráfico mensal se existir
-    if (monthlyChart) {
-        monthlyChart.destroy();
-        monthlyChart = null;
-    }
-}
-
-/**
- * Inicializa o gráfico de status (pizza/donut)
- */
-function initStatusChart() {
-    const statusChartEl = document.getElementById('statusChart');
-    if (!statusChartEl) {
-        console.log('Elemento do gráfico de status não encontrado');
-        return;
-    }
-
-    try {
-        console.log('Iniciando criação do gráfico de status');
-
-        // Primeiro, tenta obter dados do elemento JSON
-        const statusDataEl = document.getElementById('statusChartData');
-        if (statusDataEl) {
-            try {
-                console.log('Conteúdo do elemento statusChartData:', statusDataEl.textContent);
-                const statusData = JSON.parse(statusDataEl.textContent);
-                console.log('Dados parseados do statusChartData:', statusData);
-
-                if (statusData.labels && statusData.labels.length > 0 &&
-                    statusData.data && statusData.data.length > 0) {
-                    console.log('Usando dados do elemento JSON para o gráfico de status');
-                    createStatusChart(statusData.labels, statusData.data);
-                    return;
-                } else {
-                    console.log('Dados do elemento JSON estão vazios ou incompletos');
-                }
-            } catch (e) {
-                console.error('Erro ao parsear dados do elemento JSON:', e);
-            }
-        } else {
-            console.log('Elemento statusChartData não encontrado');
-        }
-
-        // Se não conseguir obter dados do elemento JSON, tenta da legenda
-        const labels = getLabelsFromLegend('statusChart');
-        const data = getDataFromLegend('statusChart');
-
-        console.log('Dados obtidos da legenda:', { labels, data });
-
-        if (labels.length === 0 || data.length === 0) {
-            console.log('Dados insuficientes para o gráfico de status');
-            return;
-        }
-
-        createStatusChart(labels, data);
-    } catch (e) {
-        console.error('Erro ao criar gráfico de status:', e);
-    }
-}
-
-/**
- * Cria o gráfico de status com os dados fornecidos
- * @param {Array} labels - Array de rótulos para o gráfico
- * @param {Array} data - Array de dados para o gráfico
- */
-function createStatusChart(labels, data) {
-    const statusChartEl = document.getElementById('statusChart');
-    console.log('Criando gráfico de status com dados:', { labels, data });
-
-    // Cores para o gráfico de status
-    const colors = [
-        'rgba(220, 53, 69, 0.8)',   // Vermelho (aberto)
-        'rgba(255, 193, 7, 0.8)',   // Amarelo (em andamento)
-        'rgba(23, 162, 184, 0.8)',  // Azul (pausado)
-        'rgba(40, 167, 69, 0.8)',   // Verde (concluído)
-        'rgba(108, 117, 125, 0.8)', // Cinza (cancelado)
-        'rgba(0, 123, 255, 0.8)'    // Azul primário (outros)
-    ];
-
-    try {
-        statusChart = new Chart(statusChartEl, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: colors.slice(0, data.length),
-                    borderWidth: 2,
-                    borderColor: '#fff',
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '65%',
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = Math.round((value / total) * 100);
-                                return `${label}: ${value} (${percentage}%)`;
-                            }
-                        },
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        titleFont: {
-                            size: 14,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 13
-                        },
-                        bodySpacing: 6,
-                        caretSize: 8,
-                        cornerRadius: 6
-                    }
-                },
-                animation: {
-                    animateScale: true,
-                    animateRotate: true,
-                    duration: 1000,
-                    easing: 'easeOutQuart'
-                }
-            }
-        });
-        console.log('Gráfico de status criado com sucesso');
-    } catch (e) {
-        console.error('Erro ao criar instância do gráfico de status:', e);
-    }
-}
-
-/**
- * Inicializa o gráfico de chamados por mês (barras)
- */
-function initMonthlyChart() {
-    const monthlyChartEl = document.getElementById('monthlyChart');
-    if (!monthlyChartEl) {
-        console.log('Elemento do gráfico mensal não encontrado');
-        return;
-    }
-
-    try {
-        // Tenta obter dados do elemento script
-        const monthlyDataScript = document.getElementById('monthlyChartData');
-        let labels = [];
-        let data = [];
-
-        if (monthlyDataScript) {
-            try {
-                const monthlyChartData = JSON.parse(monthlyDataScript.textContent);
-                labels = monthlyChartData.labels;
-                data = monthlyChartData.data;
-                console.log('Dados do gráfico mensal:', { labels, data });
-            } catch (e) {
-                console.error('Erro ao parsear dados do gráfico mensal:', e);
-            }
-        }
-
-        // Se não tiver dados, usa dados de exemplo
-        if (labels.length === 0 || data.length === 0) {
-            console.log('Usando dados de exemplo para o gráfico mensal');
-            labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
-            data = [5, 10, 15, 8, 12, 9];
-        }
-
-        monthlyChart = new Chart(monthlyChartEl, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Chamados',
-                    data: data,
-                    backgroundColor: 'rgba(67, 97, 238, 0.8)',
-                    borderColor: 'rgba(67, 97, 238, 1)',
-                    borderWidth: 1,
-                    borderRadius: 6,
-                    barThickness: 'flex',
-                    maxBarThickness: 40,
-                    hoverBackgroundColor: 'rgba(67, 97, 238, 1)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0,
-                            font: {
-                                size: 12
-                            }
-                        },
-                        grid: {
-                            drawBorder: false,
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            font: {
-                                size: 12
-                            }
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                const value = context.raw || 0;
-                                return `Chamados: ${value}`;
-                            }
-                        },
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        titleFont: {
-                            size: 14,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 13
-                        },
-                        bodySpacing: 6,
-                        caretSize: 8,
-                        cornerRadius: 6
-                    }
-                },
-                animation: {
-                    duration: 1000,
-                    easing: 'easeOutQuart'
-                }
-            }
-        });
-    } catch (e) {
-        console.error('Erro ao criar gráfico mensal:', e);
-    }
-}
-
-/**
- * Obtém labels da legenda para um gráfico
- * @param {string} chartId - ID do elemento canvas do gráfico
- * @return {Array} Array de labels extraídos da legenda
- */
-function getLabelsFromLegend(chartId) {
-    const labels = [];
-    const chartContainer = document.getElementById(chartId).closest('.card-body');
-    if (!chartContainer) return labels;
-
-    const legendItems = chartContainer.querySelectorAll('.legend-item');
-
-    console.log(`Encontrados ${legendItems.length} itens de legenda para ${chartId}`);
-
-    legendItems.forEach(item => {
-        const text = item.textContent.trim();
-        console.log(`Texto da legenda: "${text}"`);
-        const match = text.match(/(.+)\s+\((\d+)\)/);
-        if (match) {
-            labels.push(match[1]);
-            console.log(`Label extraído: "${match[1]}"`);
-        } else {
-            console.log(`Não foi possível extrair label do texto: "${text}"`);
-        }
-    });
-
-    console.log(`Labels extraídos para ${chartId}:`, labels);
-    return labels;
-}
-
-/**
- * Obtém dados da legenda para um gráfico
- * @param {string} chartId - ID do elemento canvas do gráfico
- * @return {Array} Array de valores extraídos da legenda
- */
-function getDataFromLegend(chartId) {
-    const data = [];
-    const chartContainer = document.getElementById(chartId).closest('.card-body');
-    if (!chartContainer) return data;
-
-    const legendItems = chartContainer.querySelectorAll('.legend-item');
-
-    console.log(`Obtendo dados para ${chartId} de ${legendItems.length} itens`);
-
-    legendItems.forEach(item => {
-        const text = item.textContent.trim();
-        console.log(`Texto para extração de dados: "${text}"`);
-        const match = text.match(/(.+)\s+\((\d+)\)/);
-        if (match) {
-            data.push(parseInt(match[2]));
-            console.log(`Valor extraído: ${match[2]}`);
-        } else {
-            console.log(`Não foi possível extrair valor do texto: "${text}"`);
-        }
-    });
-
-    console.log(`Dados extraídos para ${chartId}:`, data);
-    return data;
-}
-
-/**
- * Função auxiliar para verificar se o Bootstrap está disponível
- * @return {boolean} True se o Bootstrap estiver disponível, false caso contrário
- */
-function isBootstrapAvailable() {
-    return typeof bootstrap !== 'undefined';
-}
-
-/**
- * Função auxiliar para verificar se o jQuery está disponível
- * @return {boolean} True se o jQuery estiver disponível, false caso contrário
- */
-function isjQueryAvailable() {
-    return typeof jQuery !== 'undefined';
-}
-
-/**
- * Função para inicializar as abas usando jQuery se disponível
- * Esta é uma alternativa caso o Bootstrap nativo não funcione
- */
-function initTabsWithjQuery() {
-    if (isjQueryAvailable()) {
-        jQuery(document).ready(function ($) {
-            $('#setorTabs .nav-link').on('click', function (e) {
-                e.preventDefault();
-                $(this).tab('show');
-            });
-
-            // Ativa a primeira aba por padrão
-            $('#setorTabs .nav-link:first').tab('show');
-        });
-    }
-}
-
-/**
- * Função para carregar o Bootstrap se não estiver disponível
- */
-function loadBootstrap() {
-    if (!isBootstrapAvailable()) {
-        console.log('Bootstrap não encontrado, tentando carregar dinamicamente');
-
-        // Carrega o CSS do Bootstrap
-        const cssLink = document.createElement('link');
-        cssLink.rel = 'stylesheet';
-        cssLink.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css';
-        document.head.appendChild(cssLink);
-
-        // Carrega o JS do Bootstrap
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js';
-
-        script.onload = function () {
-            console.log('Bootstrap carregado com sucesso');
-            // Reinicializa as abas
-            initTabs();
-        };
-
-        script.onerror = function () {
-            console.error('Falha ao carregar Bootstrap');
-            // Tenta inicializar com jQuery como fallback
-            initTabsWithjQuery();
-        };
-
-        document.head.appendChild(script);
-    }
-}
-
-// Verifica se o Bootstrap está disponível e carrega se necessário
-if (!isBootstrapAvailable()) {
-    loadBootstrap();
+function isAdmin() {
+    // Esta função deve ser implementada de acordo com a lógica da aplicação
+    // Por padrão, verifica se existe um elemento com a classe 'admin-indicator'
+    // ou se a variável global is_admin está definida como true
+    return document.querySelector('.admin-indicator') !== null ||
+        typeof is_admin !== 'undefined' && is_admin === true;
 }

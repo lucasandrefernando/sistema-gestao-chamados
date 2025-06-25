@@ -5,6 +5,7 @@ require_once ROOT_DIR . '/app/models/Chamado.php';
 
 /** 
  * Controlador para gerenciamento de setores
+ * Responsável por todas as operações relacionadas aos setores da empresa
  */
 class SetoresController extends Controller
 {
@@ -13,6 +14,7 @@ class SetoresController extends Controller
 
     /** 
      * Construtor
+     * Inicializa os modelos necessários e verifica autenticação
      */
     public function __construct()
     {
@@ -86,6 +88,7 @@ class SetoresController extends Controller
             $setor['chamados_por_prioridade'] = $this->chamadoModel->getChamadosPorPrioridadeESetor($empresaId, $setor['id']);
         }
 
+        // Renderiza a view de visualização com os dados dos setores
         $this->render('setores/visualizacao', [
             'setores' => $setores
         ]);
@@ -93,17 +96,21 @@ class SetoresController extends Controller
 
     /**
      * Detalhes de um setor específico para usuários comuns
+     * Exibe informações detalhadas e estatísticas de um setor
+     * 
+     * @param int $id ID do setor a ser visualizado
      */
     public function detalhes($id)
     {
+        // Obtém o ID da empresa do usuário logado
         $empresaId = get_empresa_id();
         error_log("Acessando detalhes do setor ID: $id, Empresa ID: $empresaId");
 
-        // Obtém o setor
+        // Obtém os dados do setor pelo ID
         $setor = $this->setorModel->findById($id);
         error_log("Dados do setor: " . print_r($setor, true));
 
-        // Verifica se o setor existe e pertence à empresa do usuário logado
+        // Verifica se o setor existe, pertence à empresa do usuário e está ativo
         if (!$setor || $setor['empresa_id'] != $empresaId || !$setor['ativo'] || $setor['removido']) {
             set_flash_message('error', 'Setor não encontrado ou inativo.');
             redirect('setores/visualizacao');
@@ -113,7 +120,7 @@ class SetoresController extends Controller
         // Obtém todos os chamados do setor
         try {
             error_log("Buscando chamados para o setor ID: $id");
-            // Busca todos os chamados, depois filtramos na view
+            // Busca todos os chamados do setor
             $chamados = $this->chamadoModel->getChamadosPorSetor($empresaId, $id);
 
             error_log("Total de chamados encontrados: " . count($chamados));
@@ -160,10 +167,6 @@ class SetoresController extends Controller
 
             error_log("Chamados por status (processado): " . print_r($chamadosPorStatus, true));
 
-            // Chamados por prioridade (tipo de serviço)
-            $chamadosPorPrioridade = $this->chamadoModel->getChamadosPorPrioridadeESetor($empresaId, $id);
-            error_log("Chamados por prioridade: " . print_r($chamadosPorPrioridade, true));
-
             // Tempo médio de atendimento
             $tempoMedio = $this->chamadoModel->getTempoMedioAtendimentoPorSetor($empresaId, $id);
             error_log("Tempo médio de atendimento: $tempoMedio");
@@ -172,38 +175,44 @@ class SetoresController extends Controller
             $chamadosPorMes = $this->chamadoModel->getChamadosPorMesESetor($empresaId, $id);
             error_log("Chamados por mês: " . print_r($chamadosPorMes, true));
 
-            // Usuários mais ativos
-            $usuariosMaisAtivos = $this->chamadoModel->getUsuariosMaisAtivosPorSetor($empresaId, $id);
-            error_log("Usuários mais ativos: " . print_r($usuariosMaisAtivos, true));
-
             // Contagem de chamados por status (usando os dados já obtidos)
             $chamadosAbertos = 0;
             $chamadosEmAtendimento = 0;
-            $chamadosConcluidos = 0;
             $chamadosCancelados = 0;
 
+            // Log para depuração
+            error_log("Iniciando contagem de chamados por status");
+
+            // Processa cada status para contar os chamados
             foreach ($chamadosPorStatus as $status) {
+                $totalStatus = isset($status['total']) ? intval($status['total']) : 0;
+
                 if (isset($status['status_id'])) {
                     // Se tiver status_id
-                    if ($status['status_id'] == 1) $chamadosAbertos = $status['total'];
-                    if ($status['status_id'] == 2) $chamadosEmAtendimento = $status['total'];
-                    if ($status['status_id'] == 4) $chamadosConcluidos = $status['total'];
-                    if ($status['status_id'] == 5) $chamadosCancelados = $status['total'];
+                    $statusId = intval($status['status_id']);
+
+                    if ($statusId == 1) $chamadosAbertos = $totalStatus;
+                    if ($statusId == 2) $chamadosEmAtendimento = $totalStatus;
+                    if ($statusId == 5) $chamadosCancelados = $totalStatus;
                 } else if (isset($status['status'])) {
                     // Se tiver status como string
-                    if ($status['status'] == 'aberto') $chamadosAbertos = $status['total'];
-                    if ($status['status'] == 'em_andamento') $chamadosEmAtendimento = $status['total'];
-                    if ($status['status'] == 'concluido') $chamadosConcluidos = $status['total'];
-                    if ($status['status'] == 'cancelado') $chamadosCancelados = $status['total'];
+                    $statusStr = strtolower(trim($status['status']));
+
+                    if ($statusStr == 'aberto') $chamadosAbertos = $totalStatus;
+                    if ($statusStr == 'em_andamento' || $statusStr == 'em andamento') $chamadosEmAtendimento = $totalStatus;
+                    if ($statusStr == 'cancelado') $chamadosCancelados = $totalStatus;
                 } else if (isset($status['nome'])) {
                     // Se tiver nome
-                    $nomeStatus = strtolower($status['nome']);
-                    if ($nomeStatus == 'aberto') $chamadosAbertos = $status['total'];
-                    if ($nomeStatus == 'em atendimento' || $nomeStatus == 'em andamento') $chamadosEmAtendimento = $status['total'];
-                    if ($nomeStatus == 'concluído' || $nomeStatus == 'concluido') $chamadosConcluidos = $status['total'];
-                    if ($nomeStatus == 'cancelado') $chamadosCancelados = $status['total'];
+                    $nomeStatus = strtolower(trim($status['nome']));
+
+                    if (strpos($nomeStatus, 'aberto') !== false) $chamadosAbertos = $totalStatus;
+                    if (strpos($nomeStatus, 'atendimento') !== false || strpos($nomeStatus, 'andamento') !== false) $chamadosEmAtendimento = $totalStatus;
+                    if (strpos($nomeStatus, 'cancelado') !== false) $chamadosCancelados = $totalStatus;
                 }
             }
+
+            // Log dos resultados da contagem
+            error_log("Contagem final: Abertos=$chamadosAbertos, EmAtendimento=$chamadosEmAtendimento, Cancelados=$chamadosCancelados");
 
             // Contagem de chamados do último mês
             $chamadosUltimoMes = 0;
@@ -217,50 +226,266 @@ class SetoresController extends Controller
                 }
             }
 
+            // Calcular o status mais comum
+            $statusMaisComum = $this->calcularStatusMaisComum($chamadosPorStatus);
+
+            // Calcular o mês com mais chamados
+            $mesMaisChamados = $this->calcularMesMaisChamados($chamadosPorMes);
+
+            // Organiza todas as estatísticas em um array
             $estatisticas = [
                 'total_chamados' => count($chamados),
                 'chamados_por_status' => $chamadosPorStatus,
-                'chamados_por_prioridade' => $chamadosPorPrioridade,
                 'tempo_medio_atendimento' => $tempoMedio,
                 'chamados_por_mes' => $chamadosPorMes,
-                'usuarios_mais_ativos' => $usuariosMaisAtivos,
                 'chamados_abertos' => $chamadosAbertos,
                 'chamados_em_atendimento' => $chamadosEmAtendimento,
-                'chamados_concluidos' => $chamadosConcluidos,
                 'chamados_cancelados' => $chamadosCancelados,
                 'chamados_ultimo_mes' => $chamadosUltimoMes
             ];
         } catch (Exception $e) {
+            // Em caso de erro, define valores padrão para as estatísticas
             error_log("ERRO ao obter estatísticas: " . $e->getMessage());
             $estatisticas = [
                 'total_chamados' => 0,
                 'chamados_por_status' => [],
-                'chamados_por_prioridade' => [],
                 'tempo_medio_atendimento' => 0,
                 'chamados_por_mes' => [],
-                'usuarios_mais_ativos' => [],
                 'chamados_abertos' => 0,
                 'chamados_em_atendimento' => 0,
-                'chamados_concluidos' => 0,
                 'chamados_cancelados' => 0,
                 'chamados_ultimo_mes' => 0
             ];
+
+            // Definir valores padrão em caso de erro
+            $statusMaisComum = [
+                'nome' => 'Não disponível',
+                'cor' => '#6c757d', // Cor cinza secundária
+                'porcentagem' => 0
+            ];
+
+            $mesMaisChamados = [
+                'nome' => 'Não disponível',
+                'total' => 0,
+                'porcentagem' => 0,
+                'mes_ano' => 'Não disponível'
+            ];
         }
 
+        // Log dos dados que serão enviados para a view
         error_log("Renderizando view com dados: " . json_encode([
             'setor_id' => $setor['id'],
             'total_chamados' => $estatisticas['total_chamados'],
             'tem_chamados_por_status' => !empty($estatisticas['chamados_por_status']),
-            'tem_chamados_por_prioridade' => !empty($estatisticas['chamados_por_prioridade']),
-            'tem_chamados_por_mes' => !empty($estatisticas['chamados_por_mes']),
-            'tem_usuarios_mais_ativos' => !empty($estatisticas['usuarios_mais_ativos'])
+            'tem_chamados_por_mes' => !empty($estatisticas['chamados_por_mes'])
         ]));
 
+        // Renderiza a view de detalhes com todos os dados coletados
         $this->render('setores/detalhes', [
             'setor' => $setor,
             'chamados' => $chamados,
-            'estatisticas' => $estatisticas
+            'estatisticas' => $estatisticas,
+            'statusMaisComum' => $statusMaisComum,
+            'mesMaisChamados' => $mesMaisChamados
         ]);
+    }
+
+    /**
+     * Calcula o status mais comum com base nos dados de chamados por status
+     * 
+     * @param array $chamadosPorStatus Array com dados de chamados por status
+     * @return array Informações do status mais comum (nome, cor, porcentagem)
+     */
+    private function calcularStatusMaisComum($chamadosPorStatus)
+    {
+        // Valor padrão caso não haja dados suficientes
+        $statusPadrao = [
+            'nome' => 'Não disponível',
+            'cor' => '#6c757d', // Cor cinza secundária
+            'porcentagem' => 0
+        ];
+
+        // Se não houver dados, retorna o padrão
+        if (empty($chamadosPorStatus)) {
+            return $statusPadrao;
+        }
+
+        // Calcular o total de chamados
+        $totalChamados = 0;
+        foreach ($chamadosPorStatus as $status) {
+            $totalChamados += isset($status['total']) ? $status['total'] : 0;
+        }
+
+        // Se não houver chamados, retorna o padrão
+        if ($totalChamados == 0) {
+            return $statusPadrao;
+        }
+
+        // Encontrar o status com mais chamados
+        $statusMaisComum = null;
+        $maiorQuantidade = 0;
+
+        foreach ($chamadosPorStatus as $status) {
+            $quantidade = isset($status['total']) ? $status['total'] : 0;
+
+            if ($quantidade > $maiorQuantidade) {
+                $maiorQuantidade = $quantidade;
+                $statusMaisComum = $status;
+            }
+        }
+
+        // Se não encontrou um status mais comum, retorna o padrão
+        if (!$statusMaisComum) {
+            return $statusPadrao;
+        }
+
+        // Calcular a porcentagem
+        $porcentagem = round(($maiorQuantidade / $totalChamados) * 100);
+
+        // Definir a cor com base no status
+        $cor = '#6c757d'; // Cor padrão (cinza)
+
+        if (isset($statusMaisComum['status_id'])) {
+            switch ($statusMaisComum['status_id']) {
+                case 1: // Aberto
+                    $cor = '#dc3545'; // Vermelho
+                    break;
+                case 2: // Em Atendimento
+                    $cor = '#ffc107'; // Amarelo
+                    break;
+                case 3: // Aguardando
+                    $cor = '#17a2b8'; // Azul claro
+                    break;
+                case 4: // Concluído
+                    $cor = '#28a745'; // Verde
+                    break;
+                case 5: // Cancelado
+                    $cor = '#6c757d'; // Cinza
+                    break;
+            }
+        } else if (isset($statusMaisComum['nome'])) {
+            $nome = strtolower($statusMaisComum['nome']);
+            if (strpos($nome, 'aberto') !== false) {
+                $cor = '#dc3545'; // Vermelho
+            } else if (strpos($nome, 'atendimento') !== false || strpos($nome, 'andamento') !== false) {
+                $cor = '#ffc107'; // Amarelo
+            } else if (strpos($nome, 'aguardando') !== false) {
+                $cor = '#17a2b8'; // Azul claro
+            } else if (strpos($nome, 'concluído') !== false || strpos($nome, 'concluido') !== false) {
+                $cor = '#28a745'; // Verde
+            } else if (strpos($nome, 'cancelado') !== false) {
+                $cor = '#6c757d'; // Cinza
+            }
+        }
+
+        // Retornar os dados formatados
+        return [
+            'nome' => isset($statusMaisComum['nome']) ? $statusMaisComum['nome'] : 'Não disponível',
+            'cor' => $cor,
+            'porcentagem' => $porcentagem
+        ];
+    }
+
+    /**
+     * Calcula o mês com mais chamados com base nos dados de chamados por mês
+     * 
+     * @param array $chamadosPorMes Array com dados de chamados por mês
+     * @return array Informações do mês com mais chamados (nome, total, porcentagem, mes_ano)
+     */
+    private function calcularMesMaisChamados($chamadosPorMes)
+    {
+        // Valor padrão caso não haja dados suficientes
+        $mesPadrao = [
+            'nome' => 'Não disponível',
+            'total' => 0,
+            'porcentagem' => 0,
+            'mes_ano' => 'Não disponível'
+        ];
+
+        // Se não houver dados, retorna o padrão
+        if (empty($chamadosPorMes)) {
+            return $mesPadrao;
+        }
+
+        // Calcular o total de chamados em todos os meses
+        $totalChamados = 0;
+        foreach ($chamadosPorMes as $mes) {
+            $totalChamados += isset($mes['total']) ? $mes['total'] : 0;
+        }
+
+        // Se não houver chamados, retorna o padrão
+        if ($totalChamados == 0) {
+            return $mesPadrao;
+        }
+
+        // Encontrar o mês com mais chamados
+        $mesMaisChamados = null;
+        $maiorQuantidade = 0;
+
+        foreach ($chamadosPorMes as $mes) {
+            $quantidade = isset($mes['total']) ? $mes['total'] : 0;
+
+            if ($quantidade > $maiorQuantidade) {
+                $maiorQuantidade = $quantidade;
+                $mesMaisChamados = $mes;
+            }
+        }
+
+        // Se não encontrou um mês com mais chamados, retorna o padrão
+        if (!$mesMaisChamados) {
+            return $mesPadrao;
+        }
+
+        // Calcular a porcentagem
+        $porcentagem = round(($maiorQuantidade / $totalChamados) * 100);
+
+        // Formatar o nome do mês
+        $nomeMes = 'Não disponível';
+        $mesAno = isset($mesMaisChamados['mes_ano']) ? $mesMaisChamados['mes_ano'] : 'Não disponível';
+
+        if (isset($mesMaisChamados['mes_ano'])) {
+            try {
+                // Tenta formatar o mês_ano (assumindo formato YYYY-MM)
+                $data = DateTime::createFromFormat('Y-m', $mesMaisChamados['mes_ano']);
+                if ($data) {
+                    $nomeMes = $data->format('F Y'); // Nome do mês e ano em inglês
+
+                    // Traduzir para português se necessário
+                    $mesesPt = [
+                        'January' => 'Janeiro',
+                        'February' => 'Fevereiro',
+                        'March' => 'Março',
+                        'April' => 'Abril',
+                        'May' => 'Maio',
+                        'June' => 'Junho',
+                        'July' => 'Julho',
+                        'August' => 'Agosto',
+                        'September' => 'Setembro',
+                        'October' => 'Outubro',
+                        'November' => 'Novembro',
+                        'December' => 'Dezembro'
+                    ];
+
+                    foreach ($mesesPt as $en => $pt) {
+                        $nomeMes = str_replace($en, $pt, $nomeMes);
+                    }
+                }
+            } catch (Exception $e) {
+                error_log("Erro ao formatar data: " . $e->getMessage());
+                $nomeMes = $mesAno;
+            }
+        } else if (isset($mesMaisChamados['mes'])) {
+            $nomeMes = $mesMaisChamados['mes'];
+            $mesAno = $nomeMes; // Se não tiver mes_ano, usa o nome do mês
+        }
+
+        // Retornar os dados formatados com todas as chaves necessárias
+        return [
+            'nome' => $nomeMes,
+            'total' => $maiorQuantidade,
+            'porcentagem' => $porcentagem,
+            'mes_ano' => $mesAno
+        ];
     }
 
     /**
@@ -385,6 +610,8 @@ class SetoresController extends Controller
     /**
      * Formulário para editar setor
      * Apenas para administradores
+     * 
+     * @param int $id ID do setor a ser editado
      */
     public function editar($id)
     {
@@ -417,6 +644,8 @@ class SetoresController extends Controller
     /**
      * Processa a atualização de setor
      * Apenas para administradores
+     * 
+     * @param int $id ID do setor a ser atualizado
      */
     public function update($id)
     {
@@ -480,6 +709,8 @@ class SetoresController extends Controller
     /**
      * Remove um setor
      * Apenas para administradores
+     * 
+     * @param int $id ID do setor a ser removido
      */
     public function remover($id)
     {
@@ -544,6 +775,8 @@ class SetoresController extends Controller
     /**
      * Restaura um setor removido
      * Apenas para administradores
+     * 
+     * @param int $id ID do setor a ser restaurado
      */
     public function restaurar($id)
     {
@@ -593,6 +826,8 @@ class SetoresController extends Controller
     /**
      * Ativa/desativa um setor
      * Apenas para administradores
+     * 
+     * @param int $id ID do setor a ser ativado/desativado
      */
     public function toggle($id)
     {
@@ -631,6 +866,8 @@ class SetoresController extends Controller
     /**
      * Gerencia usuários do setor
      * Apenas para administradores
+     * 
+     * @param int $id ID do setor para gerenciar usuários
      */
     public function usuarios($id)
     {
@@ -821,5 +1058,231 @@ class SetoresController extends Controller
         }
 
         redirect('setores/usuarios/' . $data['setor_id']);
+    }
+
+
+    /**
+     * Obtém os usuários de um setor via AJAX
+     * 
+     * @param int $id ID do setor
+     */
+    public function getUsuariosSetor($id)
+    {
+        // Verifica autenticação
+        if (!is_authenticated()) {
+            $this->outputJson(['error' => 'Não autorizado'], 401);
+            return;
+        }
+
+        $empresaId = get_empresa_id();
+
+        // Obtém o setor
+        $setor = $this->setorModel->findById($id);
+
+        // Verifica se o setor existe e pertence à empresa do usuário
+        if (!$setor || $setor['empresa_id'] != $empresaId) {
+            $this->outputJson(['error' => 'Setor não encontrado'], 404);
+            return;
+        }
+
+        try {
+            // Obtém os usuários do setor
+            $sql = "SELECT u.id, u.nome, u.email, u.cargo, us.principal 
+                FROM usuarios u 
+                JOIN usuarios_setores us ON u.id = us.usuario_id 
+                WHERE us.setor_id = :setor_id 
+                AND u.empresa_id = :empresa_id 
+                AND u.ativo = 1 
+                AND (u.removido = 0 OR u.removido IS NULL)
+                ORDER BY u.nome ASC";
+
+            $usuarios = $this->setorModel->executeQuery($sql, [
+                'setor_id' => $id,
+                'empresa_id' => $empresaId
+            ]);
+
+            $this->outputJson(['usuarios' => $usuarios]);
+        } catch (Exception $e) {
+            error_log("Erro ao obter usuários do setor: " . $e->getMessage());
+            $this->outputJson(['error' => 'Erro ao obter usuários', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Envia uma resposta JSON
+     * 
+     * @param array $data Dados a serem enviados
+     * @param int $statusCode Código de status HTTP
+     */
+    private function outputJson($data, $statusCode = 200)
+    {
+        header('Content-Type: application/json');
+        http_response_code($statusCode);
+        echo json_encode($data);
+        exit;
+    }
+
+    /**
+     * Ativa múltiplos setores em lote
+     */
+    public function batchActivate()
+    {
+        // Verifica se o usuário é administrador
+        if (!is_admin()) {
+            set_flash_message('error', 'Acesso negado. Você não tem permissão para acessar esta área.');
+            redirect('setores/visualizacao');
+            return;
+        }
+
+        $ids = $this->getPostData('ids');
+
+        if (empty($ids)) {
+            set_flash_message('error', 'Nenhum setor selecionado.');
+            redirect('setores/admin');
+            return;
+        }
+
+        $empresaId = get_empresa_id();
+        $success = 0;
+        $errors = 0;
+
+        foreach ($ids as $id) {
+            // Verifica se o setor existe e pertence à empresa do usuário
+            $setor = $this->setorModel->findById($id);
+            if ($setor && $setor['empresa_id'] == $empresaId) {
+                if ($this->setorModel->update($id, ['ativo' => 1])) {
+                    $success++;
+                } else {
+                    $errors++;
+                }
+            } else {
+                $errors++;
+            }
+        }
+
+        if ($success > 0) {
+            set_flash_message('success', "$success setores foram ativados com sucesso.");
+        }
+
+        if ($errors > 0) {
+            set_flash_message('error', "$errors setores não puderam ser ativados.");
+        }
+
+        redirect('setores/admin');
+    }
+
+    /**
+     * Desativa múltiplos setores em lote
+     */
+    public function batchDeactivate()
+    {
+        // Verifica se o usuário é administrador
+        if (!is_admin()) {
+            set_flash_message('error', 'Acesso negado. Você não tem permissão para acessar esta área.');
+            redirect('setores/visualizacao');
+            return;
+        }
+
+        $ids = $this->getPostData('ids');
+
+        if (empty($ids)) {
+            set_flash_message('error', 'Nenhum setor selecionado.');
+            redirect('setores/admin');
+            return;
+        }
+
+        $empresaId = get_empresa_id();
+        $success = 0;
+        $errors = 0;
+
+        foreach ($ids as $id) {
+            // Verifica se o setor existe e pertence à empresa do usuário
+            $setor = $this->setorModel->findById($id);
+            if ($setor && $setor['empresa_id'] == $empresaId) {
+                if ($this->setorModel->update($id, ['ativo' => 0])) {
+                    $success++;
+                } else {
+                    $errors++;
+                }
+            } else {
+                $errors++;
+            }
+        }
+
+        if ($success > 0) {
+            set_flash_message('success', "$success setores foram desativados com sucesso.");
+        }
+
+        if ($errors > 0) {
+            set_flash_message('error', "$errors setores não puderam ser desativados.");
+        }
+
+        redirect('setores/admin');
+    }
+
+    /**
+     * Remove múltiplos setores em lote
+     */
+    public function batchRemove()
+    {
+        // Verifica se o usuário é administrador
+        if (!is_admin()) {
+            set_flash_message('error', 'Acesso negado. Você não tem permissão para acessar esta área.');
+            redirect('setores/visualizacao');
+            return;
+        }
+
+        $ids = $this->getPostData('ids');
+
+        if (empty($ids)) {
+            set_flash_message('error', 'Nenhum setor selecionado.');
+            redirect('setores/admin');
+            return;
+        }
+
+        $empresaId = get_empresa_id();
+        $success = 0;
+        $errors = 0;
+
+        foreach ($ids as $id) {
+            // Verifica se o setor existe e pertence à empresa do usuário
+            $setor = $this->setorModel->findById($id);
+            if ($setor && $setor['empresa_id'] == $empresaId) {
+                // Verifica se há chamados ou usuários associados ao setor
+                $totalChamados = $this->setorModel->contarChamados($id);
+                $totalUsuarios = $this->setorModel->contarUsuarios($id);
+
+                if ($totalChamados > 0 || $totalUsuarios > 0) {
+                    $errors++;
+                    continue;
+                }
+
+                // Marca o setor como removido
+                $data = [
+                    'removido' => 1,
+                    'ativo' => 0,
+                    'removido_por' => get_user_id(),
+                    'data_remocao' => date('Y-m-d H:i:s')
+                ];
+
+                if ($this->setorModel->update($id, $data)) {
+                    $success++;
+                } else {
+                    $errors++;
+                }
+            } else {
+                $errors++;
+            }
+        }
+
+        if ($success > 0) {
+            set_flash_message('success', "$success setores foram removidos com sucesso.");
+        }
+
+        if ($errors > 0) {
+            set_flash_message('error', "$errors setores não puderam ser removidos.");
+        }
+
+        redirect('setores/admin');
     }
 }

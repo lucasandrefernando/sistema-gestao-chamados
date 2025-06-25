@@ -1,6 +1,6 @@
 <div class="chamados-listar">
     <!-- Cabeçalho da Página -->
-    <div class="chamados-listar-header">
+    <div class="chamados-listar-header"> 
         <div class="chamados-listar-header-content">
             <div class="chamados-listar-titulo-secao">
                 <h1 class="chamados-listar-titulo">

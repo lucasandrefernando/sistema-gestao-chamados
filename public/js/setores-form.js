@@ -1,171 +1,301 @@
 /**
- * setores-form.js - Funcionalidades para o formulário de setores
+ * setores-form-v2.js
+ * Script para o formulário de criação/edição de setores
+ * 
+ * @version 2.0
+ * @author Desenvolvedor
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Verifica se estamos na página do formulário
-    const form = document.querySelector('.setor-form');
+    // Verifica se estamos na página do formulário de setores
+    const setorForm = document.querySelector('.setor-form-v2');
+    if (!setorForm) return;
 
-    if (!form) {
-        console.log('Não estamos na página de formulário de setores. Script setores-form.js não será executado.');
-        return; // Sai da função se não estiver na página correta
-    }
+    // Inicializa os componentes do formulário
+    initFormValidation();
+    initStatusToggle();
+    initAlertDismiss();
+    initCancelButton();
+    initMasks();
 
-    console.log('Script setores-form.js inicializado com sucesso.');
+    console.log('Script setores-form-v2.js inicializado com sucesso.');
+});
 
-    // Inicializa os tooltips (se estiver usando Bootstrap)
-    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-        const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        if (tooltips && tooltips.length > 0) {
-            tooltips.forEach(tooltip => {
-                if (tooltip) {
-                    new bootstrap.Tooltip(tooltip);
-                }
-            });
-        }
-    }
+/**
+ * Inicializa a validação do formulário
+ */
+function initFormValidation() {
+    const form = document.getElementById('setorForm');
+    if (!form) return;
 
-    // Validação do formulário
     form.addEventListener('submit', function (event) {
         let isValid = true;
 
-        // Validação do campo nome
+        // Validação do nome (obrigatório)
         const nomeInput = document.getElementById('nome');
-        if (nomeInput && !nomeInput.value.trim()) {
-            isValid = false;
+        if (nomeInput && nomeInput.value.trim() === '') {
             showError(nomeInput, 'O nome do setor é obrigatório');
+            isValid = false;
         } else if (nomeInput) {
-            clearError(nomeInput);
+            showSuccess(nomeInput);
+        }
+
+        // Validação do email (formato válido, se preenchido)
+        const emailInput = document.getElementById('email');
+        if (emailInput && emailInput.value.trim() !== '') {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailInput.value.trim())) {
+                showError(emailInput, 'Formato de email inválido');
+                isValid = false;
+            } else {
+                showSuccess(emailInput);
+            }
+        }
+
+        // Validação do telefone (formato válido, se preenchido)
+        const telefoneInput = document.getElementById('telefone');
+        if (telefoneInput && telefoneInput.value.trim() !== '') {
+            const telefoneRegex = /^$\d{2}$ \d{4,5}-\d{4}$/;
+            if (!telefoneRegex.test(telefoneInput.value.trim())) {
+                showError(telefoneInput, 'Formato de telefone inválido. Use (00) 0000-0000');
+                isValid = false;
+            } else {
+                showSuccess(telefoneInput);
+            }
+        }
+
+        // Validação do código (sem caracteres especiais)
+        const codigoInput = document.getElementById('codigo');
+        if (codigoInput && codigoInput.value.trim() !== '') {
+            const codigoRegex = /^[A-Za-z0-9\-]+$/;
+            if (!codigoRegex.test(codigoInput.value.trim())) {
+                showError(codigoInput, 'O código deve conter apenas letras, números e hífen');
+                isValid = false;
+            } else {
+                showSuccess(codigoInput);
+            }
         }
 
         // Se o formulário não for válido, impede o envio
         if (!isValid) {
             event.preventDefault();
+
+            // Rola até o primeiro campo com erro
+            const firstErrorField = document.querySelector('.form-control.is-invalid');
+            if (firstErrorField) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstErrorField.focus();
+            }
         }
     });
 
-    // Limpa erros quando o usuário digita
-    const inputs = form.querySelectorAll('input, textarea');
-    if (inputs && inputs.length > 0) {
-        inputs.forEach(input => {
-            if (input) {
-                input.addEventListener('input', function () {
-                    clearError(this);
-                });
+    // Validação em tempo real para melhor experiência do usuário
+    const formInputs = form.querySelectorAll('.form-control');
+    formInputs.forEach(input => {
+        input.addEventListener('blur', function () {
+            validateField(this);
+        });
+
+        input.addEventListener('input', function () {
+            // Remove as classes de erro quando o usuário começa a digitar
+            this.classList.remove('is-invalid');
+            this.classList.remove('is-valid');
+
+            const feedbackElement = this.closest('.form-group').querySelector('.form-feedback');
+            if (feedbackElement) {
+                feedbackElement.innerHTML = '';
             }
         });
-    }
+    });
+}
 
-    // Função para mostrar mensagem de erro
-    function showError(input, message) {
-        if (!input) return;
+/**
+ * Valida um campo específico
+ * @param {HTMLElement} field Campo a ser validado
+ */
+function validateField(field) {
+    if (!field) return;
 
-        // Remove qualquer mensagem de erro existente
-        clearError(input);
+    const fieldId = field.id;
+    const fieldValue = field.value.trim();
 
-        // Adiciona a classe de erro ao input
-        input.classList.add('input-error');
-
-        // Cria e adiciona a mensagem de erro
-        const errorElement = document.createElement('div');
-        errorElement.className = 'error-message';
-        errorElement.textContent = message;
-
-        // Insere após o input ou seu container
-        const parent = input.closest('.input-with-icon') || input.parentNode;
-        if (parent) {
-            parent.insertAdjacentElement('afterend', errorElement);
-        }
-    }
-
-    // Função para limpar mensagem de erro
-    function clearError(input) {
-        if (!input) return;
-
-        // Remove a classe de erro
-        input.classList.remove('input-error');
-
-        // Remove a mensagem de erro se existir
-        const parent = input.closest('.input-with-icon') || input.parentNode;
-        if (parent && parent.nextElementSibling) {
-            const errorElement = parent.nextElementSibling;
-            if (errorElement && errorElement.classList.contains('error-message')) {
-                errorElement.remove();
-            }
-        }
-    }
-
-    // Contador de caracteres para o campo de descrição
-    const descricaoTextarea = document.getElementById('descricao');
-    if (descricaoTextarea) {
-        const maxLength = 500; // Defina o limite máximo de caracteres
-
-        // Cria o elemento contador
-        const counterElement = document.createElement('div');
-        counterElement.className = 'character-counter';
-        counterElement.textContent = `0/${maxLength} caracteres`;
-
-        // Adiciona após a dica do formulário
-        const formGroup = descricaoTextarea.closest('.form-group');
-        if (formGroup) {
-            const formHint = formGroup.querySelector('.form-hint');
-            if (formHint) {
-                formHint.insertAdjacentElement('afterend', counterElement);
+    // Validação específica para cada campo
+    switch (fieldId) {
+        case 'nome':
+            if (fieldValue === '') {
+                showError(field, 'O nome do setor é obrigatório');
             } else {
-                formGroup.appendChild(counterElement);
+                showSuccess(field);
+            }
+            break;
+
+        case 'email':
+            if (fieldValue !== '') {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(fieldValue)) {
+                    showError(field, 'Formato de email inválido');
+                } else {
+                    showSuccess(field);
+                }
+            } else {
+                // Campo não obrigatório, remove qualquer feedback
+                field.classList.remove('is-invalid');
+                field.classList.remove('is-valid');
+
+                const feedbackElement = field.closest('.form-group').querySelector('.form-feedback');
+                if (feedbackElement) {
+                    feedbackElement.innerHTML = '';
+                }
+            }
+            break;
+
+        case 'telefone':
+            if (fieldValue !== '') {
+                const telefoneRegex = /^\(\d{2}\) \d{4,5}-\d{4}$/;
+                if (!telefoneRegex.test(fieldValue)) {
+                    showError(field, 'Formato de telefone inválido. Use (00) 0000-0000');
+                } else {
+                    showSuccess(field);
+                }
+            } else {
+                // Campo não obrigatório, remove qualquer feedback
+                field.classList.remove('is-invalid');
+                field.classList.remove('is-valid');
+
+                const feedbackElement = field.closest('.form-group').querySelector('.form-feedback');
+                if (feedbackElement) {
+                    feedbackElement.innerHTML = '';
+                }
+            }
+            break;
+
+        case 'codigo':
+            if (fieldValue !== '') {
+                const codigoRegex = /^[A-Za-z0-9\-]+$/;
+                if (!codigoRegex.test(fieldValue)) {
+                    showError(field, 'O código deve conter apenas letras, números e hífen');
+                } else {
+                    showSuccess(field);
+                }
+            } else {
+                // Campo não obrigatório, remove qualquer feedback
+                field.classList.remove('is-invalid');
+                field.classList.remove('is-valid');
+
+                const feedbackElement = field.closest('.form-group').querySelector('.form-feedback');
+                if (feedbackElement) {
+                    feedbackElement.innerHTML = '';
+                }
+            }
+            break;
+    }
+}
+
+/**
+ * Mostra mensagem de erro para um campo
+ * @param {HTMLElement} field Campo com erro
+ * @param {string} message Mensagem de erro
+ */
+function showError(field, message) {
+    field.classList.add('is-invalid');
+    field.classList.remove('is-valid');
+
+    const feedbackElement = field.closest('.form-group').querySelector('.form-feedback');
+    if (feedbackElement) {
+        feedbackElement.innerHTML = `<div class="invalid-feedback">${message}</div>`;
+    }
+}
+
+/**
+ * Mostra mensagem de sucesso para um campo
+ * @param {HTMLElement} field Campo válido
+ */
+function showSuccess(field) {
+    field.classList.add('is-valid');
+    field.classList.remove('is-invalid');
+
+    const feedbackElement = field.closest('.form-group').querySelector('.form-feedback');
+    if (feedbackElement) {
+        feedbackElement.innerHTML = `<div class="valid-feedback">Campo válido</div>`;
+    }
+}
+
+/**
+ * Inicializa o toggle de status
+ */
+function initStatusToggle() {
+    const statusToggle = document.getElementById('ativo');
+    const statusText = document.getElementById('statusText');
+
+    if (!statusToggle || !statusText) return;
+
+    // Atualiza o texto com base no estado inicial
+    updateStatusText();
+
+    // Adiciona evento para atualizar o texto quando o toggle mudar
+    statusToggle.addEventListener('change', updateStatusText);
+
+    function updateStatusText() {
+        statusText.textContent = statusToggle.checked ? 'Ativo' : 'Inativo';
+        statusText.style.color = statusToggle.checked ? 'var(--success-color)' : 'var(--secondary-color)';
+    }
+}
+
+/**
+ * Inicializa a funcionalidade de fechar alertas
+ */
+function initAlertDismiss() {
+    const alertCloseButtons = document.querySelectorAll('.alert-close');
+
+    alertCloseButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            const alert = this.closest('.alert-error, .alert-success');
+            if (alert) {
+                alert.style.opacity = '0';
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 300);
+            }
+        });
+    });
+}
+
+/**
+ * Inicializa o botão de cancelar
+ */
+function initCancelButton() {
+    const cancelButton = document.getElementById('cancelarBtn');
+
+    if (!cancelButton) return;
+
+    cancelButton.addEventListener('click', function () {
+        // Pergunta se o usuário realmente deseja cancelar
+        if (confirm('Tem certeza que deseja cancelar? Todas as alterações serão perdidas.')) {
+            window.location.href = document.querySelector('a[href*="setores"]').getAttribute('href');
+        }
+    });
+}
+
+/**
+ * Inicializa máscaras para campos específicos
+ */
+function initMasks() {
+    const telefoneInput = document.getElementById('telefone');
+
+    if (telefoneInput) {
+        // Máscara para telefone
+        telefoneInput.addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+
+            if (value.length <= 10) {
+                // Formato (00) 0000-0000
+                value = value.replace(/^(\d{2})(\d{4})(\d{4}).*/, '($1) $2-$3');
+            } else {
+                // Formato (00) 00000-0000
+                value = value.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
             }
 
-            // Atualiza o contador quando o usuário digita
-            descricaoTextarea.addEventListener('input', function () {
-                const currentLength = this.value.length;
-                counterElement.textContent = `${currentLength}/${maxLength} caracteres`;
-
-                // Adiciona classe de aviso quando se aproxima do limite
-                if (currentLength > maxLength * 0.8 && currentLength <= maxLength) {
-                    counterElement.className = 'character-counter warning';
-                }
-                // Adiciona classe de erro quando ultrapassa o limite
-                else if (currentLength > maxLength) {
-                    counterElement.className = 'character-counter error';
-                }
-                // Remove classes quando está dentro do limite
-                else {
-                    counterElement.className = 'character-counter';
-                }
-            });
-
-            // Dispara o evento input para atualizar o contador inicialmente
-            const event = new Event('input');
-            descricaoTextarea.dispatchEvent(event);
-        }
+            e.target.value = value;
+        });
     }
-
-    // Melhoria na experiência do toggle switch
-    const toggleSwitch = document.getElementById('ativo');
-    if (toggleSwitch) {
-        const toggleLabel = toggleSwitch.nextElementSibling;
-        if (toggleLabel && toggleLabel.classList.contains('toggle-label')) {
-            toggleLabel.addEventListener('keydown', function (e) {
-                // Permite ativar/desativar o toggle com a tecla espaço ou enter
-                if (e.key === ' ' || e.key === 'Enter') {
-                    e.preventDefault();
-                    toggleSwitch.checked = !toggleSwitch.checked;
-
-                    // Dispara o evento change para qualquer listener
-                    const event = new Event('change');
-                    toggleSwitch.dispatchEvent(event);
-                }
-            });
-
-            // Torna o label focável
-            toggleLabel.setAttribute('tabindex', '0');
-            toggleLabel.setAttribute('role', 'switch');
-            toggleLabel.setAttribute('aria-checked', toggleSwitch.checked);
-
-            // Atualiza o atributo aria-checked quando o estado muda
-            toggleSwitch.addEventListener('change', function () {
-                toggleLabel.setAttribute('aria-checked', this.checked);
-            });
-        }
-    }
-});
+}
