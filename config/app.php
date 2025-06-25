@@ -29,7 +29,7 @@ define('EMAIL_SMTP_DEBUG', false); // true para debug, false para produção
 // Configurações de timezone
 date_default_timezone_set('America/Sao_Paulo');
 
-/* Configurações de sessão */
+//Configurações de sessão
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
 ini_set('session.cookie_secure', APP_PRODUCTION ? 1 : 0);
