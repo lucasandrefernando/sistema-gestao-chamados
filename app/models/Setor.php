@@ -383,4 +383,6 @@ class Setor extends Model
 
         return $result ? round($result['tempo_medio']) : 0;
     }
+    
+    
 }

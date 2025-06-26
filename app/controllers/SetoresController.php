@@ -706,6 +706,8 @@ class SetoresController extends Controller
         }
     }
 
+
+
     /**
      * Remove um setor
      * Apenas para administradores
@@ -1122,19 +1124,17 @@ class SetoresController extends Controller
         exit;
     }
 
-    /**
-     * Ativa múltiplos setores em lote
-     */
-    public function batchActivate()
+    // Em SetoresController.php
+    public function batch($action = null)
     {
-        // Verifica se o usuário é administrador
         if (!is_admin()) {
             set_flash_message('error', 'Acesso negado. Você não tem permissão para acessar esta área.');
             redirect('setores/visualizacao');
             return;
         }
 
-        $ids = $this->getPostData('ids');
+        // Obtém os IDs dos setores
+        $ids = isset($_POST['ids']) ? $_POST['ids'] : [];
 
         if (empty($ids)) {
             set_flash_message('error', 'Nenhum setor selecionado.');
@@ -1146,35 +1146,112 @@ class SetoresController extends Controller
         $success = 0;
         $errors = 0;
 
-        foreach ($ids as $id) {
-            // Verifica se o setor existe e pertence à empresa do usuário
-            $setor = $this->setorModel->findById($id);
-            if ($setor && $setor['empresa_id'] == $empresaId) {
-                if ($this->setorModel->update($id, ['ativo' => 1])) {
-                    $success++;
-                } else {
-                    $errors++;
+        switch ($action) {
+            case 'activate':
+                // Código para ativar setores
+                foreach ($ids as $id) {
+                    // Verifica se o setor existe e pertence à empresa do usuário
+                    $setor = $this->setorModel->findById($id);
+                    if ($setor && $setor['empresa_id'] == $empresaId) {
+                        if ($this->setorModel->update($id, ['ativo' => 1])) {
+                            $success++;
+                        } else {
+                            $errors++;
+                        }
+                    } else {
+                        $errors++;
+                    }
                 }
-            } else {
-                $errors++;
-            }
-        }
 
-        if ($success > 0) {
-            set_flash_message('success', "$success setores foram ativados com sucesso.");
-        }
+                if ($success > 0) {
+                    set_flash_message('success', "$success setores foram ativados com sucesso.");
+                }
 
-        if ($errors > 0) {
-            set_flash_message('error', "$errors setores não puderam ser ativados.");
+                if ($errors > 0) {
+                    set_flash_message('error', "$errors setores não puderam ser ativados.");
+                }
+                break;
+
+            case 'deactivate':
+                // Código para desativar setores
+                foreach ($ids as $id) {
+                    // Verifica se o setor existe e pertence à empresa do usuário
+                    $setor = $this->setorModel->findById($id);
+                    if ($setor && $setor['empresa_id'] == $empresaId) {
+                        if ($this->setorModel->update($id, ['ativo' => 0])) {
+                            $success++;
+                        } else {
+                            $errors++;
+                        }
+                    } else {
+                        $errors++;
+                    }
+                }
+
+                if ($success > 0) {
+                    set_flash_message('success', "$success setores foram desativados com sucesso.");
+                }
+
+                if ($errors > 0) {
+                    set_flash_message('error', "$errors setores não puderam ser desativados.");
+                }
+                break;
+
+            case 'remove':
+                // Código para remover setores
+                foreach ($ids as $id) {
+                    // Verifica se o setor existe e pertence à empresa do usuário
+                    $setor = $this->setorModel->findById($id);
+                    if ($setor && $setor['empresa_id'] == $empresaId) {
+                        // Verifica se há chamados ou usuários associados ao setor
+                        $totalChamados = $this->setorModel->contarChamados($id);
+                        $totalUsuarios = $this->setorModel->contarUsuarios($id);
+
+                        if ($totalChamados > 0 || $totalUsuarios > 0) {
+                            $errors++;
+                            continue;
+                        }
+
+                        // Marca o setor como removido
+                        $data = [
+                            'removido' => 1,
+                            'ativo' => 0,
+                            'removido_por' => get_user_id(),
+                            'data_remocao' => date('Y-m-d H:i:s')
+                        ];
+
+                        if ($this->setorModel->update($id, $data)) {
+                            $success++;
+                        } else {
+                            $errors++;
+                        }
+                    } else {
+                        $errors++;
+                    }
+                }
+
+                if ($success > 0) {
+                    set_flash_message('success', "$success setores foram removidos com sucesso.");
+                }
+
+                if ($errors > 0) {
+                    set_flash_message('error', "$errors setores não puderam ser removidos.");
+                }
+                break;
+
+            default:
+                set_flash_message('error', 'Ação inválida.');
+                break;
+                
         }
 
         redirect('setores/admin');
     }
 
     /**
-     * Desativa múltiplos setores em lote
+     * Replica usuários de um setor para outros
      */
-    public function batchDeactivate()
+    public function replicarUsuarios()
     {
         // Verifica se o usuário é administrador
         if (!is_admin()) {
@@ -1183,104 +1260,159 @@ class SetoresController extends Controller
             return;
         }
 
-        $ids = $this->getPostData('ids');
+        // Obtém os dados do formulário
+        $data = $this->getPostData();
 
-        if (empty($ids)) {
-            set_flash_message('error', 'Nenhum setor selecionado.');
+        // Valida os campos obrigatórios
+        if (empty($data['source_id'])) {
+            set_flash_message('error', 'Setor de origem não informado.');
             redirect('setores/admin');
             return;
         }
 
-        $empresaId = get_empresa_id();
-        $success = 0;
-        $errors = 0;
+        if (empty($data['target_ids']) || !is_array($data['target_ids'])) {
+            set_flash_message('error', 'Nenhum setor de destino selecionado.');
+            redirect('setores/admin');
+            return;
+        }
 
-        foreach ($ids as $id) {
-            // Verifica se o setor existe e pertence à empresa do usuário
-            $setor = $this->setorModel->findById($id);
-            if ($setor && $setor['empresa_id'] == $empresaId) {
-                if ($this->setorModel->update($id, ['ativo' => 0])) {
-                    $success++;
-                } else {
-                    $errors++;
-                }
-            } else {
-                $errors++;
+        $sourceId = $data['source_id'];
+        $targetIds = $data['target_ids'];
+        $keepPrincipal = isset($data['keep_principal']) ? true : false;
+        $skipExisting = isset($data['skip_existing']) ? true : false;
+
+        $empresaId = get_empresa_id();
+
+        // Verifica se o setor de origem existe e pertence à empresa do usuário
+        $sourceSetor = $this->setorModel->findById($sourceId);
+        if (!$sourceSetor || $sourceSetor['empresa_id'] != $empresaId) {
+            set_flash_message('error', 'Setor de origem não encontrado.');
+            redirect('setores/admin');
+            return;
+        }
+
+        // Obtém os usuários do setor de origem
+        try {
+            $sql = "SELECT us.*, u.nome, u.email 
+                FROM usuarios_setores us 
+                JOIN usuarios u ON us.usuario_id = u.id 
+                WHERE us.setor_id = :setor_id 
+                AND u.empresa_id = :empresa_id 
+                AND u.ativo = 1 
+                AND (u.removido = 0 OR u.removido IS NULL)";
+
+            $sourceUsers = $this->setorModel->executeQuery($sql, [
+                'setor_id' => $sourceId,
+                'empresa_id' => $empresaId
+            ]);
+
+            if (empty($sourceUsers)) {
+                set_flash_message('error', 'O setor de origem não possui usuários.');
+                redirect('setores/admin');
+                return;
             }
-        }
-
-        if ($success > 0) {
-            set_flash_message('success', "$success setores foram desativados com sucesso.");
-        }
-
-        if ($errors > 0) {
-            set_flash_message('error', "$errors setores não puderam ser desativados.");
-        }
-
-        redirect('setores/admin');
-    }
-
-    /**
-     * Remove múltiplos setores em lote
-     */
-    public function batchRemove()
-    {
-        // Verifica se o usuário é administrador
-        if (!is_admin()) {
-            set_flash_message('error', 'Acesso negado. Você não tem permissão para acessar esta área.');
-            redirect('setores/visualizacao');
-            return;
-        }
-
-        $ids = $this->getPostData('ids');
-
-        if (empty($ids)) {
-            set_flash_message('error', 'Nenhum setor selecionado.');
+        } catch (Exception $e) {
+            set_flash_message('error', 'Erro ao obter usuários do setor de origem: ' . $e->getMessage());
             redirect('setores/admin');
             return;
         }
 
-        $empresaId = get_empresa_id();
-        $success = 0;
-        $errors = 0;
+        // Processa cada setor de destino
+        $totalSuccess = 0;
+        $totalSkipped = 0;
+        $totalErrors = 0;
+        $processedSetores = 0;
 
-        foreach ($ids as $id) {
-            // Verifica se o setor existe e pertence à empresa do usuário
-            $setor = $this->setorModel->findById($id);
-            if ($setor && $setor['empresa_id'] == $empresaId) {
-                // Verifica se há chamados ou usuários associados ao setor
-                $totalChamados = $this->setorModel->contarChamados($id);
-                $totalUsuarios = $this->setorModel->contarUsuarios($id);
+        foreach ($targetIds as $targetId) {
+            // Ignora se o setor de destino for igual ao de origem
+            if ($targetId == $sourceId) {
+                continue;
+            }
 
-                if ($totalChamados > 0 || $totalUsuarios > 0) {
-                    $errors++;
+            // Verifica se o setor de destino existe e pertence à empresa do usuário
+            $targetSetor = $this->setorModel->findById($targetId);
+            if (!$targetSetor || $targetSetor['empresa_id'] != $empresaId) {
+                $totalErrors++;
+                continue;
+            }
+
+            $processedSetores++;
+            $successCount = 0;
+            $skippedCount = 0;
+            $errorCount = 0;
+
+            // Obtém os usuários já associados ao setor de destino (para verificar duplicatas)
+            $existingUsers = [];
+            if ($skipExisting) {
+                try {
+                    $sql = "SELECT usuario_id FROM usuarios_setores WHERE setor_id = :setor_id";
+                    $existingUsersResult = $this->setorModel->executeQuery($sql, ['setor_id' => $targetId]);
+                    $existingUsers = array_column($existingUsersResult, 'usuario_id');
+                } catch (Exception $e) {
+                    // Se ocorrer erro, assume que não há usuários
+                    $existingUsers = [];
+                }
+            }
+
+            // Processa cada usuário do setor de origem
+            foreach ($sourceUsers as $user) {
+                // Verifica se o usuário já está associado ao setor de destino
+                if ($skipExisting && in_array($user['usuario_id'], $existingUsers)) {
+                    $skippedCount++;
                     continue;
                 }
 
-                // Marca o setor como removido
-                $data = [
-                    'removido' => 1,
-                    'ativo' => 0,
-                    'removido_por' => get_user_id(),
-                    'data_remocao' => date('Y-m-d H:i:s')
-                ];
+                try {
+                    // Insere a associação do usuário com o setor de destino
+                    $sql = "INSERT INTO usuarios_setores (usuario_id, setor_id, principal, criado_por, criado_em) 
+                        VALUES (:usuario_id, :setor_id, :principal, :criado_por, :criado_em)";
 
-                if ($this->setorModel->update($id, $data)) {
-                    $success++;
-                } else {
-                    $errors++;
+                    $principal = $keepPrincipal ? $user['principal'] : 0;
+
+                    $this->setorModel->executeUpdate($sql, [
+                        'usuario_id' => $user['usuario_id'],
+                        'setor_id' => $targetId,
+                        'principal' => $principal,
+                        'criado_por' => get_user_id(),
+                        'criado_em' => date('Y-m-d H:i:s')
+                    ]);
+
+                    $successCount++;
+                } catch (Exception $e) {
+                    // Ignora erros de chave duplicada (usuário já associado)
+                    if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                        $skippedCount++;
+                    } else {
+                        $errorCount++;
+                    }
                 }
-            } else {
-                $errors++;
             }
+
+            $totalSuccess += $successCount;
+            $totalSkipped += $skippedCount;
+            $totalErrors += $errorCount;
         }
 
-        if ($success > 0) {
-            set_flash_message('success', "$success setores foram removidos com sucesso.");
-        }
+        // Prepara a mensagem de retorno
+        if ($processedSetores == 0) {
+            set_flash_message('error', 'Nenhum setor de destino válido foi processado.');
+        } else if ($totalSuccess > 0) {
+            $message = "Replicação concluída: $totalSuccess usuários foram adicionados com sucesso";
 
-        if ($errors > 0) {
-            set_flash_message('error', "$errors setores não puderam ser removidos.");
+            if ($totalSkipped > 0) {
+                $message .= ", $totalSkipped usuários já existentes foram ignorados";
+            }
+
+            if ($totalErrors > 0) {
+                $message .= ", $totalErrors erros ocorreram";
+            }
+
+            $message .= ".";
+            set_flash_message('success', $message);
+        } else if ($totalSkipped > 0 && $totalSuccess == 0) {
+            set_flash_message('info', "Todos os $totalSkipped usuários já estavam associados aos setores de destino.");
+        } else {
+            set_flash_message('error', "Erro ao replicar usuários. Nenhum usuário foi adicionado.");
         }
 
         redirect('setores/admin');
