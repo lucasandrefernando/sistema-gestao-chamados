@@ -1,9 +1,10 @@
 /**
- * setores-admin-v4.js
+ * setores-admin-v5.js
  * Script moderno para a página de administração de setores
  * 
- * @version 4.1
+ * @version 5.0
  * @author Desenvolvedor
+ * @updated 2023-06-26
  */
 
 // Módulo de Administração de Setores
@@ -13,8 +14,9 @@ const SetoresAdmin = (function () {
     // Configurações globais parametrizadas
     const CONFIG = {
         animationDuration: 300,
+        rowsPerPage: 6, // Número de registros por página
         selectors: {
-            container: '.setores-admin-v4',
+            container: '.setores-admin-v5', // Atualizado para v5
             table: {
                 container: '.data-table',
                 rows: '.data-table tbody tr:not(.empty-row)',
@@ -86,18 +88,26 @@ const SetoresAdmin = (function () {
                     selectSourceBtn: '.btn-select-source'
                 }
             },
+            pagination: {
+                container: '.pagination-container',
+                list: '.pagination',
+                info: '.pagination-info'
+            },
             avatars: '[data-name]'
         },
         colors: [
-            '#4361ee', '#3a0ca3', '#7209b7', '#f72585',
-            '#4cc9f0', '#4895ef', '#560bad', '#f3722c',
-            '#f8961e', '#f9c74f', '#90be6d', '#43aa8b',
-            '#577590', '#277da1', '#9d4edd', '#ff9e00'
+            '#4f46e5', '#4338ca', '#3730a3', '#312e81', // Tons de roxo/azul
+            '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a', // Tons de azul
+            '#0891b2', '#0e7490', '#155e75', '#164e63', // Tons de ciano
+            '#059669', '#047857', '#065f46', '#064e3b', // Tons de verde
+            '#7c3aed', '#6d28d9', '#5b21b6', '#4c1d95', // Tons de roxo
+            '#db2777', '#be185d', '#9d174d', '#831843'  // Tons de rosa
         ],
         storage: {
             sortOrder: 'setoresAdminSortOrder',
             statusFilter: 'setoresAdminStatusFilter',
-            filtersCollapsed: 'setoresAdminFiltersCollapsed'
+            filtersCollapsed: 'setoresAdminFiltersCollapsed',
+            currentPage: 'setoresAdminCurrentPage'
         },
         endpoints: {
             getUsuarios: 'setores/getUsuariosSetor/',
@@ -130,8 +140,15 @@ const SetoresAdmin = (function () {
                     <i class="fas fa-arrow-left"></i>
                     <p>Selecione um setor de origem para ver os usuários</p>
                 </div>
+            `,
+            pagination: `
+                <div class="pagination-container">
+                    <ul class="pagination"></ul>
+                    <div class="pagination-info"></div>
+                </div>
             `
-        }
+        },
+        apiUrl: '' // Será definido dinamicamente
     };
 
     // Estado da aplicação
@@ -139,7 +156,10 @@ const SetoresAdmin = (function () {
         selectedSourceId: null,
         selectedTargetIds: [],
         sourceUsers: [],
-        baseUrl: ''
+        baseUrl: '',
+        currentPage: 1,
+        totalPages: 1,
+        visibleRows: []
     };
 
     /**
@@ -150,11 +170,19 @@ const SetoresAdmin = (function () {
         const container = getElement(CONFIG.selectors.container);
         if (!container) {
             console.log('Página de administração de setores não encontrada.');
-            return;
+            // Tenta encontrar o container v4 e atualiza para v5
+            const oldContainer = getElement('.setores-admin-v4');
+            if (oldContainer) {
+                oldContainer.className = oldContainer.className.replace('setores-admin-v4', 'setores-admin-v5');
+                console.log('Container atualizado para v5.');
+            } else {
+                return;
+            }
         }
 
         // Define a URL base
         state.baseUrl = getBaseUrl();
+        CONFIG.apiUrl = state.baseUrl;
 
         try {
             // Inicializa componentes
@@ -162,16 +190,44 @@ const SetoresAdmin = (function () {
             initSearch();
             initFilters();
             initBatchActions();
-            initActionMenus();
+            replaceDropdownWithButtons();
             initModals();
             initReplication();
+            initPagination();
 
             // Aplica cores aos avatares
             applyAvatarColors();
 
-            console.log('Setores Admin v4.1 inicializado com sucesso!');
+            // Aplica animações e efeitos visuais
+            applyAnimationsAndEffects();
+
+            console.log('Setores Admin v5.0 inicializado com sucesso!');
         } catch (error) {
             console.error('Erro ao inicializar Setores Admin:', error);
+        }
+    }
+
+    /**
+     * Aplica animações e efeitos visuais
+     */
+    function applyAnimationsAndEffects() {
+        // Adiciona efeito de hover nos cards de estatísticas
+        const statCards = getElements('.stat-card');
+        statCards.forEach(card => {
+            card.classList.add('hover-lift');
+        });
+
+        // Adiciona animação de fade-in nas linhas da tabela
+        const tableRows = getElements(CONFIG.selectors.table.rows);
+        tableRows.forEach((row, index) => {
+            row.style.animationDelay = `${index * 0.05}s`;
+            row.classList.add('fade-in');
+        });
+
+        // Adiciona efeito de pulse para destacar elementos importantes
+        const newSetorBtn = getElement('a[href*="setores/criar"]');
+        if (newSetorBtn) {
+            newSetorBtn.classList.add('pulse');
         }
     }
 
@@ -294,8 +350,8 @@ const SetoresAdmin = (function () {
     }
 
     /**
- * Inicializa o toggle de filtros
- */
+     * Inicializa o toggle de filtros
+     */
     function initFilterToggle() {
         const toggleFiltersBtn = getElement('#toggleFilters');
         const filtersBody = getElement('.filters-body');
@@ -325,38 +381,6 @@ const SetoresAdmin = (function () {
                 localStorage.setItem('setoresAdminFiltersCollapsed', 'false');
             }
         });
-    }
-
-    // Adicione esta função à inicialização
-    function init() {
-        // Verifica se estamos na página correta
-        const container = getElement(CONFIG.selectors.container);
-        if (!container) {
-            console.log('Página de administração de setores não encontrada.');
-            return;
-        }
-
-        // Define a URL base
-        state.baseUrl = getBaseUrl();
-
-        try {
-            // Inicializa componentes
-            initDataTable();
-            initSearch();
-            initFilters();
-            initFilterToggle(); // Nova função
-            initBatchActions();
-            initActionMenus();
-            initModals();
-            initReplication();
-
-            // Aplica cores aos avatares
-            applyAvatarColors();
-
-            console.log('Setores Admin v4.1 inicializado com sucesso!');
-        } catch (error) {
-            console.error('Erro ao inicializar Setores Admin:', error);
-        }
     }
 
     /**
@@ -422,6 +446,9 @@ const SetoresAdmin = (function () {
             rows.forEach(row => {
                 tableBody.appendChild(row);
             });
+
+            // Atualiza a paginação após ordenar
+            updatePagination();
         }
 
         // Eventos para cabeçalhos ordenáveis
@@ -460,8 +487,8 @@ const SetoresAdmin = (function () {
     }
 
     /**
-  * Inicializa a busca
-  */
+     * Inicializa a busca
+     */
     function initSearch() {
         const searchInput = getElement(CONFIG.selectors.search.input);
         const clearSearchBtn = getElement(CONFIG.selectors.search.clearBtn);
@@ -485,6 +512,7 @@ const SetoresAdmin = (function () {
 
             // Filtra as linhas
             let visibleCount = 0;
+            state.visibleRows = [];
 
             if (tableRows && tableRows.length) {
                 tableRows.forEach(row => {
@@ -497,6 +525,7 @@ const SetoresAdmin = (function () {
                     if (matchesSearch && matchesStatus) {
                         row.style.display = '';
                         visibleCount++;
+                        state.visibleRows.push(row);
                     } else {
                         row.style.display = 'none';
                     }
@@ -514,10 +543,14 @@ const SetoresAdmin = (function () {
                 }
             }
 
-            // Atualiza a contagem de selecionados, se a função existir
-            if (typeof updateSelectedCount === 'function') {
-                updateSelectedCount();
-            }
+            // Atualiza a contagem de selecionados
+            updateSelectedCount();
+
+            // Atualiza a paginação
+            updatePagination();
+
+            // Volta para a primeira página após filtrar
+            goToPage(1);
         }
 
         // Evento de input para busca em tempo real
@@ -551,11 +584,11 @@ const SetoresAdmin = (function () {
     }
 
     /**
- * Verifica se um elemento existe e executa uma função nele
- * @param {HTMLElement|null} element - Elemento a ser verificado
- * @param {Function} callback - Função a ser executada se o elemento existir
- * @returns {any} - Resultado da função ou undefined
- */
+     * Verifica se um elemento existe e executa uma função nele
+     * @param {HTMLElement|null} element - Elemento a ser verificado
+     * @param {Function} callback - Função a ser executada se o elemento existir
+     * @returns {any} - Resultado da função ou undefined
+     */
     function safeElementOperation(element, callback) {
         if (element) {
             return callback(element);
@@ -606,9 +639,19 @@ const SetoresAdmin = (function () {
         // Botão para mostrar/esconder o painel
         addEvent(batchActionsBtn, 'click', () => {
             const isVisible = batchActionsPanel.style.display !== 'none';
-            batchActionsPanel.style.display = isVisible ? 'none' : 'block';
 
-            if (!isVisible) {
+            if (isVisible) {
+                // Anima a saída do painel
+                batchActionsPanel.style.opacity = '0';
+                batchActionsPanel.style.transform = 'translateY(20px)';
+
+                setTimeout(() => {
+                    batchActionsPanel.style.display = 'none';
+                }, CONFIG.animationDuration);
+            } else {
+                // Mostra o painel
+                batchActionsPanel.style.display = 'block';
+
                 // Anima a entrada do painel
                 batchActionsPanel.style.opacity = '0';
                 batchActionsPanel.style.transform = 'translateY(20px)';
@@ -617,6 +660,9 @@ const SetoresAdmin = (function () {
                     batchActionsPanel.style.opacity = '1';
                     batchActionsPanel.style.transform = 'translateY(0)';
                 }, 10);
+
+                // Adiciona classe de animação
+                batchActionsPanel.classList.add('fade-in');
             }
         });
 
@@ -698,40 +744,62 @@ const SetoresAdmin = (function () {
     }
 
     /**
-     * Inicializa os menus de ações
+     * Substitui o dropdown por botões diretos
      */
-    function initActionMenus() {
-        const actionMenuBtns = getElements(CONFIG.selectors.actionMenu.btn);
+    function replaceDropdownWithButtons() {
+        const actionMenus = getElements(CONFIG.selectors.actionMenu.container);
 
-        addEventToAll(actionMenuBtns, 'click', function (e) {
-            e.stopPropagation();
+        actionMenus.forEach(menu => {
+            const dropdownItems = menu.querySelectorAll('.dropdown-item');
 
-            const menu = this.closest(CONFIG.selectors.actionMenu.container);
+            // Cria o container para os botões
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'action-buttons-inline';
 
-            // Fecha todos os outros menus
-            getElements(CONFIG.selectors.actionMenu.active).forEach(m => {
-                if (m !== menu) m.classList.remove('active');
+            // Converte cada item do dropdown em um botão
+            dropdownItems.forEach(item => {
+                const href = item.getAttribute('href');
+                const icon = item.querySelector('i').className;
+                const text = item.textContent.trim();
+
+                // Determina a classe do botão com base no texto ou ícone
+                let buttonClass = 'edit'; // Padrão
+
+                if (text.includes('Remover')) {
+                    buttonClass = 'remove';
+                } else if (text.includes('Ativar') || text.includes('Desativar')) {
+                    buttonClass = 'toggle-active';
+                } else if (text.includes('Restaurar')) {
+                    buttonClass = 'restore';
+                }
+
+                // Cria o botão
+                const button = document.createElement('a');
+                button.href = href;
+                button.className = `btn-action ${buttonClass}`;
+                button.innerHTML = `<i class="${icon}"></i>`;
+                button.setAttribute('data-tooltip', text);
+
+                // Se for o botão de remover, adiciona o evento
+                if (text.includes('Remover')) {
+                    button.href = 'javascript:void(0)';
+                    button.setAttribute('data-id', item.getAttribute('data-id'));
+                    button.setAttribute('data-nome', item.getAttribute('data-nome'));
+
+                    button.addEventListener('click', function () {
+                        const id = this.getAttribute('data-id');
+                        const nome = this.getAttribute('data-nome');
+
+                        // Chama a função de abrir o modal de remoção
+                        openRemoveModal(id, nome);
+                    });
+                }
+
+                buttonsContainer.appendChild(button);
             });
 
-            // Abre/fecha o menu atual
-            menu.classList.toggle('active');
-        });
-
-        // Fecha os menus ao clicar fora
-        addEvent(document, 'click', () => {
-            getElements(CONFIG.selectors.actionMenu.active).forEach(menu => {
-                menu.classList.remove('active');
-            });
-        });
-
-        // Inicializa os botões de remoção
-        const removeButtons = getElements(CONFIG.selectors.actionMenu.removeBtn);
-
-        addEventToAll(removeButtons, 'click', function () {
-            const id = this.getAttribute('data-id');
-            const nome = this.getAttribute('data-nome');
-
-            openRemoveModal(id, nome);
+            // Substitui o menu pelo container de botões
+            menu.parentNode.replaceChild(buttonsContainer, menu);
         });
     }
 
@@ -812,6 +880,8 @@ const SetoresAdmin = (function () {
 
         if (!modalElement) return;
 
+        // Adiciona classe de animação antes de mostrar
+        modalElement.classList.add('fade-in');
         modalElement.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
@@ -823,9 +893,14 @@ const SetoresAdmin = (function () {
     function closeModal(modal) {
         if (!modal) return;
 
-        modal.classList.remove('active');
+        // Anima a saída do modal
+        modal.style.opacity = '0';
+        modal.style.transform = 'translateY(20px)';
 
         setTimeout(() => {
+            modal.classList.remove('active');
+            modal.style.opacity = '';
+            modal.style.transform = '';
             document.body.style.overflow = '';
         }, CONFIG.animationDuration);
     }
@@ -849,9 +924,9 @@ const SetoresAdmin = (function () {
     }
 
     /**
- * Abre o modal de ação em lote
- * @param {string} action - Ação a ser executada (activate, deactivate, remove)
- */
+     * Abre o modal de ação em lote
+     * @param {string} action - Ação a ser executada (activate, deactivate, remove)
+     */
     function openBatchModal(action) {
         const batchModal = getElement(CONFIG.selectors.modals.batch.container);
         const batchModalTitle = getElement(CONFIG.selectors.modals.batch.title);
@@ -872,7 +947,7 @@ const SetoresAdmin = (function () {
                 title: 'Ativar Setores',
                 message: 'Tem certeza que deseja ativar os seguintes setores?',
                 btnClass: 'btn-primary',
-                btnHtml: '<i class="fas fa-check me-2"></i> Ativar',
+                btnHtml: '<i class="fas fa-check"></i> Ativar',
                 showWarning: false,
                 iconClass: 'modal-icon success',
                 iconHtml: '<i class="fas fa-check-circle"></i>'
@@ -880,8 +955,8 @@ const SetoresAdmin = (function () {
             deactivate: {
                 title: 'Desativar Setores',
                 message: 'Tem certeza que deseja desativar os seguintes setores?',
-                btnClass: 'btn-primary',
-                btnHtml: '<i class="fas fa-times me-2"></i> Desativar',
+                btnClass: 'btn-secondary',
+                btnHtml: '<i class="fas fa-times"></i> Desativar',
                 showWarning: false,
                 iconClass: 'modal-icon info',
                 iconHtml: '<i class="fas fa-info-circle"></i>'
@@ -890,7 +965,7 @@ const SetoresAdmin = (function () {
                 title: 'Remover Setores',
                 message: 'Tem certeza que deseja remover os seguintes setores?',
                 btnClass: 'btn-danger',
-                btnHtml: '<i class="fas fa-trash me-2"></i> Remover',
+                btnHtml: '<i class="fas fa-trash"></i> Remover',
                 showWarning: true,
                 iconClass: 'modal-icon danger',
                 iconHtml: '<i class="fas fa-exclamation-triangle"></i>'
@@ -938,8 +1013,8 @@ const SetoresAdmin = (function () {
     }
 
     /**
-  * Executa a ação em lote
-  */
+     * Executa a ação em lote
+     */
     function executeBatchAction() {
         const batchModal = getElement(CONFIG.selectors.modals.batch.container);
         if (!batchModal) return;
@@ -999,8 +1074,8 @@ const SetoresAdmin = (function () {
     }
 
     /**
-   * Inicializa a funcionalidade de replicação
-   */
+     * Inicializa a funcionalidade de replicação
+     */
     function initReplication() {
         // Cards de setor de origem
         initSourceSectorCards();
@@ -1160,56 +1235,78 @@ const SetoresAdmin = (function () {
     }
 
     /**
-     * Carrega os usuários do setor de origem
-     * @param {string} setorId - ID do setor
+     * Carrega os usuários do setor selecionado
+     * @param {string} sourceId - ID do setor de origem
      */
-    function loadSourceUsers(setorId) {
+    function loadSourceUsers(sourceId) {
         const sourceUsersContainer = getElement(CONFIG.selectors.modals.replicate.usersContainer);
-        const selectedUsersCount = getElement('#selectedUsersCount');
 
-        if (!sourceUsersContainer) return;
+        if (!sourceUsersContainer) {
+            console.error('Container de usuários não encontrado');
+            return;
+        }
 
-        // Mostra o loading
+        if (!sourceId) {
+            sourceUsersContainer.innerHTML = CONFIG.templates.defaultUsers;
+            return;
+        }
+
+        // Exibe o loader
         sourceUsersContainer.innerHTML = CONFIG.templates.loadingUsers;
 
-        // Faz a requisição AJAX
-        fetch(`${state.baseUrl}${CONFIG.endpoints.getUsuarios}${setorId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    sourceUsersContainer.innerHTML = CONFIG.templates.errorUsers.replace('Erro ao carregar usuários.', `Erro ao carregar usuários: ${data.error}`);
-                    return;
+        // Faz a requisição para obter os usuários do setor
+        fetch(`${CONFIG.apiUrl}${CONFIG.endpoints.getUsuarios}${sourceId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar usuários');
                 }
+                return response.json();
+            })
+            .then(responseData => {
+                // A resposta está em formato { usuarios: [...] }
+                // Extraímos o array de usuários
+                const usuarios = responseData.usuarios || [];
 
-                const usuarios = data.usuarios || [];
+                // Atualiza o estado
                 state.sourceUsers = usuarios;
 
                 // Atualiza o contador de usuários
+                const selectedUsersCount = getElement('#selectedUsersCount');
                 if (selectedUsersCount) {
                     selectedUsersCount.querySelector('span').textContent = usuarios.length;
                 }
 
-                if (usuarios.length === 0) {
+                // Se não houver usuários, exibe mensagem
+                if (!usuarios || usuarios.length === 0) {
                     sourceUsersContainer.innerHTML = CONFIG.templates.noUsers;
                     return;
                 }
 
-                // Renderiza a lista de usuários
+                // Renderiza os usuários
                 let html = `<div class="users-list">`;
 
                 usuarios.forEach(usuario => {
-                    const iniciais = usuario.nome.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-                    const isPrincipal = usuario.principal == 1;
+                    const iniciais = usuario.nome
+                        ? usuario.nome.split(' ')
+                            .map(n => n.charAt(0))
+                            .slice(0, 2)
+                            .join('')
+                        : '?';
+
+                    const isPrincipal = usuario.principal === 1 || usuario.principal === true;
+
+                    // Gera uma cor baseada no nome
+                    const corUsuario = generateColorFromString(usuario.nome || '');
 
                     html += `
-                    <div class="user-item">
-                        <div class="user-avatar" style="background-color: ${generateColorFromString(usuario.nome)}">
+                    <div class="user-item fade-in">
+                        <div class="user-avatar" style="background-color: ${corUsuario}">
                             ${iniciais}
                         </div>
                         <div class="user-info">
                             <p class="user-name">
-                                ${usuario.nome}
-                                ${isPrincipal ? '<span class="user-principal">Principal</span>' : ''}
+                                ${usuario.nome || 'Sem nome'}
+                                ${isPrincipal ? '<span class="user-principal"><i class="fas fa-crown"></i> Principal</span>' : ''}
                             </p>
                             <p class="user-email">${usuario.email || ''}</p>
                         </div>
@@ -1220,6 +1317,9 @@ const SetoresAdmin = (function () {
                 html += `</div>`;
 
                 sourceUsersContainer.innerHTML = html;
+
+                // Atualiza o botão de confirmar
+                updateReplicateButton();
             })
             .catch(error => {
                 console.error('Erro ao carregar usuários:', error);
@@ -1233,7 +1333,6 @@ const SetoresAdmin = (function () {
      */
     function updateTargetSectors(sourceId) {
         const targetCards = getElements(CONFIG.selectors.modals.replicate.targetCards);
-        const targetSearch = getElement('#targetSearch');
 
         targetCards.forEach(card => {
             const cardId = card.getAttribute('data-id');
@@ -1255,7 +1354,7 @@ const SetoresAdmin = (function () {
             }
         });
 
-        // Atualiza os IDs de destino selecionados
+        // Atualiza o estado
         state.selectedTargetIds = Array.from(getElements(`${CONFIG.selectors.modals.replicate.targetCheckboxes}:checked:not(:disabled)`))
             .map(cb => cb.value);
 
@@ -1266,10 +1365,8 @@ const SetoresAdmin = (function () {
             targetSelectedCount.textContent = `${count} ${count === 1 ? 'setor de destino selecionado' : 'setores de destino selecionados'}`;
         }
 
-        // Reaplica a busca atual, se houver
-        if (targetSearch && targetSearch.value.trim() !== '') {
-            targetSearch.dispatchEvent(new Event('input'));
-        }
+        // Verifica se pode habilitar o botão de confirmar
+        updateReplicateButton();
     }
 
     /**
@@ -1353,6 +1450,164 @@ const SetoresAdmin = (function () {
         }
     }
 
+    /**
+     * Inicializa a paginação
+     */
+    function initPagination() {
+        // Cria o container de paginação se não existir
+        let paginationContainer = getElement(CONFIG.selectors.pagination.container);
+        if (!paginationContainer) {
+            paginationContainer = document.createElement('div');
+            paginationContainer.className = 'pagination-container';
+
+            const dataContainer = getElement('.data-container');
+            if (dataContainer) {
+                dataContainer.appendChild(paginationContainer);
+            }
+        }
+
+        // Carrega a página salva
+        const savedPage = localStorage.getItem(CONFIG.storage.currentPage);
+        if (savedPage) {
+            state.currentPage = parseInt(savedPage, 10);
+        }
+
+        // Atualiza a paginação
+        updatePagination();
+
+        // Vai para a página inicial
+        goToPage(state.currentPage);
+    }
+
+    /**
+     * Atualiza a paginação
+     */
+    function updatePagination() {
+        // Obtém as linhas visíveis
+        const tableRows = getElements(CONFIG.selectors.table.rows);
+        state.visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none');
+
+        // Calcula o total de páginas
+        state.totalPages = Math.ceil(state.visibleRows.length / CONFIG.rowsPerPage);
+
+        // Ajusta a página atual se necessário
+        if (state.currentPage > state.totalPages) {
+            state.currentPage = Math.max(1, state.totalPages);
+        }
+
+        // Renderiza a paginação
+        renderPagination();
+    }
+
+    /**
+     * Renderiza a paginação
+     */
+    function renderPagination() {
+        const paginationContainer = getElement(CONFIG.selectors.pagination.container);
+        if (!paginationContainer) return;
+
+        // Limpa o container
+        paginationContainer.innerHTML = '';
+
+        // Se não houver páginas ou apenas uma página, não mostra a paginação
+        if (state.totalPages <= 1) {
+            paginationContainer.style.display = 'none';
+            return;
+        } else {
+            paginationContainer.style.display = 'flex';
+        }
+
+        // Cria a lista de paginação
+        const paginationList = document.createElement('ul');
+        paginationList.className = 'pagination';
+
+        // Botão anterior
+        const prevItem = document.createElement('li');
+        prevItem.className = 'pagination-item';
+        const prevLink = document.createElement('a');
+        prevLink.href = 'javascript:void(0)';
+        prevLink.className = `pagination-link ${state.currentPage === 1 ? 'disabled' : ''}`;
+        prevLink.innerHTML = '<i class="fas fa-chevron-left"></i>';
+        prevLink.addEventListener('click', function () {
+            if (state.currentPage > 1) {
+                goToPage(state.currentPage - 1);
+            }
+        });
+        prevItem.appendChild(prevLink);
+        paginationList.appendChild(prevItem);
+
+        // Páginas
+        for (let i = 1; i <= state.totalPages; i++) {
+            const pageItem = document.createElement('li');
+            pageItem.className = 'pagination-item';
+            const pageLink = document.createElement('a');
+            pageLink.href = 'javascript:void(0)';
+            pageLink.className = `pagination-link ${i === state.currentPage ? 'active' : ''}`;
+            pageLink.textContent = i;
+            pageLink.addEventListener('click', function () {
+                goToPage(i);
+            });
+            pageItem.appendChild(pageLink);
+            paginationList.appendChild(pageItem);
+        }
+
+        // Botão próximo
+        const nextItem = document.createElement('li');
+        nextItem.className = 'pagination-item';
+        const nextLink = document.createElement('a');
+        nextLink.href = 'javascript:void(0)';
+        nextLink.className = `pagination-link ${state.currentPage === state.totalPages ? 'disabled' : ''}`;
+        nextLink.innerHTML = '<i class="fas fa-chevron-right"></i>';
+        nextLink.addEventListener('click', function () {
+            if (state.currentPage < state.totalPages) {
+                goToPage(state.currentPage + 1);
+            }
+        });
+        nextItem.appendChild(nextLink);
+        paginationList.appendChild(nextItem);
+
+        paginationContainer.appendChild(paginationList);
+
+        // Adiciona informação de paginação
+        const paginationInfo = document.createElement('div');
+        paginationInfo.className = 'pagination-info';
+
+        const startIndex = (state.currentPage - 1) * CONFIG.rowsPerPage + 1;
+        const endIndex = Math.min(state.currentPage * CONFIG.rowsPerPage, state.visibleRows.length);
+
+        paginationInfo.textContent = `Mostrando ${startIndex} a ${endIndex} de ${state.visibleRows.length} registros`;
+        paginationContainer.appendChild(paginationInfo);
+    }
+
+    /**
+     * Vai para uma página específica
+     * @param {number} page - Número da página
+     */
+    function goToPage(page) {
+        state.currentPage = page;
+
+        // Salva a página atual
+        localStorage.setItem(CONFIG.storage.currentPage, state.currentPage);
+
+        // Oculta todas as linhas
+        const tableRows = getElements(CONFIG.selectors.table.rows);
+        tableRows.forEach(row => {
+            row.style.display = 'none';
+        });
+
+        // Mostra apenas as linhas da página atual
+        const startIndex = (state.currentPage - 1) * CONFIG.rowsPerPage;
+        const endIndex = Math.min(startIndex + CONFIG.rowsPerPage, state.visibleRows.length);
+
+        for (let i = startIndex; i < endIndex; i++) {
+            if (state.visibleRows[i]) {
+                state.visibleRows[i].style.display = '';
+            }
+        }
+
+        // Atualiza a paginação
+        renderPagination();
+    }
 
     /**
      * Aplica cores aos avatares
@@ -1386,9 +1641,9 @@ const SetoresAdmin = (function () {
     }
 
     /**
-  * Obtém a URL base do sistema
-  * @returns {string} - URL base
-  */
+     * Obtém a URL base do sistema
+     * @returns {string} URL base
+     */
     function getBaseUrl() {
         // Tenta obter a URL base a partir de um link existente
         const baseUrlElement = getElement('a[href*="setores/admin"]');
@@ -1414,116 +1669,282 @@ const SetoresAdmin = (function () {
             urlParts.pop();
         }
 
-        // Retorna a URL base
+        // Retorna a URL base com uma barra no final
         return urlParts.join('/') + '/';
     }
 
     // API pública
     return {
-        init: init
+        init: init,
+        closeModal: closeModal, // Exporta a função closeModal para uso global
+        goToPage: goToPage, // Exporta a função goToPage para uso global
+        updatePagination: updatePagination, // Exporta a função updatePagination para uso global
+        loadSourceUsers: loadSourceUsers // Exporta a função loadSourceUsers para uso global
     };
 })();
 
 // Inicializa o módulo quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', SetoresAdmin.init);
+document.addEventListener('DOMContentLoaded', function () {
+    // Inicializa o módulo principal
+    SetoresAdmin.init();
 
-/**
- * Executa a ação em lote
- */
-function executeBatchAction() {
-    const batchModal = getElement(CONFIG.selectors.modals.batch.container);
-    if (!batchModal) return;
+    // Corrige o erro no arquivo setores-visualizacao.js:122
+    const searchInput = document.querySelector('#searchInput');
+    if (searchInput) {
+        // Remove o evento original que causa o erro
+        const oldPerformSearch = searchInput.onkeyup;
+        if (oldPerformSearch) {
+            searchInput.removeEventListener('keyup', oldPerformSearch);
+        }
 
-    const action = batchModal.dataset.action;
-    const selectedIds = Array.from(getElements(`${CONFIG.selectors.table.rowCheckbox}:checked:not(${CONFIG.selectors.table.selectAll})`))
-        .map(checkbox => checkbox.closest('tr').getAttribute('data-id'));
+        // Adiciona um novo evento seguro
+        searchInput.addEventListener('input', function () {
+            const searchTerm = this.value.toLowerCase().trim();
+            const statusFilter = document.querySelector('#statusFilter');
+            const statusValue = statusFilter ? statusFilter.value.toLowerCase() : '';
 
-    if (selectedIds.length === 0) {
-        closeModal(batchModal);
-        return;
+            // Verifica se o elemento clearSearchBtn existe antes de acessar style
+            const clearSearchBtn = document.querySelector('#clearSearch');
+            if (clearSearchBtn) {
+                clearSearchBtn.style.display = searchTerm ? 'block' : 'none';
+            }
+
+            // Filtra as linhas
+            const tableRows = document.querySelectorAll('.data-table tbody tr:not(.empty-row)');
+            const noResults = document.querySelector('#noResults');
+            const tableContainer = document.querySelector('.table-responsive');
+
+            let visibleCount = 0;
+            let visibleRows = [];
+
+            if (tableRows && tableRows.length) {
+                tableRows.forEach(row => {
+                    const nome = row.getAttribute('data-nome').toLowerCase();
+                    const status = row.getAttribute('data-status').toLowerCase();
+
+                    const matchesSearch = nome.includes(searchTerm);
+                    const matchesStatus = statusValue === '' || status === statusValue;
+
+                    if (matchesSearch && matchesStatus) {
+                        row.style.display = '';
+                        visibleCount++;
+                        visibleRows.push(row);
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            // Mostra/esconde mensagem de nenhum resultado
+            if (noResults && tableContainer) {
+                if (visibleCount === 0 && (searchTerm || statusValue)) {
+                    noResults.style.display = 'flex';
+                    tableContainer.style.display = 'none';
+                } else {
+                    noResults.style.display = 'none';
+                    tableContainer.style.display = 'block';
+                }
+            }
+
+            // Atualiza a paginação
+            if (typeof SetoresAdmin.updatePagination === 'function') {
+                SetoresAdmin.updatePagination();
+                SetoresAdmin.goToPage(1);
+            }
+        });
     }
 
-    // Define a URL com base na ação
-    const endpoints = {
-        activate: CONFIG.endpoints.batchActivate,
-        deactivate: CONFIG.endpoints.batchDeactivate,
-        remove: CONFIG.endpoints.batchRemove
-    };
-
-    const url = endpoints[action];
-
-    if (!url) {
-        console.error('Ação em lote desconhecida:', action);
-        closeModal(batchModal);
-        return;
+    // Adiciona classe para atualizar o estilo
+    const container = document.querySelector('.setores-admin-v4');
+    if (container) {
+        container.className = container.className.replace('setores-admin-v4', 'setores-admin-v5');
     }
 
-    // Obtém a URL base
-    const baseUrl = getBaseUrl();
-    const fullUrl = `${baseUrl}${url}`;
-
-    // Depuração
-    console.log('Base URL:', baseUrl);
-    console.log('Endpoint:', url);
-    console.log('Full URL:', fullUrl);
-    console.log('Selected IDs:', selectedIds);
-
-    // Cria um formulário para enviar os IDs
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = fullUrl;
-    form.style.display = 'none';
-
-    // Adiciona os IDs como campos ocultos
-    selectedIds.forEach(id => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'ids[]';
-        input.value = id;
-        form.appendChild(input);
+    // Adiciona efeitos visuais aos cards de estatísticas
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach(card => {
+        card.classList.add('hover-lift');
     });
 
-    // Adiciona o token CSRF se necessário
-    const csrfToken = getElement('meta[name="csrf-token"]');
-    if (csrfToken) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'csrf_token';
-        input.value = csrfToken.content;
-        form.appendChild(input);
-    }
+    // Adiciona animação de fade-in às linhas da tabela
+    const tableRows = document.querySelectorAll('.data-table tbody tr:not(.empty-row)');
+    tableRows.forEach((row, index) => {
+        row.style.animationDelay = `${index * 0.05}s`;
+        row.classList.add('fade-in');
+    });
+});
 
-    // Adiciona o formulário ao documento e o envia
-    document.body.appendChild(form);
-    form.submit();
-}
-
-/**
- * Obtém um elemento do DOM pelo seletor
- * @param {string} selector - Seletor CSS
- * @param {HTMLElement} [parent=document] - Elemento pai para busca
- * @returns {HTMLElement|null} - Elemento encontrado ou null
- */
-function getElement(selector, parent = document) {
-    try {
-        return parent.querySelector(selector);
-    } catch (error) {
-        console.warn(`Erro ao buscar elemento com seletor "${selector}":`, error);
-        return null;
+// Função global para fechar modais (para uso em onclick)
+function closeModalFunction(modalId) {
+    const modal = document.querySelector(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
     }
 }
 
+// Função global para carregar usuários (para uso em onclick)
+function loadSourceUsers(sourceId) {
+    if (typeof SetoresAdmin !== 'undefined' && typeof SetoresAdmin.loadSourceUsers === 'function') {
+        SetoresAdmin.loadSourceUsers(sourceId);
+    } else {
+        const sourceUsersContainer = document.querySelector('#sourceUsersContainer');
+
+        if (!sourceUsersContainer) {
+            console.error('Container de usuários não encontrado');
+            return;
+        }
+
+        if (!sourceId) {
+            sourceUsersContainer.innerHTML = `
+                <div class="placeholder-message">
+                    <i class="fas fa-arrow-left"></i>
+                    <p>Selecione um setor de origem para ver os usuários</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Exibe o loader
+        sourceUsersContainer.innerHTML = `
+            <div class="placeholder-message">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Carregando usuários...</p>
+            </div>
+        `;
+
+        // Obtém a URL base do sistema
+        const baseUrl = getBaseUrl();
+
+        // Faz a requisição para obter os usuários do setor
+        fetch(`${baseUrl}setores/getUsuariosSetor/${sourceId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar usuários');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Atualiza o contador de usuários
+                const selectedUsersCount = document.querySelector('#selectedUsersCount');
+                if (selectedUsersCount) {
+                    selectedUsersCount.querySelector('span').textContent = data.length;
+                }
+
+                // Se não houver usuários, exibe mensagem
+                if (!data || data.length === 0) {
+                    sourceUsersContainer.innerHTML = `
+                        <div class="placeholder-message">
+                            <i class="fas fa-users-slash"></i>
+                            <p>Nenhum usuário encontrado neste setor</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Renderiza os usuários
+                let html = `<div class="users-list">`;
+
+                data.forEach((usuario, index) => {
+                    const iniciais = usuario.nome
+                        ? usuario.nome.split(' ')
+                            .map(n => n.charAt(0))
+                            .slice(0, 2)
+                            .join('')
+                        : '?';
+
+                    const isPrincipal = usuario.principal === 1 || usuario.principal === true;
+
+                    // Gera uma cor baseada no nome
+                    const corUsuario = generateColorFromName(usuario.nome || '');
+
+                    html += `
+                        <div class="user-item fade-in" style="animation-delay: ${index * 0.05}s">
+                            <div class="user-avatar" style="background-color: ${corUsuario}">
+                                ${iniciais}
+                            </div>
+                            <div class="user-info">
+                                <p class="user-name">
+                                    ${usuario.nome || 'Sem nome'}
+                                    ${isPrincipal ? '<span class="user-principal"><i class="fas fa-crown"></i> Principal</span>' : ''}
+                                </p>
+                                <p class="user-email">${usuario.email || ''}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+
+                sourceUsersContainer.innerHTML = html;
+
+                // Atualiza o botão de confirmar
+                updateConfirmButton();
+            })
+            .catch(error => {
+                console.error('Erro ao carregar usuários:', error);
+                sourceUsersContainer.innerHTML = `
+                    <div class="placeholder-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Erro ao carregar usuários. Tente novamente.</p>
+                        <button onclick="loadSourceUsers('${sourceId}')" class="btn-text">
+                            <i class="fas fa-redo"></i> Tentar novamente
+                        </button>
+                    </div>
+                `;
+            });
+    }
+}
+
 /**
- * Obtém múltiplos elementos do DOM pelo seletor
- * @param {string} selector - Seletor CSS
- * @param {HTMLElement} [parent=document] - Elemento pai para busca
- * @returns {NodeList|[]} - Lista de elementos encontrados ou array vazio
+ * Gera uma cor baseada no nome
+ * @param {string} name - Nome para gerar a cor
+ * @returns {string} - Cor em formato hexadecimal
  */
-function getElements(selector, parent = document) {
-    try {
-        return parent.querySelectorAll(selector);
-    } catch (error) {
-        console.warn(`Erro ao buscar elementos com seletor "${selector}":`, error);
-        return [];
+function generateColorFromName(name) {
+    const colors = [
+        '#4f46e5', '#4338ca', '#3730a3', '#312e81', // Tons de roxo/azul
+        '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a', // Tons de azul
+        '#0891b2', '#0e7490', '#155e75', '#164e63', // Tons de ciano
+        '#059669', '#047857', '#065f46', '#064e3b', // Tons de verde
+        '#7c3aed', '#6d28d9', '#5b21b6', '#4c1d95', // Tons de roxo
+        '#db2777', '#be185d', '#9d174d', '#831843'  // Tons de rosa
+    ];
+
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+}
+
+/**
+ * Obtém a URL base do sistema
+ * @returns {string} URL base
+ */
+function getBaseUrl() {
+    // Tenta obter a URL base a partir da URL atual
+    const currentUrl = window.location.href;
+    const urlParts = currentUrl.split('/');
+
+    // Remove o último segmento da URL (que deve ser 'admin' ou similar)
+    urlParts.pop();
+
+    // Retorna a URL base com uma barra no final
+    return urlParts.join('/') + '/';
+}
+
+/**
+ * Verifica se pode habilitar o botão de confirmar
+ */
+function updateConfirmButton() {
+    const confirmButton = document.querySelector('#confirmReplicate');
+    const sourceSelected = document.querySelector('.source-setor-card.selected');
+    const targetSelected = document.querySelector('.target-checkbox:checked');
+
+    if (confirmButton) {
+        confirmButton.disabled = !(sourceSelected && targetSelected);
     }
 }

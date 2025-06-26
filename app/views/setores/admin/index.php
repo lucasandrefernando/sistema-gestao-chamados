@@ -1,15 +1,4 @@
-<?php
-
-/**
- * Administração de Setores
- * Esta página permite gerenciar todos os setores da organização
- * 
- * @version 4.1
- * @author Desenvolvedor
- */
-?>
-
-<div class="setores-admin-v4">
+<div class="setores-admin-v5">
     <!-- Cabeçalho da página -->
     <header class="page-header">
         <div class="header-content">
@@ -24,7 +13,6 @@
             </div>
         </div>
         <div class="header-actions">
-            <!-- Botão voltar corrigido para usar o histórico do navegador -->
             <a href="javascript:history.back()" class="btn-outline btn-back">
                 <i class="fas fa-arrow-left"></i>
                 <span>Voltar</span>
@@ -35,7 +23,7 @@
     <!-- Painel de estatísticas -->
     <section class="stats-dashboard">
         <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card hover-lift">
                 <div class="stat-icon">
                     <i class="fas fa-building"></i>
                 </div>
@@ -53,7 +41,7 @@
                 return $setor['ativo'] && (!isset($setor['removido']) || !$setor['removido']);
             });
             ?>
-            <div class="stat-card">
+            <div class="stat-card hover-lift">
                 <div class="stat-icon">
                     <i class="fas fa-check-circle"></i>
                 </div>
@@ -69,7 +57,7 @@
             <?php
             $totalUsuarios = array_sum(array_column($setores, 'total_usuarios'));
             ?>
-            <div class="stat-card">
+            <div class="stat-card hover-lift">
                 <div class="stat-icon">
                     <i class="fas fa-users"></i>
                 </div>
@@ -81,34 +69,20 @@
                     <i class="fas fa-user-plus"></i>
                 </div>
             </div>
-
-            <div class="stat-card highlight-card" id="replicateUsersCard">
-                <div class="highlight-content">
-                    <div class="highlight-icon">
-                        <i class="fas fa-copy"></i>
-                    </div>
-                    <div class="highlight-text">
-                        <h3>Replicar Usuários</h3>
-                        <p>Copie usuários entre setores rapidamente</p>
-                    </div>
-                </div>
-                <button class="highlight-button">
-                    Iniciar Agora
-                </button>
-            </div>
         </div>
     </section>
 
-    <!-- Filtros e opções - versão simplificada e compacta -->
+    <!-- Filtros e opções -->
     <section class="filters-section">
         <div class="filters-container">
             <!-- Linha de filtros -->
             <div class="filters-row">
                 <!-- Campo de busca -->
                 <div class="filter-group">
+                    <label for="searchInput" class="filter-label">Buscar setores</label>
                     <div class="search-input-wrapper">
                         <i class="fas fa-search search-icon"></i>
-                        <input type="text" id="searchInput" class="search-input" placeholder="Buscar setores...">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Digite para buscar...">
                         <button type="button" id="clearSearch" class="search-clear" style="display: none;">
                             <i class="fas fa-times"></i>
                         </button>
@@ -117,30 +91,33 @@
 
                 <!-- Filtro de status -->
                 <div class="filter-group">
+                    <label for="statusFilter" class="filter-label">Status</label>
                     <select id="statusFilter" class="filter-select">
-                        <option value="">Status: Todos</option>
-                        <option value="ativo">Status: Ativos</option>
-                        <option value="inativo">Status: Inativos</option>
+                        <option value="">Todos os status</option>
+                        <option value="ativo">Ativos</option>
+                        <option value="inativo">Inativos</option>
                         <?php if ($mostrarRemovidos): ?>
-                            <option value="removido">Status: Removidos</option>
+                            <option value="removido">Removidos</option>
                         <?php endif; ?>
                     </select>
                 </div>
 
                 <!-- Ordenação -->
                 <div class="filter-group">
+                    <label for="sortOrder" class="filter-label">Ordenar por</label>
                     <select id="sortOrder" class="filter-select">
-                        <option value="id_asc">Ordenar por: ID (↑)</option>
-                        <option value="id_desc">Ordenar por: ID (↓)</option>
-                        <option value="nome_asc">Ordenar por: Nome (A-Z)</option>
-                        <option value="nome_desc">Ordenar por: Nome (Z-A)</option>
-                        <option value="usuarios_desc">Ordenar por: Mais Usuários</option>
+                        <option value="id_asc">ID (Crescente)</option>
+                        <option value="id_desc">ID (Decrescente)</option>
+                        <option value="nome_asc">Nome (A-Z)</option>
+                        <option value="nome_desc">Nome (Z-A)</option>
+                        <option value="usuarios_desc">Mais Usuários</option>
                     </select>
                 </div>
 
                 <!-- Botão limpar filtros -->
                 <div class="filter-group">
-                    <button id="clearFilters" class="btn-outline btn-filter">
+                    <label class="filter-label">&nbsp;</label>
+                    <button id="clearFilters" class="btn-outline">
                         <i class="fas fa-times-circle"></i>
                         <span>Limpar Filtros</span>
                     </button>
@@ -183,11 +160,11 @@
         </div>
         <div class="panel-body">
             <div class="action-buttons">
-                <button id="batchActivate" class="btn-outline" disabled>
+                <button id="batchActivate" class="btn-primary" disabled>
                     <i class="fas fa-check-circle"></i>
                     <span>Ativar</span>
                 </button>
-                <button id="batchDeactivate" class="btn-outline" disabled>
+                <button id="batchDeactivate" class="btn-secondary" disabled>
                     <i class="fas fa-times-circle"></i>
                     <span>Desativar</span>
                 </button>
@@ -224,7 +201,7 @@
                     </thead>
                     <tbody>
                         <?php foreach ($setores as $setor): ?>
-                            <tr class="<?= isset($setor['removido']) && $setor['removido'] ? 'row-removed' : '' ?>"
+                            <tr class="<?= isset($setor['removido']) && $setor['removido'] ? 'row-removed' : '' ?> fade-in"
                                 data-id="<?= $setor['id'] ?>"
                                 data-nome="<?= htmlspecialchars($setor['nome']) ?>"
                                 data-status="<?= isset($setor['removido']) && $setor['removido'] ? 'removido' : ($setor['ativo'] ? 'ativo' : 'inativo') ?>"
@@ -271,33 +248,27 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="col-acoes">
-                                    <div class="action-menu">
-                                        <button class="action-menu-btn">
-                                            <i class="fas fa-ellipsis-v"></i>
-                                        </button>
-                                        <div class="action-menu-dropdown">
-                                            <?php if (isset($setor['removido']) && $setor['removido']): ?>
-                                                <a href="<?= base_url('setores/restaurar/' . $setor['id']) ?>" class="dropdown-item">
-                                                    <i class="fas fa-trash-restore"></i> Restaurar
+                                    <div class="action-buttons-inline">
+                                        <?php if (isset($setor['removido']) && $setor['removido']): ?>
+                                            <a href="<?= base_url('setores/restaurar/' . $setor['id']) ?>" class="btn-action restore" data-tooltip="Restaurar">
+                                                <i class="fas fa-trash-restore"></i>
+                                            </a>
+                                        <?php else: ?>
+                                            <a href="<?= base_url('setores/editar/' . $setor['id']) ?>" class="btn-action edit" data-tooltip="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="<?= base_url('setores/usuarios/' . $setor['id']) ?>" class="btn-action edit" data-tooltip="Gerenciar Usuários">
+                                                <i class="fas fa-users"></i>
+                                            </a>
+                                            <a href="<?= base_url('setores/toggle/' . $setor['id']) ?>" class="btn-action toggle-active" data-tooltip="<?= $setor['ativo'] ? 'Desativar' : 'Ativar' ?>">
+                                                <i class="fas <?= $setor['ativo'] ? 'fa-times' : 'fa-check' ?>"></i>
+                                            </a>
+                                            <?php if ($setor['total_usuarios'] == 0): ?>
+                                                <a href="javascript:void(0)" class="btn-action remove" data-tooltip="Remover" data-id="<?= $setor['id'] ?>" data-nome="<?= htmlspecialchars($setor['nome']) ?>">
+                                                    <i class="fas fa-trash"></i>
                                                 </a>
-                                            <?php else: ?>
-                                                <a href="<?= base_url('setores/editar/' . $setor['id']) ?>" class="dropdown-item">
-                                                    <i class="fas fa-edit"></i> Editar
-                                                </a>
-                                                <a href="<?= base_url('setores/usuarios/' . $setor['id']) ?>" class="dropdown-item">
-                                                    <i class="fas fa-users"></i> Gerenciar Usuários
-                                                </a>
-                                                <a href="<?= base_url('setores/toggle/' . $setor['id']) ?>" class="dropdown-item">
-                                                    <i class="fas <?= $setor['ativo'] ? 'fa-times' : 'fa-check' ?>"></i>
-                                                    <?= $setor['ativo'] ? 'Desativar' : 'Ativar' ?>
-                                                </a>
-                                                <?php if ($setor['total_usuarios'] == 0): ?>
-                                                    <a href="javascript:void(0)" class="dropdown-item text-danger action-remove" data-id="<?= $setor['id'] ?>" data-nome="<?= htmlspecialchars($setor['nome']) ?>">
-                                                        <i class="fas fa-trash"></i> Remover
-                                                    </a>
-                                                <?php endif; ?>
                                             <?php endif; ?>
-                                        </div>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -313,7 +284,7 @@
                                         <h3 class="empty-title">Nenhum setor encontrado</h3>
                                         <p class="empty-description">Não há setores cadastrados ou que correspondam aos filtros aplicados.</p>
                                         <a href="<?= base_url('setores/criar') ?>" class="btn-primary">
-                                            <i class="fas fa-plus me-2"></i> Criar Novo Setor
+                                            <i class="fas fa-plus"></i> Criar Novo Setor
                                         </a>
                                     </div>
                                 </td>
@@ -321,6 +292,11 @@
                         <?php endif; ?>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Paginação -->
+            <div class="pagination-container">
+                <!-- Será preenchido via JavaScript -->
             </div>
 
             <!-- Estado vazio para resultados de busca -->
@@ -331,7 +307,7 @@
                 <h3 class="empty-title">Nenhum resultado encontrado</h3>
                 <p class="empty-description">Sua busca não retornou resultados. Tente outros termos ou remova os filtros.</p>
                 <button id="clearFiltersBtn" class="btn-outline">
-                    <i class="fas fa-times-circle me-2"></i> Limpar Filtros
+                    <i class="fas fa-times-circle"></i> Limpar Filtros
                 </button>
             </div>
         </div>
@@ -359,7 +335,7 @@
                     <div class="modal-footer">
                         <button type="button" class="btn-outline" id="cancelRemove">Cancelar</button>
                         <a href="#" id="confirmRemove" class="btn-danger">
-                            <i class="fas fa-trash me-2"></i> Remover
+                            <i class="fas fa-trash"></i> Remover
                         </a>
                     </div>
                 </div>
@@ -389,183 +365,11 @@
                     <div class="modal-footer">
                         <button type="button" class="btn-outline" id="cancelBatchAction">Cancelar</button>
                         <button type="button" id="confirmBatchAction" class="btn-primary">
-                            <i class="fas fa-check me-2"></i> Confirmar
+                            <i class="fas fa-check"></i> Confirmar
                         </button>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Modal para replicação de usuários - Versão Melhorada -->
-        <div class="modal-overlay" id="replicateModal">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 class="modal-title">
-                            <i class="fas fa-copy"></i>
-                            Replicar Usuários Entre Setores
-                        </h3>
-                        <button type="button" class="modal-close" id="closeReplicateModal">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="replicateForm" action="<?= base_url('setores/batch/replicate') ?>" method="post">
-                            <div class="replication-container">
-                                <!-- Instruções -->
-                                <div class="replication-instructions">
-                                    <p><i class="fas fa-info-circle"></i> Selecione um setor de origem, verifique os usuários e escolha os setores de destino para replicar.</p>
-                                </div>
-
-                                <div class="replication-grid">
-                                    <!-- Coluna de origem -->
-                                    <div class="replication-column source-column">
-                                        <div class="column-header">
-                                            <h4>Setor de Origem</h4>
-                                            <div class="search-wrapper">
-                                                <input type="text" id="sourceSearch" class="search-input" placeholder="Buscar setor...">
-                                                <i class="fas fa-search search-icon"></i>
-                                            </div>
-                                        </div>
-                                        <div class="column-content">
-                                            <div class="source-setores-list">
-                                                <?php foreach ($setores as $setor): ?>
-                                                    <?php if (!isset($setor['removido']) || !$setor['removido']): ?>
-                                                        <div class="source-setor-card" data-id="<?= $setor['id'] ?>" data-nome="<?= htmlspecialchars(strtolower($setor['nome'])) ?>">
-                                                            <div class="setor-card-header">
-                                                                <div class="setor-avatar" data-name="<?= htmlspecialchars($setor['nome']) ?>">
-                                                                    <?= strtoupper(substr($setor['nome'], 0, 1)) ?>
-                                                                </div>
-                                                                <div class="setor-card-title">
-                                                                    <h4><?= htmlspecialchars($setor['nome']) ?></h4>
-                                                                    <span class="user-count">
-                                                                        <i class="fas fa-users"></i> <?= $setor['total_usuarios'] ?> usuários
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="setor-card-footer">
-                                                                <button type="button" class="btn-select-source">Selecionar</button>
-                                                            </div>
-                                                            <input type="radio" name="source_id" value="<?= $setor['id'] ?>" class="source-radio" required>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                <?php endforeach; ?>
-
-                                                <div class="empty-state small" id="noSourceResults" style="display: none;">
-                                                    <div class="empty-icon">
-                                                        <i class="fas fa-search"></i>
-                                                    </div>
-                                                    <h3 class="empty-title">Nenhum resultado</h3>
-                                                    <p class="empty-description">Nenhum setor encontrado com este termo.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Coluna de usuários -->
-                                    <div class="replication-column users-column">
-                                        <div class="column-header">
-                                            <h4>Usuários a Replicar</h4>
-                                            <div class="user-count-badge" id="selectedUsersCount">
-                                                <i class="fas fa-user"></i> <span>0</span> usuários
-                                            </div>
-                                        </div>
-                                        <div class="column-content" id="sourceUsersContainer">
-                                            <div class="placeholder-message">
-                                                <i class="fas fa-arrow-left"></i>
-                                                <p>Selecione um setor de origem para ver os usuários</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Coluna de destino -->
-                                    <div class="replication-column target-column">
-                                        <div class="column-header">
-                                            <h4>Setores de Destino</h4>
-                                            <div class="search-wrapper">
-                                                <input type="text" id="targetSearch" class="search-input" placeholder="Buscar setor...">
-                                                <i class="fas fa-search search-icon"></i>
-                                            </div>
-                                        </div>
-                                        <div class="column-content">
-                                            <div class="target-setores-list">
-                                                <?php foreach ($setores as $setor): ?>
-                                                    <?php if (!isset($setor['removido']) || !$setor['removido']): ?>
-                                                        <div class="target-setor-card" data-id="<?= $setor['id'] ?>" data-nome="<?= htmlspecialchars(strtolower($setor['nome'])) ?>">
-                                                            <div class="setor-card-header">
-                                                                <div class="setor-avatar" data-name="<?= htmlspecialchars($setor['nome']) ?>">
-                                                                    <?= strtoupper(substr($setor['nome'], 0, 1)) ?>
-                                                                </div>
-                                                                <div class="setor-card-title">
-                                                                    <h4><?= htmlspecialchars($setor['nome']) ?></h4>
-                                                                    <span class="user-count">
-                                                                        <i class="fas fa-users"></i> <?= $setor['total_usuarios'] ?> usuários
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="setor-card-footer">
-                                                                <label class="checkbox-container">
-                                                                    <input type="checkbox" name="target_ids[]" value="<?= $setor['id'] ?>" class="target-checkbox">
-                                                                    <span class="checkmark"></span>
-                                                                    <span class="checkbox-label">Selecionar</span>
-                                                                </label>
-                                                            </div>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                <?php endforeach; ?>
-
-                                                <div class="empty-state small" id="noTargetResults" style="display: none;">
-                                                    <div class="empty-icon">
-                                                        <i class="fas fa-search"></i>
-                                                    </div>
-                                                    <h3 class="empty-title">Nenhum resultado</h3>
-                                                    <p class="empty-description">Nenhum setor encontrado com este termo.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="replication-options">
-                                    <h4>Opções de Replicação</h4>
-                                    <div class="options-list">
-                                        <div class="option-item">
-                                            <label class="switch">
-                                                <input type="checkbox" name="keep_principal" value="1" checked>
-                                                <span class="slider round"></span>
-                                            </label>
-                                            <div class="option-details">
-                                                <h4>Manter status de "Principal"</h4>
-                                                <p>Preserva o status de usuário principal ao replicar para os setores de destino.</p>
-                                            </div>
-                                        </div>
-
-                                        <div class="option-item">
-                                            <label class="switch">
-                                                <input type="checkbox" name="skip_existing" value="1" checked>
-                                                <span class="slider round"></span>
-                                            </label>
-                                            <div class="option-details">
-                                                <h4>Ignorar usuários existentes</h4>
-                                                <p>Não duplica usuários que já estão associados aos setores de destino.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <div class="replication-summary">
-                            <span id="targetSelectedCount">0 setores de destino selecionados</span>
-                        </div>
-                        <div class="modal-actions">
-                            <button type="button" class="btn-outline" id="cancelReplicate">Cancelar</button>
-                            <button type="submit" form="replicateForm" class="btn-primary" id="confirmReplicate" disabled>
-                                <i class="fas fa-copy me-2"></i> Replicar Usuários
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    </div>
+</div>
