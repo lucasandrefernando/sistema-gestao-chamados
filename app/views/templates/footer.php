@@ -44,6 +44,7 @@
     <script src="<?= base_url('public/js/setores-form.js') ?>"></script>
     <script src="<?= base_url('public/js/setores-detalhes.js') ?>"></script>
     <script src="<?= base_url('public/js/setores-admin.js') ?>"></script>
+    <script src="<?= base_url('public/js/setores-usuarios.js') ?>"></script>
 
 
 
