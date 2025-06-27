@@ -201,10 +201,25 @@ const SetoresAdmin = (function () {
             // Aplica animações e efeitos visuais
             applyAnimationsAndEffects();
 
+            // Inicializa tooltips melhorados
+            initEnhancedTooltips();
+
             console.log('Setores Admin v5.0 inicializado com sucesso!');
         } catch (error) {
             console.error('Erro ao inicializar Setores Admin:', error);
         }
+    }
+
+    /**
+     * Inicializa tooltips melhorados para os botões de ação
+     */
+    function initEnhancedTooltips() {
+        // Adiciona z-index elevado para os botões de ação
+        const actionButtons = getElements('.btn-action');
+        actionButtons.forEach(button => {
+            button.style.position = 'relative';
+            button.style.zIndex = '5';
+        });
     }
 
     /**
@@ -395,6 +410,8 @@ const SetoresAdmin = (function () {
         // Função para ordenar a tabela
         function sortTable(column, direction) {
             const tableBody = getElement(`${CONFIG.selectors.table.container} tbody`);
+            if (!tableBody) return;
+
             const rows = Array.from(tableBody.querySelectorAll('tr:not(.empty-row)'));
 
             // Remove classes de ordenação
@@ -414,20 +431,20 @@ const SetoresAdmin = (function () {
 
                 switch (column) {
                     case 'id':
-                        valueA = parseInt(a.getAttribute('data-id'), 10);
-                        valueB = parseInt(b.getAttribute('data-id'), 10);
+                        valueA = parseInt(a.getAttribute('data-id') || '0', 10);
+                        valueB = parseInt(b.getAttribute('data-id') || '0', 10);
                         break;
                     case 'nome':
-                        valueA = a.getAttribute('data-nome').toLowerCase();
-                        valueB = b.getAttribute('data-nome').toLowerCase();
+                        valueA = (a.getAttribute('data-nome') || '').toLowerCase();
+                        valueB = (b.getAttribute('data-nome') || '').toLowerCase();
                         break;
                     case 'usuarios':
-                        valueA = parseInt(a.getAttribute('data-usuarios'), 10);
-                        valueB = parseInt(b.getAttribute('data-usuarios'), 10);
+                        valueA = parseInt(a.getAttribute('data-usuarios') || '0', 10);
+                        valueB = parseInt(b.getAttribute('data-usuarios') || '0', 10);
                         break;
                     case 'status':
-                        valueA = a.getAttribute('data-status').toLowerCase();
-                        valueB = b.getAttribute('data-status').toLowerCase();
+                        valueA = (a.getAttribute('data-status') || '').toLowerCase();
+                        valueB = (b.getAttribute('data-status') || '').toLowerCase();
                         break;
                     default:
                         return 0;
@@ -486,102 +503,7 @@ const SetoresAdmin = (function () {
         }
     }
 
-    /**
-     * Inicializa a busca
-     */
-    function initSearch() {
-        const searchInput = getElement(CONFIG.selectors.search.input);
-        const clearSearchBtn = getElement(CONFIG.selectors.search.clearBtn);
-        const tableRows = getElements(CONFIG.selectors.table.rows);
-        const noResults = getElement(CONFIG.selectors.search.noResults);
-        const tableContainer = getElement(CONFIG.selectors.search.tableContainer);
 
-        // Verifica se o elemento de busca existe
-        if (!searchInput) return;
-
-        // Função para realizar a busca
-        function performSearch() {
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            const statusFilter = getElement(CONFIG.selectors.filters.status);
-            const statusValue = statusFilter ? statusFilter.value.toLowerCase() : '';
-
-            // Mostra/esconde o botão de limpar
-            if (clearSearchBtn) {
-                clearSearchBtn.style.display = searchTerm ? 'block' : 'none';
-            }
-
-            // Filtra as linhas
-            let visibleCount = 0;
-            state.visibleRows = [];
-
-            if (tableRows && tableRows.length) {
-                tableRows.forEach(row => {
-                    const nome = row.getAttribute('data-nome').toLowerCase();
-                    const status = row.getAttribute('data-status').toLowerCase();
-
-                    const matchesSearch = nome.includes(searchTerm);
-                    const matchesStatus = statusValue === '' || status === statusValue;
-
-                    if (matchesSearch && matchesStatus) {
-                        row.style.display = '';
-                        visibleCount++;
-                        state.visibleRows.push(row);
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-            }
-
-            // Mostra/esconde mensagem de nenhum resultado
-            if (noResults && tableContainer) {
-                if (visibleCount === 0 && (searchTerm || statusValue)) {
-                    noResults.style.display = 'flex';
-                    tableContainer.style.display = 'none';
-                } else {
-                    noResults.style.display = 'none';
-                    tableContainer.style.display = 'block';
-                }
-            }
-
-            // Atualiza a contagem de selecionados
-            updateSelectedCount();
-
-            // Atualiza a paginação
-            updatePagination();
-
-            // Volta para a primeira página após filtrar
-            goToPage(1);
-        }
-
-        // Evento de input para busca em tempo real
-        addEvent(searchInput, 'input', performSearch);
-
-        // Botão para limpar a busca
-        if (clearSearchBtn) {
-            addEvent(clearSearchBtn, 'click', () => {
-                searchInput.value = '';
-                searchInput.focus();
-                performSearch();
-            });
-        }
-
-        // Botões para limpar todos os filtros
-        const clearFiltersBtn = getElement(CONFIG.selectors.search.clearFiltersBtn);
-        const clearFilters = getElement(CONFIG.selectors.search.clearFilters);
-
-        [clearFiltersBtn, clearFilters].forEach(btn => {
-            if (btn) {
-                addEvent(btn, 'click', () => {
-                    searchInput.value = '';
-
-                    const statusFilter = getElement(CONFIG.selectors.filters.status);
-                    if (statusFilter) statusFilter.value = '';
-
-                    performSearch();
-                });
-            }
-        });
-    }
 
     /**
      * Verifica se um elemento existe e executa uma função nele
@@ -733,7 +655,7 @@ const SetoresAdmin = (function () {
             const canRemoveAll = Array.from(checkboxes).every(checkbox => {
                 const row = checkbox.closest('tr');
                 if (row) {
-                    const usuarios = parseInt(row.getAttribute('data-usuarios'), 10);
+                    const usuarios = parseInt(row.getAttribute('data-usuarios') || '0', 10);
                     return usuarios === 0;
                 }
                 return false;
@@ -751,6 +673,7 @@ const SetoresAdmin = (function () {
 
         actionMenus.forEach(menu => {
             const dropdownItems = menu.querySelectorAll('.dropdown-item');
+            if (!dropdownItems.length) return;
 
             // Cria o container para os botões
             const buttonsContainer = document.createElement('div');
@@ -758,8 +681,9 @@ const SetoresAdmin = (function () {
 
             // Converte cada item do dropdown em um botão
             dropdownItems.forEach(item => {
-                const href = item.getAttribute('href');
-                const icon = item.querySelector('i').className;
+                const href = item.getAttribute('href') || '#';
+                const iconElement = item.querySelector('i');
+                const icon = iconElement ? iconElement.className : 'fas fa-cog';
                 const text = item.textContent.trim();
 
                 // Determina a classe do botão com base no texto ou ícone
@@ -783,8 +707,8 @@ const SetoresAdmin = (function () {
                 // Se for o botão de remover, adiciona o evento
                 if (text.includes('Remover')) {
                     button.href = 'javascript:void(0)';
-                    button.setAttribute('data-id', item.getAttribute('data-id'));
-                    button.setAttribute('data-nome', item.getAttribute('data-nome'));
+                    button.setAttribute('data-id', item.getAttribute('data-id') || '');
+                    button.setAttribute('data-nome', item.getAttribute('data-nome') || '');
 
                     button.addEventListener('click', function () {
                         const id = this.getAttribute('data-id');
@@ -799,7 +723,9 @@ const SetoresAdmin = (function () {
             });
 
             // Substitui o menu pelo container de botões
-            menu.parentNode.replaceChild(buttonsContainer, menu);
+            if (menu.parentNode) {
+                menu.parentNode.replaceChild(buttonsContainer, menu);
+            }
         });
     }
 
@@ -994,8 +920,8 @@ const SetoresAdmin = (function () {
             selectedRows.forEach(checkbox => {
                 const row = checkbox.closest('tr');
                 if (row) {
-                    const id = row.getAttribute('data-id');
-                    const nome = row.getAttribute('data-nome');
+                    const id = row.getAttribute('data-id') || '';
+                    const nome = row.getAttribute('data-nome') || '';
 
                     const listItem = document.createElement('div');
                     listItem.className = 'modal-list-item';
@@ -1021,7 +947,11 @@ const SetoresAdmin = (function () {
 
         const action = batchModal.dataset.action;
         const selectedIds = Array.from(getElements(`${CONFIG.selectors.table.rowCheckbox}:checked:not(${CONFIG.selectors.table.selectAll})`))
-            .map(checkbox => checkbox.closest('tr').getAttribute('data-id'));
+            .map(checkbox => {
+                const row = checkbox.closest('tr');
+                return row ? row.getAttribute('data-id') || '' : '';
+            })
+            .filter(id => id !== ''); // Remove IDs vazios
 
         if (selectedIds.length === 0) {
             closeModal(batchModal);
@@ -1198,8 +1128,8 @@ const SetoresAdmin = (function () {
                 let visibleCount = 0;
 
                 sourceCards.forEach(card => {
-                    const nome = card.getAttribute('data-nome').toLowerCase();
-                    const matches = nome.includes(searchTerm);
+                    const nome = card.getAttribute('data-nome') || '';
+                    const matches = nome.toLowerCase().includes(searchTerm);
 
                     card.style.display = matches ? '' : 'none';
                     if (matches) visibleCount++;
@@ -1220,8 +1150,8 @@ const SetoresAdmin = (function () {
                 targetCards.forEach(card => {
                     if (card.classList.contains('disabled')) return;
 
-                    const nome = card.getAttribute('data-nome').toLowerCase();
-                    const matches = nome.includes(searchTerm);
+                    const nome = card.getAttribute('data-nome') || '';
+                    const matches = nome.toLowerCase().includes(searchTerm);
 
                     card.style.display = matches ? '' : 'none';
                     if (matches) visibleCount++;
@@ -1273,7 +1203,10 @@ const SetoresAdmin = (function () {
                 // Atualiza o contador de usuários
                 const selectedUsersCount = getElement('#selectedUsersCount');
                 if (selectedUsersCount) {
-                    selectedUsersCount.querySelector('span').textContent = usuarios.length;
+                    const countSpan = selectedUsersCount.querySelector('span');
+                    if (countSpan) {
+                        countSpan.textContent = usuarios.length;
+                    }
                 }
 
                 // Se não houver usuários, exibe mensagem
@@ -1285,7 +1218,7 @@ const SetoresAdmin = (function () {
                 // Renderiza os usuários
                 let html = `<div class="users-list">`;
 
-                usuarios.forEach(usuario => {
+                usuarios.forEach((usuario, index) => {
                     const iniciais = usuario.nome
                         ? usuario.nome.split(' ')
                             .map(n => n.charAt(0))
@@ -1299,7 +1232,7 @@ const SetoresAdmin = (function () {
                     const corUsuario = generateColorFromString(usuario.nome || '');
 
                     html += `
-                    <div class="user-item fade-in">
+                    <div class="user-item fade-in" style="animation-delay: ${index * 0.05}s">
                         <div class="user-avatar" style="background-color: ${corUsuario}">
                             ${iniciais}
                         </div>
@@ -1335,7 +1268,7 @@ const SetoresAdmin = (function () {
         const targetCards = getElements(CONFIG.selectors.modals.replicate.targetCards);
 
         targetCards.forEach(card => {
-            const cardId = card.getAttribute('data-id');
+            const cardId = card.getAttribute('data-id') || '';
             const checkbox = card.querySelector(CONFIG.selectors.modals.replicate.targetCheckboxes);
 
             if (cardId === sourceId) {
@@ -1440,8 +1373,16 @@ const SetoresAdmin = (function () {
         const selectedUsersCount = getElement('#selectedUsersCount');
         const targetSelectedCount = getElement('#targetSelectedCount');
 
-        if (selectedUsersCount) selectedUsersCount.querySelector('span').textContent = '0';
-        if (targetSelectedCount) targetSelectedCount.textContent = '0 setores de destino selecionados';
+        if (selectedUsersCount) {
+            const countSpan = selectedUsersCount.querySelector('span');
+            if (countSpan) {
+                countSpan.textContent = '0';
+            }
+        }
+
+        if (targetSelectedCount) {
+            targetSelectedCount.textContent = '0 setores de destino selecionados';
+        }
 
         // Desabilita o botão de confirmar
         const confirmReplicate = getElement(CONFIG.selectors.modals.replicate.confirmBtn);
@@ -1616,7 +1557,7 @@ const SetoresAdmin = (function () {
         const avatars = getElements(CONFIG.selectors.avatars);
 
         avatars.forEach(avatar => {
-            const name = avatar.getAttribute('data-name');
+            const name = avatar.getAttribute('data-name') || '';
             if (!avatar.style.backgroundColor) {
                 avatar.style.backgroundColor = generateColorFromString(name);
             }
@@ -1648,7 +1589,7 @@ const SetoresAdmin = (function () {
         // Tenta obter a URL base a partir de um link existente
         const baseUrlElement = getElement('a[href*="setores/admin"]');
         if (baseUrlElement) {
-            const href = baseUrlElement.getAttribute('href');
+            const href = baseUrlElement.getAttribute('href') || '';
             if (href.includes('setores/admin')) {
                 return href.split('setores/admin')[0];
             }
@@ -1686,73 +1627,13 @@ const SetoresAdmin = (function () {
 // Inicializa o módulo quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function () {
     // Inicializa o módulo principal
-    SetoresAdmin.init();
-
-    // Corrige o erro no arquivo setores-visualizacao.js:122
-    const searchInput = document.querySelector('#searchInput');
-    if (searchInput) {
-        // Remove o evento original que causa o erro
-        const oldPerformSearch = searchInput.onkeyup;
-        if (oldPerformSearch) {
-            searchInput.removeEventListener('keyup', oldPerformSearch);
-        }
-
-        // Adiciona um novo evento seguro
-        searchInput.addEventListener('input', function () {
-            const searchTerm = this.value.toLowerCase().trim();
-            const statusFilter = document.querySelector('#statusFilter');
-            const statusValue = statusFilter ? statusFilter.value.toLowerCase() : '';
-
-            // Verifica se o elemento clearSearchBtn existe antes de acessar style
-            const clearSearchBtn = document.querySelector('#clearSearch');
-            if (clearSearchBtn) {
-                clearSearchBtn.style.display = searchTerm ? 'block' : 'none';
-            }
-
-            // Filtra as linhas
-            const tableRows = document.querySelectorAll('.data-table tbody tr:not(.empty-row)');
-            const noResults = document.querySelector('#noResults');
-            const tableContainer = document.querySelector('.table-responsive');
-
-            let visibleCount = 0;
-            let visibleRows = [];
-
-            if (tableRows && tableRows.length) {
-                tableRows.forEach(row => {
-                    const nome = row.getAttribute('data-nome').toLowerCase();
-                    const status = row.getAttribute('data-status').toLowerCase();
-
-                    const matchesSearch = nome.includes(searchTerm);
-                    const matchesStatus = statusValue === '' || status === statusValue;
-
-                    if (matchesSearch && matchesStatus) {
-                        row.style.display = '';
-                        visibleCount++;
-                        visibleRows.push(row);
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-            }
-
-            // Mostra/esconde mensagem de nenhum resultado
-            if (noResults && tableContainer) {
-                if (visibleCount === 0 && (searchTerm || statusValue)) {
-                    noResults.style.display = 'flex';
-                    tableContainer.style.display = 'none';
-                } else {
-                    noResults.style.display = 'none';
-                    tableContainer.style.display = 'block';
-                }
-            }
-
-            // Atualiza a paginação
-            if (typeof SetoresAdmin.updatePagination === 'function') {
-                SetoresAdmin.updatePagination();
-                SetoresAdmin.goToPage(1);
-            }
-        });
+    if (typeof SetoresAdmin !== 'undefined') {
+        SetoresAdmin.init();
     }
+
+    // Aplica as correções
+    fixAllSearchFunctionality();
+    fixAllTooltips();
 
     // Adiciona classe para atualizar o estilo
     const container = document.querySelector('.setores-admin-v4');
@@ -1773,6 +1654,117 @@ document.addEventListener('DOMContentLoaded', function () {
         row.classList.add('fade-in');
     });
 });
+
+// Também executa as correções quando a janela terminar de carregar
+window.addEventListener('load', function () {
+    // Aplica as correções novamente para garantir
+    setTimeout(function () {
+        fixAllSearchFunctionality();
+        fixAllTooltips();
+    }, 500);
+});
+
+// Garante que as correções sejam aplicadas mesmo após atualizações AJAX
+document.addEventListener('ajaxComplete', function () {
+    setTimeout(function () {
+        fixAllSearchFunctionality();
+        fixAllTooltips();
+    }, 100);
+});
+
+
+/**
+ * Corrige a funcionalidade de busca para evitar erros
+ */
+function fixSearchFunctionality() {
+    const searchInput = document.querySelector('#searchInput');
+    if (!searchInput) return; // Se não existir, sai da função
+
+    // Remove o evento original que causa o erro
+    if (searchInput.onkeyup) {
+        searchInput.removeEventListener('keyup', searchInput.onkeyup);
+    }
+
+    // Adiciona um novo evento seguro
+    searchInput.addEventListener('input', function () {
+        const searchTerm = this.value.toLowerCase().trim();
+
+        // Verifica se os elementos existem antes de acessá-los
+        const statusFilter = document.querySelector('#statusFilter');
+        const statusValue = statusFilter ? statusFilter.value.toLowerCase() : '';
+
+        const clearSearchBtn = document.querySelector('#clearSearch');
+        if (clearSearchBtn) {
+            clearSearchBtn.style.display = searchTerm ? 'block' : 'none';
+        }
+
+        // Filtra as linhas
+        const tableRows = document.querySelectorAll('.data-table tbody tr:not(.empty-row)');
+        const noResults = document.querySelector('#noResults');
+        const tableContainer = document.querySelector('.table-responsive');
+
+        let visibleCount = 0;
+        let visibleRows = [];
+
+        if (tableRows && tableRows.length) {
+            tableRows.forEach(row => {
+                const nome = row.getAttribute('data-nome');
+                const status = row.getAttribute('data-status');
+
+                if (!nome || !status) return;
+
+                const matchesSearch = nome.toLowerCase().includes(searchTerm);
+                const matchesStatus = statusValue === '' || status.toLowerCase() === statusValue;
+
+                if (matchesSearch && matchesStatus) {
+                    row.style.display = '';
+                    visibleCount++;
+                    visibleRows.push(row);
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Verifica se os elementos existem antes de acessá-los
+        if (noResults) {
+            noResults.style.display = visibleCount === 0 && (searchTerm || statusValue) ? 'flex' : 'none';
+        }
+
+        if (tableContainer) {
+            tableContainer.style.display = visibleCount === 0 && (searchTerm || statusValue) ? 'none' : 'block';
+        }
+
+        // Atualiza a paginação se a função existir
+        if (typeof SetoresAdmin !== 'undefined' && typeof SetoresAdmin.updatePagination === 'function') {
+            SetoresAdmin.updatePagination();
+            SetoresAdmin.goToPage(1);
+        }
+    });
+}
+
+/**
+ * Inicializa tooltips melhorados para os botões de ação
+ */
+function initEnhancedTooltips() {
+    // Remove tooltips dinâmicos existentes
+    const existingTooltips = document.querySelectorAll('.dynamic-tooltip');
+    existingTooltips.forEach(tooltip => tooltip.remove());
+
+    // Adiciona z-index elevado para os botões de ação
+    const actionButtons = document.querySelectorAll('.btn-action');
+    actionButtons.forEach(button => {
+        // Remove quaisquer event listeners existentes para tooltips
+        const newButton = button.cloneNode(true);
+        if (button.parentNode) {
+            button.parentNode.replaceChild(newButton, button);
+        }
+
+        // Configura apenas o z-index
+        newButton.style.position = 'relative';
+        newButton.style.zIndex = '5';
+    });
+}
 
 // Função global para fechar modais (para uso em onclick)
 function closeModalFunction(modalId) {
@@ -1828,7 +1820,10 @@ function loadSourceUsers(sourceId) {
                 // Atualiza o contador de usuários
                 const selectedUsersCount = document.querySelector('#selectedUsersCount');
                 if (selectedUsersCount) {
-                    selectedUsersCount.querySelector('span').textContent = data.length;
+                    const countSpan = selectedUsersCount.querySelector('span');
+                    if (countSpan) {
+                        countSpan.textContent = data.length;
+                    }
                 }
 
                 // Se não houver usuários, exibe mensagem
@@ -1947,4 +1942,587 @@ function updateConfirmButton() {
     if (confirmButton) {
         confirmButton.disabled = !(sourceSelected && targetSelected);
     }
+}
+
+/**
+ * Sobrescreve completamente a função problemática no arquivo setores-visualizacao.js
+ */
+function fixVisualizacaoErrors() {
+    // Encontra todas as funções performSearch no escopo global
+    if (typeof window.performSearch === 'function') {
+        // Sobrescreve a função problemática
+        window.performSearch = function (event) {
+            const searchTerm = event && event.target ? event.target.value.toLowerCase().trim() : '';
+
+            // Verifica se os elementos existem antes de acessá-los
+            const clearSearchBtn = document.querySelector('#clearSearch');
+            if (clearSearchBtn) {
+                clearSearchBtn.style.display = searchTerm ? 'block' : 'none';
+            }
+
+            // Filtra as linhas
+            const tableRows = document.querySelectorAll('.data-table tbody tr:not(.empty-row)');
+            const noResults = document.querySelector('#noResults');
+            const tableContainer = document.querySelector('.table-responsive');
+
+            let visibleCount = 0;
+
+            if (tableRows && tableRows.length) {
+                tableRows.forEach(row => {
+                    const nome = row.getAttribute('data-nome');
+                    const status = row.getAttribute('data-status');
+
+                    if (!nome || !status) return;
+
+                    const matchesSearch = nome.toLowerCase().includes(searchTerm);
+                    const statusFilter = document.querySelector('#statusFilter');
+                    const statusValue = statusFilter ? statusFilter.value.toLowerCase() : '';
+                    const matchesStatus = statusValue === '' || status.toLowerCase() === statusValue;
+
+                    if (matchesSearch && matchesStatus) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            // Verifica se os elementos existem antes de acessá-los
+            if (noResults) {
+                noResults.style.display = visibleCount === 0 ? 'flex' : 'none';
+            }
+
+            if (tableContainer) {
+                tableContainer.style.display = visibleCount === 0 ? 'none' : 'block';
+            }
+
+            // Atualiza a paginação se a função existir
+            if (typeof SetoresAdmin !== 'undefined' && typeof SetoresAdmin.updatePagination === 'function') {
+                SetoresAdmin.updatePagination();
+                SetoresAdmin.goToPage(1);
+            }
+        };
+    }
+
+    // Também sobrescreve qualquer evento de input no searchInput
+    const searchInput = document.querySelector('#searchInput');
+    if (searchInput) {
+        // Remove todos os event listeners existentes
+        const newSearchInput = searchInput.cloneNode(true);
+        if (searchInput.parentNode) {
+            searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+        }
+
+        // Adiciona um novo event listener seguro
+        newSearchInput.addEventListener('input', function () {
+            const searchTerm = this.value.toLowerCase().trim();
+
+            // Verifica se os elementos existem antes de acessá-los
+            const clearSearchBtn = document.querySelector('#clearSearch');
+            if (clearSearchBtn) {
+                clearSearchBtn.style.display = searchTerm ? 'block' : 'none';
+            }
+
+            // Filtra as linhas
+            const tableRows = document.querySelectorAll('.data-table tbody tr:not(.empty-row)');
+            const noResults = document.querySelector('#noResults');
+            const tableContainer = document.querySelector('.table-responsive');
+
+            let visibleCount = 0;
+
+            if (tableRows && tableRows.length) {
+                tableRows.forEach(row => {
+                    const nome = row.getAttribute('data-nome');
+                    const status = row.getAttribute('data-status');
+
+                    if (!nome || !status) return;
+
+                    const matchesSearch = nome.toLowerCase().includes(searchTerm);
+                    const statusFilter = document.querySelector('#statusFilter');
+                    const statusValue = statusFilter ? statusFilter.value.toLowerCase() : '';
+                    const matchesStatus = statusValue === '' || status.toLowerCase() === statusValue;
+
+                    if (matchesSearch && matchesStatus) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            // Verifica se os elementos existem antes de acessá-los
+            if (noResults) {
+                noResults.style.display = visibleCount === 0 && searchTerm ? 'flex' : 'none';
+            }
+
+            if (tableContainer) {
+                tableContainer.style.display = visibleCount === 0 && searchTerm ? 'none' : 'block';
+            }
+
+            // Atualiza a paginação se a função existir
+            if (typeof SetoresAdmin !== 'undefined' && typeof SetoresAdmin.updatePagination === 'function') {
+                SetoresAdmin.updatePagination();
+                SetoresAdmin.goToPage(1);
+            }
+        });
+    }
+
+    // Corrige também o botão de limpar
+    const clearSearchBtn = document.querySelector('#clearSearch');
+    if (clearSearchBtn) {
+        // Remove todos os event listeners existentes
+        const newClearBtn = clearSearchBtn.cloneNode(true);
+        if (clearSearchBtn.parentNode) {
+            clearSearchBtn.parentNode.replaceChild(newClearBtn, clearSearchBtn);
+        }
+
+        // Adiciona um novo event listener seguro
+        newClearBtn.addEventListener('click', function () {
+            const searchInput = document.querySelector('#searchInput');
+            if (searchInput) {
+                searchInput.value = '';
+                searchInput.focus();
+
+                // Dispara o evento input manualmente
+                const event = new Event('input', { bubbles: true });
+                searchInput.dispatchEvent(event);
+            }
+        });
+    }
+}
+
+/**
+ * Sobrescreve completamente a função problemática no arquivo setores-visualizacao.js
+ * Esta função deve substituir qualquer versão anterior
+ */
+function fixAllSearchFunctionality() {
+    // Sobrescreve a função global performSearch
+    window.performSearch = function (event) {
+        try {
+            const searchTerm = (event && event.target) ? event.target.value.toLowerCase().trim() : '';
+
+            // Verifica se os elementos existem antes de acessá-los
+            const clearSearchBtn = document.querySelector('#clearSearch');
+            if (clearSearchBtn) {
+                clearSearchBtn.style.display = searchTerm ? 'block' : 'none';
+            }
+
+            // Filtra as linhas
+            const tableRows = document.querySelectorAll('.data-table tbody tr:not(.empty-row)');
+            const noResults = document.querySelector('#noResults');
+            const tableContainer = document.querySelector('.table-responsive');
+
+            let visibleCount = 0;
+
+            if (tableRows && tableRows.length) {
+                tableRows.forEach(row => {
+                    const nome = row.getAttribute('data-nome');
+                    const status = row.getAttribute('data-status');
+
+                    if (!nome || !status) return;
+
+                    const matchesSearch = nome.toLowerCase().includes(searchTerm);
+                    const statusFilter = document.querySelector('#statusFilter');
+                    const statusValue = statusFilter ? statusFilter.value.toLowerCase() : '';
+                    const matchesStatus = statusValue === '' || status.toLowerCase() === statusValue;
+
+                    if (matchesSearch && matchesStatus) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            // Verifica se os elementos existem antes de acessá-los
+            if (noResults) {
+                noResults.style.display = visibleCount === 0 && (searchTerm || (statusFilter && statusFilter.value)) ? 'flex' : 'none';
+            }
+
+            if (tableContainer) {
+                tableContainer.style.display = visibleCount === 0 && (searchTerm || (statusFilter && statusFilter.value)) ? 'none' : 'block';
+            }
+
+            // Atualiza a paginação se a função existir
+            if (typeof SetoresAdmin !== 'undefined' && typeof SetoresAdmin.updatePagination === 'function') {
+                SetoresAdmin.updatePagination();
+                SetoresAdmin.goToPage(1);
+            }
+        } catch (error) {
+            console.error('Erro seguro em performSearch:', error);
+        }
+    };
+
+    // Redefine todos os event listeners relacionados à pesquisa
+    const searchInput = document.querySelector('#searchInput');
+    if (searchInput) {
+        // Clona o elemento para remover todos os event listeners
+        const newSearchInput = searchInput.cloneNode(true);
+        if (searchInput.parentNode) {
+            searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+        }
+
+        // Adiciona o novo event listener
+        newSearchInput.addEventListener('input', function (event) {
+            window.performSearch(event);
+        });
+    }
+
+    // Redefine o botão de limpar pesquisa
+    const clearSearchBtn = document.querySelector('#clearSearch');
+    if (clearSearchBtn) {
+        // Clona o elemento para remover todos os event listeners
+        const newClearBtn = clearSearchBtn.cloneNode(true);
+        if (clearSearchBtn.parentNode) {
+            clearSearchBtn.parentNode.replaceChild(newClearBtn, clearSearchBtn);
+        }
+
+        // Adiciona o novo event listener
+        newClearBtn.addEventListener('click', function () {
+            const searchInput = document.querySelector('#searchInput');
+            if (searchInput) {
+                searchInput.value = '';
+
+                // Dispara o evento input manualmente
+                const event = new Event('input', { bubbles: true });
+                searchInput.dispatchEvent(event);
+
+                // Foca no input
+                searchInput.focus();
+            }
+        });
+    }
+
+    // Redefine o botão de limpar filtros
+    const clearFiltersBtn = document.querySelector('#clearFiltersBtn');
+    if (clearFiltersBtn) {
+        // Clona o elemento para remover todos os event listeners
+        const newClearFiltersBtn = clearFiltersBtn.cloneNode(true);
+        if (clearFiltersBtn.parentNode) {
+            clearFiltersBtn.parentNode.replaceChild(newClearFiltersBtn, clearFiltersBtn);
+        }
+
+        // Adiciona o novo event listener
+        newClearFiltersBtn.addEventListener('click', function () {
+            const searchInput = document.querySelector('#searchInput');
+            const statusFilter = document.querySelector('#statusFilter');
+
+            if (searchInput) {
+                searchInput.value = '';
+            }
+
+            if (statusFilter) {
+                statusFilter.value = '';
+            }
+
+            // Dispara o evento input manualmente
+            if (searchInput) {
+                const event = new Event('input', { bubbles: true });
+                searchInput.dispatchEvent(event);
+            }
+        });
+    }
+
+    // Redefine o link de limpar filtros
+    const clearFilters = document.querySelector('#clearFilters');
+    if (clearFilters) {
+        // Clona o elemento para remover todos os event listeners
+        const newClearFilters = clearFilters.cloneNode(true);
+        if (clearFilters.parentNode) {
+            clearFilters.parentNode.replaceChild(newClearFilters, clearFilters);
+        }
+
+        // Adiciona o novo event listener
+        newClearFilters.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            const searchInput = document.querySelector('#searchInput');
+            const statusFilter = document.querySelector('#statusFilter');
+
+            if (searchInput) {
+                searchInput.value = '';
+            }
+
+            if (statusFilter) {
+                statusFilter.value = '';
+            }
+
+            // Dispara o evento input manualmente
+            if (searchInput) {
+                const event = new Event('input', { bubbles: true });
+                searchInput.dispatchEvent(event);
+            }
+        });
+    }
+}
+
+/**
+ * Solução definitiva para os tooltips
+ * Esta função deve substituir qualquer versão anterior
+ */
+function fixAllTooltips() {
+    // Remove qualquer tooltip dinâmico existente
+    document.querySelectorAll('.custom-tooltip').forEach(el => el.remove());
+
+    // Adiciona os estilos para os tooltips dinâmicos se ainda não existirem
+    if (!document.querySelector('#custom-tooltip-styles')) {
+        const style = document.createElement('style');
+        style.id = 'custom-tooltip-styles';
+        style.textContent = `
+            .custom-tooltip {
+                position: fixed;
+                z-index: 9999;
+                background-color: #1f2937;
+                color: white;
+                padding: 6px 10px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                letter-spacing: 0.3px;
+                pointer-events: none;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                white-space: nowrap;
+                animation: fadeIn 0.2s ease-in-out;
+            }
+            
+            .custom-tooltip.tooltip-top::after {
+                content: '';
+                position: absolute;
+                bottom: -10px;
+                left: 50%;
+                transform: translateX(-50%);
+                border-width: 5px;
+                border-style: solid;
+                border-color: #1f2937 transparent transparent transparent;
+            }
+            
+            .custom-tooltip.tooltip-bottom::after {
+                content: '';
+                position: absolute;
+                top: -10px;
+                left: 50%;
+                transform: translateX(-50%);
+                border-width: 5px;
+                border-style: solid;
+                border-color: transparent transparent #1f2937 transparent;
+            }
+            
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(5px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            /* Desativa os tooltips CSS originais */
+            .setores-admin-v5 .btn-action::after,
+            .setores-admin-v5 .btn-action::before {
+                display: none !important;
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
+
+    // Processa todos os botões de ação
+    const actionButtons = document.querySelectorAll('.btn-action');
+
+    actionButtons.forEach(button => {
+        // Verifica se o botão já foi processado
+        if (button.hasAttribute('data-tooltip-processed')) {
+            return;
+        }
+
+        // Marca o botão como processado
+        button.setAttribute('data-tooltip-processed', 'true');
+
+        // Obtém o texto do tooltip
+        const tooltipText = button.getAttribute('data-tooltip');
+        if (!tooltipText) return;
+
+        // Remove os event listeners existentes
+        const newButton = button.cloneNode(true);
+        newButton.setAttribute('data-tooltip-processed', 'true');
+
+        if (button.parentNode) {
+            button.parentNode.replaceChild(newButton, button);
+
+            // Adiciona os novos event listeners
+            newButton.addEventListener('mouseenter', function () {
+                // Remove qualquer tooltip existente
+                if (this._tooltip) {
+                    document.body.removeChild(this._tooltip);
+                    this._tooltip = null;
+                }
+
+                // Cria o tooltip
+                const tooltip = document.createElement('div');
+                tooltip.className = 'custom-tooltip';
+                tooltip.textContent = tooltipText;
+                document.body.appendChild(tooltip);
+
+                // Posiciona o tooltip
+                const rect = this.getBoundingClientRect();
+                const isInFirstRows = this.closest('tr') &&
+                    Array.from(this.closest('tbody').querySelectorAll('tr')).indexOf(this.closest('tr')) < 3;
+
+                if (isInFirstRows) {
+                    // Posiciona abaixo para as primeiras 3 linhas
+                    tooltip.style.top = `${rect.bottom + 10}px`;
+                    tooltip.classList.add('tooltip-bottom');
+                } else {
+                    // Posiciona acima para as demais linhas
+                    tooltip.style.top = `${rect.top - tooltip.offsetHeight - 10}px`;
+                    tooltip.classList.add('tooltip-top');
+                }
+
+                tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)}px`;
+
+                // Armazena o tooltip para remoção posterior
+                this._tooltip = tooltip;
+            });
+
+            newButton.addEventListener('mouseleave', function () {
+                if (this._tooltip) {
+                    document.body.removeChild(this._tooltip);
+                    this._tooltip = null;
+                }
+            });
+        }
+    });
+}
+
+/**
+ * Solução definitiva para os tooltips
+ */
+function fixTooltips() {
+    // Remove qualquer tooltip dinâmico existente
+    document.querySelectorAll('.dynamic-tooltip').forEach(el => el.remove());
+
+    // Remove os tooltips CSS existentes substituindo os botões
+    const actionButtons = document.querySelectorAll('.btn-action');
+
+    actionButtons.forEach(button => {
+        // Cria um novo botão sem os tooltips CSS
+        const newButton = button.cloneNode(true);
+
+        // Remove qualquer estilo inline que possa interferir
+        newButton.removeAttribute('style');
+
+        // Adiciona o estilo necessário
+        newButton.style.position = 'relative';
+        newButton.style.zIndex = '5';
+
+        // Obtém o texto do tooltip
+        const tooltipText = button.getAttribute('data-tooltip');
+
+        // Substitui o botão original
+        if (button.parentNode) {
+            button.parentNode.replaceChild(newButton, button);
+
+            // Adiciona um novo event listener para criar tooltips dinâmicos
+            newButton.addEventListener('mouseenter', function () {
+                // Cria o tooltip
+                const tooltip = document.createElement('div');
+                tooltip.className = 'custom-tooltip';
+                tooltip.textContent = tooltipText;
+                document.body.appendChild(tooltip);
+
+                // Posiciona o tooltip
+                const rect = this.getBoundingClientRect();
+                const isInFirstRows = this.closest('tr') &&
+                    Array.from(this.closest('tbody').querySelectorAll('tr')).indexOf(this.closest('tr')) < 3;
+
+                if (isInFirstRows) {
+                    // Posiciona abaixo para as primeiras 3 linhas
+                    tooltip.style.top = `${rect.bottom + 10}px`;
+                    tooltip.classList.add('tooltip-bottom');
+                } else {
+                    // Posiciona acima para as demais linhas
+                    tooltip.style.top = `${rect.top - tooltip.offsetHeight - 10}px`;
+                    tooltip.classList.add('tooltip-top');
+                }
+
+                tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)}px`;
+
+                // Armazena o tooltip para remoção posterior
+                this._tooltip = tooltip;
+            });
+
+            newButton.addEventListener('mouseleave', function () {
+                if (this._tooltip) {
+                    document.body.removeChild(this._tooltip);
+                    this._tooltip = null;
+                }
+            });
+        }
+    });
+
+    // Adiciona os estilos para os tooltips dinâmicos
+    const style = document.createElement('style');
+    style.textContent = `
+        .custom-tooltip {
+            position: fixed;
+            z-index: 9999;
+            background-color: #1f2937;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            pointer-events: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+        
+        .custom-tooltip.tooltip-top::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: #1f2937 transparent transparent transparent;
+        }
+        
+        .custom-tooltip.tooltip-bottom::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent transparent #1f2937 transparent;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Desativa os tooltips CSS originais */
+        .setores-admin-v5 .btn-action::after,
+        .setores-admin-v5 .btn-action::before {
+            display: none !important;
+        }
+    `;
+
+    document.head.appendChild(style);
 }

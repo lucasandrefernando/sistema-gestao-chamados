@@ -373,3 +373,73 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const actionButtons = document.querySelectorAll('.setores-admin-v5 .btn-action');
+
+        actionButtons.forEach(button => {
+            button.addEventListener('mouseenter', function() {
+                const rect = this.getBoundingClientRect();
+                const tooltip = this.querySelector('::after');
+
+                // Não podemos manipular diretamente o pseudo-elemento, então usamos uma solução alternativa
+                // Adicionamos um atributo de estilo personalizado ao botão
+                const tooltipText = this.getAttribute('data-tooltip');
+                const tooltipElement = document.createElement('div');
+                tooltipElement.className = 'custom-tooltip';
+                tooltipElement.textContent = tooltipText;
+                tooltipElement.style.position = 'fixed';
+                tooltipElement.style.zIndex = '99999';
+                tooltipElement.style.backgroundColor = 'var(--gray-800)';
+                tooltipElement.style.color = 'white';
+                tooltipElement.style.padding = '6px 12px';
+                tooltipElement.style.borderRadius = 'var(--border-radius-sm)';
+                tooltipElement.style.fontSize = '12px';
+                tooltipElement.style.boxShadow = '0 3px 10px rgba(0, 0, 0, 0.2)';
+                tooltipElement.style.pointerEvents = 'none';
+
+                // Determina se deve mostrar acima ou abaixo
+                const viewportHeight = window.innerHeight;
+                const spaceAbove = rect.top;
+                const spaceBelow = viewportHeight - rect.bottom;
+
+                document.body.appendChild(tooltipElement);
+
+                // Calcula a largura do tooltip após adicioná-lo ao DOM
+                const tooltipWidth = tooltipElement.offsetWidth;
+                const tooltipHeight = tooltipElement.offsetHeight;
+
+                // Posiciona o tooltip
+                if (spaceBelow >= tooltipHeight + 10 || spaceAbove < tooltipHeight + 10) {
+                    // Posiciona abaixo
+                    tooltipElement.style.top = `${rect.bottom + 8}px`;
+
+                    // Adiciona uma seta para cima
+                    tooltipElement.style.setProperty('--tooltip-arrow', "'▲'");
+                    tooltipElement.style.setProperty('--tooltip-arrow-pos', "'top'");
+                } else {
+                    // Posiciona acima
+                    tooltipElement.style.top = `${rect.top - tooltipHeight - 8}px`;
+
+                    // Adiciona uma seta para baixo
+                    tooltipElement.style.setProperty('--tooltip-arrow', "'▼'");
+                    tooltipElement.style.setProperty('--tooltip-arrow-pos', "'bottom'");
+                }
+
+                // Centraliza horizontalmente
+                tooltipElement.style.left = `${rect.left + (rect.width / 2) - (tooltipWidth / 2)}px`;
+
+                // Armazena o elemento para remoção posterior
+                this._tooltipElement = tooltipElement;
+            });
+
+            button.addEventListener('mouseleave', function() {
+                if (this._tooltipElement) {
+                    document.body.removeChild(this._tooltipElement);
+                    this._tooltipElement = null;
+                }
+            });
+        });
+    });
+</script>
