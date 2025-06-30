@@ -46,6 +46,10 @@
     <script src="<?= base_url('public/js/setores-admin.js') ?>"></script>
     <script src="<?= base_url('public/js/setores-usuarios.js') ?>"></script>
 
+    <script src="<?= base_url('public/js/licencas.js') ?>"></script>
+
+    <script src="<?= base_url('public/js/dashboard.js') ?>"></script>
+
 
 
 

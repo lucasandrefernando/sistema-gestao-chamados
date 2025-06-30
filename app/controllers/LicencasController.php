@@ -60,9 +60,14 @@ class LicencasController extends Controller
             }
         }
 
+        // Adiciona os arquivos CSS e JS específicos
+        $this->addCssFile('licencas.css');
+        $this->addJsFile('licencas.js');
+
         $this->render('licencas/index', [
             'licencas' => $licencas,
-            'empresas' => $empresas
+            'empresas' => $empresas,
+            'titulo' => 'Gerenciamento de Licenças'
         ]);
     }
 
@@ -73,6 +78,10 @@ class LicencasController extends Controller
     {
         // Obtém a lista de empresas
         $empresas = $this->empresaModel->findAll('ativo = 1', [], 'nome ASC');
+
+        // Adiciona os arquivos CSS e JS específicos
+        $this->addCssFile('licencas.css');
+        $this->addJsFile('licencas.js');
 
         $this->render('licencas/form', [
             'titulo' => 'Nova Licença',
@@ -101,6 +110,14 @@ class LicencasController extends Controller
 
         if (!empty($errors)) {
             set_flash_message('error', implode('<br>', $errors));
+            redirect('licencas/criar');
+            return;
+        }
+
+        // Verifica se já existe uma licença para esta empresa
+        $licencasExistentes = $this->licencaModel->findByEmpresa($data['empresa_id']);
+        if (!empty($licencasExistentes)) {
+            set_flash_message('error', 'Já existe uma licença para esta empresa. Cada empresa pode ter apenas uma licença.');
             redirect('licencas/criar');
             return;
         }
@@ -137,6 +154,7 @@ class LicencasController extends Controller
         }
     }
 
+
     /**
      * Formulário para editar licença
      */
@@ -154,6 +172,10 @@ class LicencasController extends Controller
 
         // Obtém a lista de empresas
         $empresas = $this->empresaModel->findAll('ativo = 1', [], 'nome ASC');
+
+        // Adiciona os arquivos CSS e JS específicos
+        $this->addCssFile('licencas.css');
+        $this->addJsFile('licencas.js');
 
         $this->render('licencas/form', [
             'titulo' => 'Editar Licença',
@@ -180,6 +202,17 @@ class LicencasController extends Controller
 
         // Obtém os dados do formulário
         $data = $this->getPostData();
+
+        // Verifica se está alterando a empresa
+        if (isset($data['empresa_id']) && $data['empresa_id'] != $licenca['empresa_id']) {
+            // Verifica se já existe uma licença para a nova empresa
+            $licencasExistentes = $this->licencaModel->findByEmpresa($data['empresa_id']);
+            if (!empty($licencasExistentes)) {
+                set_flash_message('error', 'Já existe uma licença para esta empresa. Cada empresa pode ter apenas uma licença.');
+                redirect('licencas/editar/' . $id);
+                return;
+            }
+        }
 
         // Valida os campos obrigatórios
         $requiredFields = [
@@ -242,7 +275,12 @@ class LicencasController extends Controller
         // Alterna o status
         $novoStatus = $licenca['ativo'] ? 0 : 1;
 
-        if ($this->licencaModel->update($id, ['ativo' => $novoStatus])) {
+        // Usar apenas a coluna 'ativo' que sabemos que existe
+        $data = [
+            'ativo' => $novoStatus
+        ];
+
+        if ($this->licencaModel->update($id, $data)) {
             $mensagem = $novoStatus ? 'Licença ativada com sucesso.' : 'Licença desativada com sucesso.';
             set_flash_message('success', $mensagem);
         } else {
@@ -250,5 +288,43 @@ class LicencasController extends Controller
         }
 
         redirect('licencas');
+    }
+
+    /**
+     * Registra log de atividade
+     */
+    private function registrarLog($acao, $licencaId)
+    {
+        if (class_exists('Log')) {
+            $logModel = new Log();
+
+            // Obter o ID do usuário atual
+            $usuarioId = get_user_id();
+
+            // Data atual formatada
+            $dataAtual = date('Y-m-d H:i:s');
+
+            // Chamar o método registrar com os argumentos separados
+            $logModel->registrar($usuarioId, $acao, 'licencas', $licencaId);
+        }
+    }
+
+
+    /**
+     * Adiciona arquivo CSS específico
+     */
+    private function addCssFile($filename)
+    {
+        // Implementar conforme sua estrutura de template
+        // Exemplo: $this->view->addCss($filename);
+    }
+
+    /**
+     * Adiciona arquivo JS específico
+     */
+    private function addJsFile($filename)
+    {
+        // Implementar conforme sua estrutura de template
+        // Exemplo: $this->view->addJs($filename);
     }
 }

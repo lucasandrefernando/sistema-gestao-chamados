@@ -1,0 +1,986 @@
+/* ==========================================================================
+   SISTEMA DE GESTÃO DE LICENÇAS - ESTILOS EXCLUSIVOS
+   Versão 2.0 - Design Moderno e Interativo
+   ========================================================================== */
+
+.licencas-module {
+  --licenca-primary: #4361ee;
+  --licenca-primary-light: #4895ef;
+  --licenca-primary-dark: #3f37c9;
+  --licenca-secondary: #4cc9f0;
+  --licenca-success: #4cc9a0;
+  --licenca-warning: #f72585;
+  --licenca-danger: #e63946;
+  --licenca-info: #48bfe3;
+  --licenca-light: #f8f9fa;
+  --licenca-dark: #212529;
+  --licenca-gray: #6c757d;
+  --licenca-border: #dee2e6;
+  --licenca-shadow: rgba(67, 97, 238, 0.15);
+  --licenca-shadow-hover: rgba(67, 97, 238, 0.25);
+
+  --licenca-gradient-primary: linear-gradient(
+    135deg,
+    var(--licenca-primary),
+    var(--licenca-primary-light)
+  );
+  --licenca-gradient-success: linear-gradient(
+    135deg,
+    var(--licenca-success),
+    #56cfe1
+  );
+  --licenca-gradient-warning: linear-gradient(
+    135deg,
+    var(--licenca-warning),
+    #b5179e
+  );
+  --licenca-gradient-danger: linear-gradient(
+    135deg,
+    var(--licenca-danger),
+    #e76f51
+  );
+  --licenca-gradient-info: linear-gradient(
+    135deg,
+    var(--licenca-info),
+    #90e0ef
+  );
+
+  --licenca-transition-fast: 0.2s ease-in-out;
+  --licenca-transition-normal: 0.3s ease-in-out;
+  --licenca-transition-slow: 0.5s ease-in-out;
+
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, sans-serif;
+  color: var(--licenca-dark);
+  background-color: #f9fafb;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.03);
+}
+
+/* Cabeçalho do módulo 
+.licencas-module .licenca-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  position: relative;
+}*/
+
+/* Estilos para o título padronizado */
+.licencas-module .header-title {
+  margin-bottom: 20px;
+}
+
+.licencas-module .header-title h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--licenca-dark);
+  margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+}
+
+.licencas-module .header-title h1 i {
+  margin-right: 12px;
+  color: var(--licenca-primary);
+}
+
+.licencas-module .header-title .subtitle {
+  color: var(--licenca-gray);
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Correção para remover sublinhado dos botões */
+.licencas-module a.licenca-add-btn,
+.licencas-module a.licenca-form-btn,
+.licencas-module a.licenca-card-btn,
+.licencas-module a.licenca-btn,
+.licencas-module a.licenca-empty-btn {
+  text-decoration: none;
+}
+
+/* Correção para os botões na tabela */
+.licencas-module .licenca-table .licenca-actions a {
+  text-decoration: none;
+}
+
+/* Correção para os botões nos cards */
+.licencas-module .licenca-card-footer a {
+  text-decoration: none;
+}
+
+/* Melhorias adicionais nos botões */
+.licencas-module .licenca-btn,
+.licencas-module .licenca-card-btn,
+.licencas-module .licenca-form-btn {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.licencas-module .licenca-btn i,
+.licencas-module .licenca-card-btn i,
+.licencas-module .licenca-form-btn i {
+  margin-right: 8px;
+}
+
+/* Efeito de hover mais suave */
+.licencas-module .licenca-btn:hover,
+.licencas-module .licenca-card-btn:hover,
+.licencas-module .licenca-form-btn:hover {
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}
+
+/* Cabeçalho do módulo */
+.licencas-module .licenca-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  position: relative;
+}
+
+/* Responsividade para o cabeçalho */
+@media (max-width: 992px) {
+  .licencas-module .licenca-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .licencas-module .licenca-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Ajustes no cabeçalho */
+.page-header {
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--light-gray);
+}
+
+.licencas-module .licenca-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--licenca-dark);
+  margin: 0;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.licencas-module .licenca-title::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: var(--licenca-gradient-primary);
+  border-radius: 2px;
+}
+
+/* Controles e filtros */
+.licencas-module .licenca-controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.licencas-module .licenca-filter {
+  position: relative;
+}
+
+.licencas-module .licenca-filter select {
+  appearance: none;
+  background-color: white;
+  border: 1px solid var(--licenca-border);
+  border-radius: 8px;
+  padding: 10px 35px 10px 15px;
+  font-size: 0.9rem;
+  color: var(--licenca-dark);
+  cursor: pointer;
+  transition: all var(--licenca-transition-fast);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.licencas-module .licenca-filter select:focus {
+  outline: none;
+  border-color: var(--licenca-primary);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+}
+
+.licencas-module .licenca-filter::after {
+  content: "\f0d7";
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--licenca-gray);
+  pointer-events: none;
+}
+
+/* Botões de visualização */
+.licencas-module .licenca-view-toggle {
+  display: flex;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.licencas-module .licenca-view-btn {
+  border: none;
+  background-color: transparent;
+  padding: 10px 15px;
+  cursor: pointer;
+  color: var(--licenca-gray);
+  transition: all var(--licenca-transition-fast);
+}
+
+.licencas-module .licenca-view-btn:hover {
+  color: var(--licenca-primary);
+}
+
+.licencas-module .licenca-view-btn.active {
+  background-color: var(--licenca-primary);
+  color: white;
+}
+
+/* Botão de adicionar */
+.licencas-module .licenca-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--licenca-gradient-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--licenca-transition-fast);
+  box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+}
+
+.licencas-module .licenca-add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(67, 97, 238, 0.4);
+}
+
+.licencas-module .licenca-add-btn i {
+  margin-right: 8px;
+}
+
+/* Cards de licença */
+.licencas-module .licenca-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.licencas-module .licenca-card {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  transition: all var(--licenca-transition-normal);
+  position: relative;
+  border: none;
+}
+
+.licencas-module .licenca-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px var(--licenca-shadow-hover);
+}
+
+.licencas-module .licenca-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: var(--licenca-gray);
+}
+
+.licencas-module .licenca-card.ativa::before {
+  background: var(--licenca-gradient-success);
+}
+
+.licencas-module .licenca-card.inativa::before {
+  background: var(--licenca-gradient-danger);
+}
+
+.licencas-module .licenca-card.futura::before {
+  background: var(--licenca-gradient-info);
+}
+
+.licencas-module .licenca-card.expirada::before {
+  background: var(--licenca-gradient-warning);
+}
+
+.licencas-module .licenca-card-header {
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.licencas-module .licenca-card-company {
+  display: flex;
+  flex-direction: column;
+}
+
+.licencas-module .licenca-card-company-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--licenca-dark);
+  margin-bottom: 5px;
+}
+
+.licencas-module .licenca-card-company-id {
+  font-size: 0.8rem;
+  color: var(--licenca-gray);
+}
+
+.licencas-module .licenca-card-status {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.licencas-module .licenca-card-status i {
+  margin-right: 5px;
+}
+
+.licencas-module .licenca-card-status.ativa {
+  background-color: rgba(76, 201, 160, 0.1);
+  color: var(--licenca-success);
+}
+
+.licencas-module .licenca-card-status.inativa {
+  background-color: rgba(230, 57, 70, 0.1);
+  color: var(--licenca-danger);
+}
+
+.licencas-module .licenca-card-status.futura {
+  background-color: rgba(72, 191, 227, 0.1);
+  color: var(--licenca-info);
+}
+
+.licencas-module .licenca-card-status.expirada {
+  background-color: rgba(247, 37, 133, 0.1);
+  color: var(--licenca-warning);
+}
+
+.licencas-module .licenca-card-body {
+  padding: 20px;
+  text-align: center;
+}
+
+.licencas-module .licenca-card-quantity {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--licenca-primary);
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.licencas-module .licenca-card-quantity-label {
+  font-size: 0.9rem;
+  color: var(--licenca-gray);
+  margin-bottom: 20px;
+}
+
+.licencas-module .licenca-card-dates {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.licencas-module .licenca-card-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.licencas-module .licenca-card-date-label {
+  font-size: 0.75rem;
+  color: var(--licenca-gray);
+  margin-bottom: 5px;
+}
+
+.licencas-module .licenca-card-date-value {
+  font-weight: 600;
+  color: var(--licenca-dark);
+}
+
+.licencas-module .licenca-card-date-arrow {
+  color: var(--licenca-gray);
+}
+
+.licencas-module .licenca-card-duration {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 15px;
+  background-color: rgba(67, 97, 238, 0.1);
+  border-radius: 20px;
+  color: var(--licenca-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: 15px;
+}
+
+.licencas-module .licenca-card-duration i {
+  margin-right: 5px;
+}
+
+.licencas-module .licenca-card-footer {
+  padding: 15px 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.licencas-module .licenca-card-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.licencas-module .licenca-card-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--licenca-border);
+  background-color: white;
+  color: var(--licenca-gray);
+  cursor: pointer;
+  transition: all var(--licenca-transition-fast);
+}
+
+.licencas-module .licenca-card-btn:hover {
+  background-color: var(--licenca-primary);
+  border-color: var(--licenca-primary);
+  color: white;
+}
+
+.licencas-module .licenca-card-btn.edit:hover {
+  background-color: var(--licenca-info);
+  border-color: var(--licenca-info);
+}
+
+.licencas-module .licenca-card-btn.delete:hover {
+  background-color: var(--licenca-danger);
+  border-color: var(--licenca-danger);
+}
+
+.licencas-module .licenca-card-btn.activate:hover {
+  background-color: var(--licenca-success);
+  border-color: var(--licenca-success);
+}
+
+/* Tabela de licenças */
+.licencas-module .licenca-table-container {
+  margin-top: 20px;
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.licencas-module .licenca-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.licencas-module .licenca-table th {
+  background-color: #f8f9fa;
+  padding: 15px 20px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--licenca-dark);
+  border-bottom: 1px solid var(--licenca-border);
+}
+
+.licencas-module .licenca-table td {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--licenca-border);
+  vertical-align: middle;
+}
+
+.licencas-module .licenca-table tr:last-child td {
+  border-bottom: none;
+}
+
+.licencas-module .licenca-table tr {
+  transition: background-color var(--licenca-transition-fast);
+}
+
+.licencas-module .licenca-table tr:hover {
+  background-color: rgba(67, 97, 238, 0.03);
+}
+
+.licencas-module .licenca-table .licenca-company {
+  font-weight: 600;
+  color: var(--licenca-dark);
+  display: flex;
+  align-items: center;
+}
+
+.licencas-module .licenca-table .licenca-company i {
+  margin-right: 10px;
+  color: var(--licenca-primary);
+}
+
+.licencas-module .licenca-table .licenca-quantity {
+  font-weight: 700;
+  color: var(--licenca-primary);
+}
+
+.licencas-module .licenca-table .licenca-dates {
+  font-size: 0.9rem;
+  color: var(--licenca-gray);
+}
+
+.licencas-module .licenca-table .licenca-duration {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  background-color: rgba(67, 97, 238, 0.1);
+  border-radius: 20px;
+  color: var(--licenca-primary);
+  font-size: 0.8rem;
+  margin-top: 5px;
+}
+
+.licencas-module .licenca-table .licenca-duration i {
+  margin-right: 5px;
+}
+
+.licencas-module .licenca-table .licenca-status {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.licencas-module .licenca-table .licenca-status i {
+  margin-right: 5px;
+}
+
+.licencas-module .licenca-table .licenca-status.ativa {
+  background-color: rgba(76, 201, 160, 0.1);
+  color: var(--licenca-success);
+}
+
+.licencas-module .licenca-table .licenca-status.inativa {
+  background-color: rgba(230, 57, 70, 0.1);
+  color: var(--licenca-danger);
+}
+
+.licencas-module .licenca-table .licenca-status.futura {
+  background-color: rgba(72, 191, 227, 0.1);
+  color: var(--licenca-info);
+}
+
+.licencas-module .licenca-table .licenca-status.expirada {
+  background-color: rgba(247, 37, 133, 0.1);
+  color: var(--licenca-warning);
+}
+
+.licencas-module .licenca-table .licenca-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.licencas-module .licenca-table .licenca-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--licenca-border);
+  background-color: white;
+  color: var(--licenca-gray);
+  cursor: pointer;
+  transition: all var(--licenca-transition-fast);
+}
+
+.licencas-module .licenca-table .licenca-btn:hover {
+  background-color: var(--licenca-primary);
+  border-color: var(--licenca-primary);
+  color: white;
+}
+
+.licencas-module .licenca-table .licenca-btn.edit:hover {
+  background-color: var(--licenca-info);
+  border-color: var(--licenca-info);
+}
+
+.licencas-module .licenca-table .licenca-btn.delete:hover {
+  background-color: var(--licenca-danger);
+  border-color: var(--licenca-danger);
+}
+
+.licencas-module .licenca-table .licenca-btn.activate:hover {
+  background-color: var(--licenca-success);
+  border-color: var(--licenca-success);
+}
+
+/* Formulário de licença */
+.licencas-module .licenca-form {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  margin-top: 20px;
+}
+
+.licencas-module .licenca-form-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--licenca-border);
+  display: flex;
+  align-items: center;
+}
+
+.licencas-module .licenca-form-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--licenca-gradient-primary);
+  color: white;
+  border-radius: 10px;
+  margin-right: 15px;
+  font-size: 1.2rem;
+}
+
+.licencas-module .licenca-form-title {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--licenca-dark);
+  margin: 0;
+}
+
+.licencas-module .licenca-form-body {
+  padding: 20px;
+}
+
+.licencas-module .licenca-form-group {
+  margin-bottom: 20px;
+}
+
+.licencas-module .licenca-form-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--licenca-dark);
+}
+
+.licencas-module .licenca-form-label .required {
+  color: var(--licenca-danger);
+  margin-left: 3px;
+}
+
+.licencas-module .licenca-form-control {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--licenca-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  color: var(--licenca-dark);
+  transition: all var(--licenca-transition-fast);
+}
+
+.licencas-module .licenca-form-control:focus {
+  outline: none;
+  border-color: var(--licenca-primary);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+}
+
+.licencas-module .licenca-form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 15px center;
+  padding-right: 40px;
+}
+
+.licencas-module .licenca-form-text {
+  font-size: 0.85rem;
+  color: var(--licenca-gray);
+  margin-top: 5px;
+}
+
+.licencas-module .licenca-form-dates {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.licencas-module .licenca-form-date {
+  flex: 1;
+}
+
+.licencas-module .licenca-form-date-arrow {
+  color: var(--licenca-gray);
+  font-size: 1.2rem;
+}
+
+.licencas-module .licenca-form-duration {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 15px;
+  background-color: rgba(67, 97, 238, 0.1);
+  border-radius: 20px;
+  color: var(--licenca-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: 15px;
+}
+
+.licencas-module .licenca-form-duration i {
+  margin-right: 5px;
+}
+
+.licencas-module .licenca-form-footer {
+  padding: 20px;
+  border-top: 1px solid var(--licenca-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.licencas-module .licenca-form-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--licenca-transition-fast);
+}
+
+.licencas-module .licenca-form-btn i {
+  margin-right: 8px;
+}
+
+.licencas-module .licenca-form-btn-primary {
+  background: var(--licenca-gradient-primary);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+}
+
+.licencas-module .licenca-form-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(67, 97, 238, 0.4);
+}
+
+.licencas-module .licenca-form-btn-secondary {
+  background-color: white;
+  color: var(--licenca-gray);
+  border: 1px solid var(--licenca-border);
+}
+
+.licencas-module .licenca-form-btn-secondary:hover {
+  background-color: #f8f9fa;
+  color: var(--licenca-dark);
+}
+
+/* Animações */
+@keyframes licencaFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.licencas-module .licenca-fade-in {
+  animation: licencaFadeIn 0.5s ease-out forwards;
+}
+
+@keyframes licencaPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.licencas-module .licenca-pulse {
+  animation: licencaPulse 1.5s ease-in-out infinite;
+}
+
+/* Estado vazio */
+.licencas-module .licenca-empty {
+  text-align: center;
+  padding: 50px 20px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.licencas-module .licenca-empty-icon {
+  font-size: 3rem;
+  color: var(--licenca-gray);
+  margin-bottom: 20px;
+}
+
+.licencas-module .licenca-empty-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--licenca-dark);
+  margin-bottom: 10px;
+}
+
+.licencas-module .licenca-empty-text {
+  color: var(--licenca-gray);
+  margin-bottom: 25px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.licencas-module .licenca-empty-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--licenca-gradient-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 25px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--licenca-transition-fast);
+  box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+}
+
+.licencas-module .licenca-empty-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(67, 97, 238, 0.4);
+}
+
+.licencas-module .licenca-empty-btn i {
+  margin-right: 8px;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+  .licencas-module .licenca-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .licencas-module .licenca-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .licencas-module .licenca-form-dates {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .licencas-module .licenca-form-date-arrow {
+    transform: rotate(90deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .licencas-module .licenca-controls {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .licencas-module .licenca-filter select {
+    width: 100%;
+  }
+
+  .licencas-module .licenca-card-dates {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .licencas-module .licenca-card-date-arrow {
+    transform: rotate(90deg);
+    margin: 5px 0;
+  }
+
+  .licencas-module .licenca-table-container {
+    overflow-x: auto;
+  }
+
+  .licencas-module .licenca-form-footer {
+    flex-direction: column-reverse;
+    gap: 15px;
+  }
+
+  .licencas-module .licenca-form-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .licencas-module {
+    padding: 15px;
+  }
+
+  .licencas-module .licenca-title {
+    font-size: 1.5rem;
+  }
+
+  .licencas-module .licenca-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .licencas-module .licenca-view-toggle {
+    width: 100%;
+  }
+
+  .licencas-module .licenca-view-btn {
+    flex: 1;
+  }
+
+  .licencas-module .licenca-add-btn {
+    width: 100%;
+  }
+}

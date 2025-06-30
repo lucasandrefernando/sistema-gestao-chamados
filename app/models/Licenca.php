@@ -9,6 +9,22 @@ class Licenca extends Model
     protected $table = 'licencas';
 
     /**
+     * Campos permitidos para criação/atualização
+     */
+    protected $fillable = [
+        'empresa_id',
+        'quantidade',
+        'data_inicio',
+        'data_fim',
+        'observacoes',
+        'ativo',
+        'criado_por',
+        'data_criacao',
+        'atualizado_por',
+        'data_atualizacao'
+    ];
+
+    /**
      * Construtor
      */
     public function __construct()
@@ -78,5 +94,63 @@ class Licenca extends Model
             ['empresa_id' => $empresaId, 'hoje' => $hoje],
             'data_fim ASC'
         );
+    }
+
+    /**
+     * Busca licenças que estão prestes a expirar
+     */
+    public function findProximasExpirar($diasAviso = 30)
+    {
+        $hoje = date('Y-m-d');
+        $dataLimite = date('Y-m-d', strtotime("+{$diasAviso} days"));
+
+        return $this->findAll(
+            'ativo = 1 AND data_inicio <= :hoje AND data_fim >= :hoje AND data_fim <= :data_limite',
+            ['hoje' => $hoje, 'data_limite' => $dataLimite],
+            'data_fim ASC'
+        );
+    }
+
+    /**
+     * Obtém estatísticas de licenças por status
+     */
+    public function getEstatisticasPorStatus($empresaId = null)
+    {
+        $hoje = date('Y-m-d');
+        $where = [];
+        $params = ['hoje' => $hoje];
+
+        if ($empresaId) {
+            $where[] = 'empresa_id = :empresa_id';
+            $params['empresa_id'] = $empresaId;
+        }
+
+        // Licenças ativas
+        $whereAtivas = $where;
+        $whereAtivas[] = 'ativo = 1 AND data_inicio <= :hoje AND data_fim >= :hoje';
+        $ativas = $this->count(implode(' AND ', $whereAtivas), $params);
+
+        // Licenças futuras
+        $whereFuturas = $where;
+        $whereFuturas[] = 'ativo = 1 AND data_inicio > :hoje';
+        $futuras = $this->count(implode(' AND ', $whereFuturas), $params);
+
+        // Licenças expiradas
+        $whereExpiradas = $where;
+        $whereExpiradas[] = 'ativo = 1 AND data_fim < :hoje';
+        $expiradas = $this->count(implode(' AND ', $whereExpiradas), $params);
+
+        // Licenças inativas
+        $whereInativas = $where;
+        $whereInativas[] = 'ativo = 0';
+        $inativas = $this->count(implode(' AND ', $whereInativas), $params);
+
+        return [
+            'ativas' => $ativas,
+            'futuras' => $futuras,
+            'expiradas' => $expiradas,
+            'inativas' => $inativas,
+            'total' => $ativas + $futuras + $expiradas + $inativas
+        ];
     }
 }
