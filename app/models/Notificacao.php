@@ -166,8 +166,7 @@ class Notificacao extends Model
 
         return $sucesso;
     }
-
-
+    
 
     /**
      * Cria notificações para usuários baseado no e-mail do setor
