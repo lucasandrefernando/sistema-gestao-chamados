@@ -375,7 +375,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Processa a recuperação de senha
+     * Processa a solicitação de recuperação de senha
      */
     public function processarRecuperarSenha()
     {
@@ -385,84 +385,134 @@ class AuthController extends Controller
             return;
         }
 
-        $email = sanitize_input($_POST['email'] ?? '');
-        $empresaId = intval($_POST['empresa_id'] ?? 0);
+        // Obtém os dados do formulário
+        $email = isset($_POST['email']) ? trim($_POST['email']) : '';
+        $empresaId = isset($_POST['empresa_id']) ? intval($_POST['empresa_id']) : 0;
         $isAdminMaster = isset($_POST['is_admin_master']) && $_POST['is_admin_master'] === 'true';
 
-        // Valida os campos
-        $errors = [];
+        // Log para depuração
+        error_log("Processando recuperação de senha para email: $email, empresa: $empresaId, admin master: " . ($isAdminMaster ? 'Sim' : 'Não'));
 
+        // Valida os dados
         if (empty($email)) {
-            $errors[] = 'O campo E-mail é obrigatório.';
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'O formato do e-mail é inválido.';
-        }
-
-        // Só valida empresa_id se não for admin master
-        if (!$isAdminMaster && $empresaId <= 0) {
-            $errors[] = 'O campo Empresa é obrigatório.';
-        }
-
-        if (!empty($errors)) {
-            set_flash_message('error', implode('<br>', $errors));
+            error_log("Email vazio na solicitação de recuperação de senha");
+            set_flash_message('error', 'O email é obrigatório.');
             redirect('auth/recuperarSenha');
             return;
         }
 
-        // Se for admin master, busca o usuário pelo email apenas
-        if ($isAdminMaster) {
-            $usuario = $this->usuarioModel->findOne('email = :email AND admin = 1 AND admin_tipo = "master" AND ativo = 1', [
-                'email' => $email
-            ]);
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            error_log("Email inválido na solicitação de recuperação de senha: $email");
+            set_flash_message('error', 'O email informado é inválido.');
+            redirect('auth/recuperarSenha');
+            return;
+        }
 
-            // Se encontrou, usa a empresa do admin master
-            if ($usuario) {
-                $empresaId = $usuario['empresa_id'];
-            }
+        if (!$isAdminMaster && $empresaId <= 0) {
+            error_log("Empresa não selecionada na solicitação de recuperação de senha");
+            set_flash_message('error', 'A empresa é obrigatória.');
+            redirect('auth/recuperarSenha');
+            return;
+        }
+
+        // Busca o usuário
+        if ($isAdminMaster) {
+            // Busca admin master pelo email
+            $sql = "SELECT id, nome, email, ativo 
+                FROM usuarios 
+                WHERE email = :email 
+                AND admin = 1 
+                AND admin_tipo = 'master' 
+                AND ativo = 1 
+                LIMIT 1";
+
+            $stmt = $this->usuarioModel->getDb()->prepare($sql);
+            $stmt->execute(['email' => $email]);
         } else {
-            // Caso contrário, busca o usuário pelo email e empresa
-            $usuario = $this->usuarioModel->findOne('email = :email AND empresa_id = :empresa_id AND ativo = 1', [
+            // Busca usuário pelo email e empresa
+            $sql = "SELECT id, nome, email, ativo 
+                FROM usuarios 
+                WHERE email = :email 
+                AND empresa_id = :empresa_id 
+                AND ativo = 1 
+                LIMIT 1";
+
+            $stmt = $this->usuarioModel->getDb()->prepare($sql);
+            $stmt->execute([
                 'email' => $email,
                 'empresa_id' => $empresaId
             ]);
         }
 
-        // Adiciona um pequeno atraso para dificultar ataques de enumeração
+        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Adiciona um pequeno atraso para dificultar ataques de força bruta
         sleep(1);
 
-        if ($usuario) {
-            // Gera um token de recuperação
-            $token = bin2hex(random_bytes(32));
-            $expira = date('Y-m-d H:i:s', strtotime('+1 hour'));
-
-            // Salva o token no banco
-            $this->usuarioModel->update($usuario['id'], [
-                'token_recuperacao' => $token,
-                'token_expiracao' => $expira
-            ]);
-
-            // Envia o e-mail de recuperação usando o EmailService
-            $resultado = $this->emailService->enviarRecuperacaoSenha($usuario['email'], $usuario['nome'], $token);
-
-            // Registra o resultado
-            if ($resultado['success']) {
-                error_log("E-mail de recuperação enviado com sucesso para {$usuario['email']}");
-            } else {
-                error_log("Falha ao enviar e-mail de recuperação para {$usuario['email']}: " . $resultado['message']);
-            }
-
-            // Registra a tentativa de recuperação
-            $this->registrarTentativaRecuperacao($usuario['id'], $resultado['success']);
-
-            set_flash_message('success', 'Enviamos um e-mail com instruções para recuperar sua senha. Verifique sua caixa de entrada e spam.');
-        } else {
-            // Não informamos se o e-mail existe ou não por segurança
-            // Mas registramos a tentativa para monitoramento
-            error_log("Tentativa de recuperação para e-mail não encontrado: $email na empresa: $empresaId");
-
-            set_flash_message('success', 'Se este e-mail estiver cadastrado na empresa selecionada, enviaremos instruções para recuperar sua senha.');
+        // Verifica se o usuário foi encontrado
+        if (!$usuario) {
+            error_log("Usuário não encontrado na solicitação de recuperação de senha: $email");
+            // Por segurança, não informamos se o email existe ou não
+            set_flash_message('success', 'Se este email estiver cadastrado, enviaremos instruções para recuperar sua senha.');
+            redirect('auth');
+            return;
         }
 
+        // Gera um token de recuperação
+        $token = bin2hex(random_bytes(32));
+        $expiracao = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
+        // Salva o token no banco de dados
+        try {
+            $sql = "UPDATE usuarios 
+                SET token_recuperacao = :token, 
+                    token_expiracao = :expiracao 
+                WHERE id = :id";
+
+            $stmt = $this->usuarioModel->getDb()->prepare($sql);
+            $resultado = $stmt->execute([
+                'token' => $token,
+                'expiracao' => $expiracao,
+                'id' => $usuario['id']
+            ]);
+
+            if (!$resultado) {
+                error_log("Erro ao salvar token de recuperação para o usuário ID: {$usuario['id']}");
+                set_flash_message('error', 'Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.');
+                redirect('auth/recuperarSenha');
+                return;
+            }
+
+            error_log("Token de recuperação gerado com sucesso para o usuário ID: {$usuario['id']}, token: $token, expira em: $expiracao");
+        } catch (Exception $e) {
+            error_log("Exceção ao salvar token de recuperação: " . $e->getMessage());
+            set_flash_message('error', 'Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.');
+            redirect('auth/recuperarSenha');
+            return;
+        }
+
+        // Envia o email de recuperação
+        try {
+            $emailService = new EmailService();
+            $resultado = $emailService->enviarRecuperacaoSenha($usuario['email'], $usuario['nome'], $token);
+
+            if ($resultado['success']) {
+                error_log("Email de recuperação enviado com sucesso para: {$usuario['email']}");
+                set_flash_message('success', 'Enviamos um email com instruções para recuperar sua senha. Verifique sua caixa de entrada e pasta de spam.');
+            } else {
+                error_log("Erro ao enviar email de recuperação para: {$usuario['email']}, erro: {$resultado['message']}");
+                set_flash_message('error', 'Ocorreu um erro ao enviar o email de recuperação. Por favor, tente novamente.');
+                redirect('auth/recuperarSenha');
+                return;
+            }
+        } catch (Exception $e) {
+            error_log("Exceção ao enviar email de recuperação: " . $e->getMessage());
+            set_flash_message('error', 'Ocorreu um erro ao enviar o email de recuperação. Por favor, tente novamente.');
+            redirect('auth/recuperarSenha');
+            return;
+        }
+
+        // Redireciona para a página de login
         redirect('auth');
     }
 
@@ -494,25 +544,65 @@ class AuthController extends Controller
      */
     public function redefinirSenha()
     {
-        $token = sanitize_input($_GET['token'] ?? '');
+        // Se o usuário já estiver logado, redireciona para o dashboard
+        if (is_authenticated()) {
+            redirect('dashboard');
+            return;
+        }
+
+        // Obtém o token da URL
+        $token = isset($_GET['token']) ? trim($_GET['token']) : '';
+
+        // Log para depuração
+        error_log("Tentativa de redefinição de senha com token: $token");
 
         if (empty($token)) {
+            error_log("Token vazio na solicitação de redefinição de senha");
             set_flash_message('error', 'Token de recuperação inválido ou expirado.');
             redirect('auth');
             return;
         }
 
         // Busca o usuário pelo token
-        $usuario = $this->usuarioModel->findOne('token_recuperacao = :token AND token_expiracao > NOW() AND ativo = 1', [
-            'token' => $token
-        ]);
+        $sql = "SELECT id, nome, email, token_recuperacao, token_expiracao, ativo 
+            FROM usuarios 
+            WHERE token_recuperacao = :token 
+            LIMIT 1";
 
-        if (!$usuario) {
+        $stmt = $this->usuarioModel->getDb()->prepare($sql);
+        $stmt->execute(['token' => $token]);
+        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Log do resultado da busca
+        if ($usuario) {
+            error_log("Usuário encontrado para o token: ID={$usuario['id']}, Nome={$usuario['nome']}, Token={$usuario['token_recuperacao']}");
+        } else {
+            error_log("Nenhum usuário encontrado com o token: $token");
             set_flash_message('error', 'Token de recuperação inválido ou expirado.');
             redirect('auth');
             return;
         }
 
+        // Verifica se o token expirou
+        $agora = new DateTime();
+        $expiracao = new DateTime($usuario['token_expiracao']);
+
+        if ($agora > $expiracao) {
+            error_log("Token expirado. Expiração: {$usuario['token_expiracao']}, Agora: " . $agora->format('Y-m-d H:i:s'));
+            set_flash_message('error', 'O link de recuperação de senha expirou. Por favor, solicite um novo link.');
+            redirect('auth/recuperarSenha');
+            return;
+        }
+
+        // Verifica se o usuário está ativo
+        if (!$usuario['ativo']) {
+            error_log("Usuário inativo tentando redefinir senha: ID={$usuario['id']}");
+            set_flash_message('error', 'Esta conta está desativada. Entre em contato com o administrador.');
+            redirect('auth');
+            return;
+        }
+
+        // Renderiza a página de redefinição de senha
         $this->render('auth/redefinir-senha', [
             'token' => $token
         ]);
@@ -529,40 +619,76 @@ class AuthController extends Controller
             return;
         }
 
-        $token = sanitize_input($_POST['token'] ?? '');
-        $senha = $_POST['senha'] ?? '';
-        $confirmarSenha = $_POST['confirmar_senha'] ?? '';
+        // Obtém os dados do formulário
+        $token = isset($_POST['token']) ? trim($_POST['token']) : '';
+        $senha = isset($_POST['senha']) ? $_POST['senha'] : '';
+        $confirmarSenha = isset($_POST['confirmar_senha']) ? $_POST['confirmar_senha'] : '';
 
-        // Valida os campos
-        $errors = [];
+        // Log para depuração
+        error_log("Processando redefinição de senha com token: $token");
 
+        // Valida os dados
         if (empty($token)) {
-            $errors[] = 'Token de recuperação inválido.';
+            error_log("Token vazio no processamento de redefinição de senha");
+            set_flash_message('error', 'Token de recuperação inválido ou expirado.');
+            redirect('auth');
+            return;
         }
 
         if (empty($senha)) {
-            $errors[] = 'O campo Senha é obrigatório.';
-        } elseif (strlen($senha) < 8) {
-            $errors[] = 'A senha deve ter pelo menos 8 caracteres.';
+            error_log("Senha vazia no processamento de redefinição de senha");
+            set_flash_message('error', 'A senha é obrigatória.');
+            redirect("auth/redefinirSenha?token=$token");
+            return;
+        }
+
+        if (strlen($senha) < 8) {
+            error_log("Senha muito curta no processamento de redefinição de senha");
+            set_flash_message('error', 'A senha deve ter pelo menos 8 caracteres.');
+            redirect("auth/redefinirSenha?token=$token");
+            return;
         }
 
         if ($senha !== $confirmarSenha) {
-            $errors[] = 'As senhas não coincidem.';
-        }
-
-        if (!empty($errors)) {
-            set_flash_message('error', implode('<br>', $errors));
-            redirect("auth/redefinirSenha?token={$token}");
+            error_log("Senhas não coincidem no processamento de redefinição de senha");
+            set_flash_message('error', 'As senhas não coincidem.');
+            redirect("auth/redefinirSenha?token=$token");
             return;
         }
 
         // Busca o usuário pelo token
-        $usuario = $this->usuarioModel->findOne('token_recuperacao = :token AND token_expiracao > NOW() AND ativo = 1', [
-            'token' => $token
-        ]);
+        $sql = "SELECT id, nome, email, token_recuperacao, token_expiracao, ativo 
+            FROM usuarios 
+            WHERE token_recuperacao = :token 
+            LIMIT 1";
 
+        $stmt = $this->usuarioModel->getDb()->prepare($sql);
+        $stmt->execute(['token' => $token]);
+        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Verifica se o usuário foi encontrado
         if (!$usuario) {
+            error_log("Nenhum usuário encontrado com o token: $token");
             set_flash_message('error', 'Token de recuperação inválido ou expirado.');
+            redirect('auth');
+            return;
+        }
+
+        // Verifica se o token expirou
+        $agora = new DateTime();
+        $expiracao = new DateTime($usuario['token_expiracao']);
+
+        if ($agora > $expiracao) {
+            error_log("Token expirado. Expiração: {$usuario['token_expiracao']}, Agora: " . $agora->format('Y-m-d H:i:s'));
+            set_flash_message('error', 'O link de recuperação de senha expirou. Por favor, solicite um novo link.');
+            redirect('auth/recuperarSenha');
+            return;
+        }
+
+        // Verifica se o usuário está ativo
+        if (!$usuario['ativo']) {
+            error_log("Usuário inativo tentando redefinir senha: ID={$usuario['id']}");
+            set_flash_message('error', 'Esta conta está desativada. Entre em contato com o administrador.');
             redirect('auth');
             return;
         }
@@ -571,18 +697,34 @@ class AuthController extends Controller
         $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
 
         // Atualiza a senha e limpa o token
-        $this->usuarioModel->update($usuario['id'], [
-            'senha' => $senhaHash,
-            'token_recuperacao' => null,
-            'token_expiracao' => null,
-            'data_atualizacao' => date('Y-m-d H:i:s')
-        ]);
+        try {
+            $sql = "UPDATE usuarios 
+                SET senha = :senha, 
+                    token_recuperacao = NULL, 
+                    token_expiracao = NULL, 
+                    data_atualizacao = NOW() 
+                WHERE id = :id";
 
-        // Registra a alteração de senha
-        error_log("Senha redefinida com sucesso para o usuário ID: {$usuario['id']}");
+            $stmt = $this->usuarioModel->getDb()->prepare($sql);
+            $resultado = $stmt->execute([
+                'senha' => $senhaHash,
+                'id' => $usuario['id']
+            ]);
 
-        set_flash_message('success', 'Sua senha foi redefinida com sucesso. Você já pode fazer login com sua nova senha.');
-        redirect('auth');
+            if ($resultado) {
+                error_log("Senha redefinida com sucesso para o usuário ID: {$usuario['id']}");
+                set_flash_message('success', 'Sua senha foi redefinida com sucesso. Você já pode fazer login com sua nova senha.');
+                redirect('auth');
+            } else {
+                error_log("Erro ao atualizar senha no banco de dados para o usuário ID: {$usuario['id']}");
+                set_flash_message('error', 'Ocorreu um erro ao redefinir sua senha. Por favor, tente novamente.');
+                redirect("auth/redefinirSenha?token=$token");
+            }
+        } catch (Exception $e) {
+            error_log("Exceção ao atualizar senha: " . $e->getMessage());
+            set_flash_message('error', 'Ocorreu um erro ao redefinir sua senha. Por favor, tente novamente.');
+            redirect("auth/redefinirSenha?token=$token");
+        }
     }
 
     /**
