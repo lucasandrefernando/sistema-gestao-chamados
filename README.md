@@ -316,9 +316,7 @@ php scripts/setup-database.php
 6. **Acesse no navegador:**
 
 - Exemplo: `http://localhost/sistema-gestao-chamados/public/`
-- Faça login com as credenciais padrão:
-  - Email: `lucasandre.sanos@gmail.com`
-  - Senha: `admin123`
+
 
 ## 🖥️ Módulos do Sistema
 
