@@ -485,7 +485,7 @@ class ChamadosController extends Controller
             'tiposServico' => $tiposServico
         ]);
     }
-
+ 
     /**
      * Salva um novo chamado
      */
@@ -583,7 +583,7 @@ class ChamadosController extends Controller
 
             $historicoStmt->execute();
 
-            // NOVO CÓDIGO: Criar notificações para todos os usuários do setor
+            // Criar notificações para todos os usuários do setor
             $notificacaoModel = new Notificacao();
 
             // Preparar os dados da notificação
@@ -839,7 +839,7 @@ class ChamadosController extends Controller
 
             $historicoStmt->execute();
 
-            // NOVO CÓDIGO: Criar notificações para todos os usuários do setor
+            // Criar notificações para todos os usuários do setor
             $notificacaoModel = new Notificacao();
 
             // Obter nome do usuário que alterou o status
@@ -965,20 +965,22 @@ class ChamadosController extends Controller
 
             $historicoStmt->execute();
 
-            // NOVO CÓDIGO: Criar notificações para todos os usuários do novo setor
+            // Criar notificações para todos os usuários do novo setor
             $notificacaoModel = new Notificacao();
 
             // Obter nome do setor anterior para a notificação
             $setorAnterior = $this->setorModel->findById($chamado['setor_id']);
             $setorAnteriorNome = $setorAnterior ? $setorAnterior['nome'] : 'outro setor';
 
-            // Preparar os dados da notificação
-            $descricaoResumida = substr($chamado['descricao'], 0, 100) . (strlen($chamado['descricao']) > 100 ? '...' : '');
+            // Obter nome do usuário que transferiu
+            $usuario = $this->usuarioModel->findById($usuarioId);
+            $usuarioNome = $usuario ? $usuario['nome'] : 'Um usuário';
 
+            // Preparar os dados da notificação
             $dadosNotificacao = [
                 'tipo' => 'chamado_transferido',
                 'titulo' => "Chamado #$id transferido para seu setor",
-                'descricao' => "Transferido de $setorAnteriorNome. " . ($observacao ? "Obs: $observacao" : $descricaoResumida),
+                'descricao' => "$usuarioNome transferiu de $setorAnteriorNome. " . ($observacao ? "Obs: $observacao" : ""),
                 'referencia_id' => $id,
                 'referencia_tipo' => 'chamado'
             ];
@@ -1047,7 +1049,7 @@ class ChamadosController extends Controller
             $comentarioStmt->execute();
             $comentarioId = $this->comentarioModel->getDb()->lastInsertId();
 
-            // NOVO CÓDIGO: Criar notificações para todos os usuários do setor
+            // Criar notificações para todos os usuários do setor
             $notificacaoModel = new Notificacao();
 
             // Obter nome do usuário que comentou

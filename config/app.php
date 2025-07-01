@@ -7,8 +7,8 @@ session_start();
 // Informações básicas da aplicação
 define('APP_NAME', 'Sistema de Gestão de Chamados');
 define('APP_VERSION', '2.0.0');
-define('APP_URL', 'http://localhost/sistema-gestao-chamados');
-//define('APP_URL', 'https://chamado.eagletelecom.com.br');
+//define('APP_URL', 'http://localhost/sistema-gestao-chamados');
+define('APP_URL', 'https://chamado.eagletelecom.com.br');
 define('APP_PRODUCTION', false);
 
 // Configurações de e-mail
@@ -29,10 +29,10 @@ define('EMAIL_SMTP_DEBUG', false); // true para debug, false para produção
 // Configurações de timezone
 date_default_timezone_set('America/Sao_Paulo');
 
-/*Configurações de sessão
+/*Configurações de sessão*/
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
-ini_set('session.cookie_secure', APP_PRODUCTION ? 1 : 0);*/
+ini_set('session.cookie_secure', APP_PRODUCTION ? 1 : 0);
 
 // Configurações de exibição de erros
 if (APP_PRODUCTION) {
@@ -70,6 +70,39 @@ function set_flash_message($type, $message)
         'type' => $type,
         'message' => $message
     ];
+}
+
+/**
+ * Formata o tempo decorrido desde uma data
+ * 
+ * @param string $data Data no formato MySQL
+ * @return string Tempo decorrido formatado
+ */
+function formatarTempoDecorrido($data)
+{
+    if (empty($data)) return '';
+
+    $timestamp = strtotime($data);
+    $agora = time();
+    $diferenca = $agora - $timestamp;
+
+    if ($diferenca < 60) {
+        return 'Agora mesmo';
+    } elseif ($diferenca < 3600) {
+        $minutos = floor($diferenca / 60);
+        return $minutos . ' ' . ($minutos == 1 ? 'minuto' : 'minutos') . ' atrás';
+    } elseif ($diferenca < 86400) {
+        $horas = floor($diferenca / 3600);
+        return $horas . ' ' . ($horas == 1 ? 'hora' : 'horas') . ' atrás';
+    } elseif ($diferenca < 604800) {
+        $dias = floor($diferenca / 86400);
+        return $dias . ' ' . ($dias == 1 ? 'dia' : 'dias') . ' atrás';
+    } elseif ($diferenca < 2592000) {
+        $semanas = floor($diferenca / 604800);
+        return $semanas . ' ' . ($semanas == 1 ? 'semana' : 'semanas') . ' atrás';
+    } else {
+        return date('d/m/Y H:i', $timestamp);
+    }
 }
 
 /**
