@@ -408,7 +408,7 @@ class ChamadosController extends Controller
     }
 
 
-    
+
 
     /**
      * Visualiza um chamado
@@ -534,14 +534,14 @@ class ChamadosController extends Controller
         // Insere o chamado usando SQL direto
         try {
             $sql = "INSERT INTO chamados (
-                empresa_id, setor_id, status_id, solicitante, 
-                paciente, quarto_leito, descricao, tipo_servico, 
-                data_solicitacao, data_criacao, data_atualizacao
-            ) VALUES (
-                :empresa_id, :setor_id, :status_id, :solicitante, 
-                :paciente, :quarto_leito, :descricao, :tipo_servico, 
-                :data_solicitacao, :data_criacao, :data_atualizacao
-            )";
+            empresa_id, setor_id, status_id, solicitante, 
+            paciente, quarto_leito, descricao, tipo_servico, 
+            data_solicitacao, data_criacao, data_atualizacao
+        ) VALUES (
+            :empresa_id, :setor_id, :status_id, :solicitante, 
+            :paciente, :quarto_leito, :descricao, :tipo_servico, 
+            :data_solicitacao, :data_criacao, :data_atualizacao
+        )";
 
             $stmt = $this->chamadoModel->getDb()->prepare($sql);
             $stmt->bindValue(':empresa_id', $data['empresa_id'], PDO::PARAM_INT);
@@ -561,14 +561,14 @@ class ChamadosController extends Controller
 
             // Registra no histórico usando SQL direto
             $historicoSql = "INSERT INTO historico_chamados (
-                chamado_id, setor_id_anterior, setor_id_novo, 
-                status_id_anterior, status_id_novo, usuario_id, 
-                observacao, data_criacao
-            ) VALUES (
-                :chamado_id, :setor_id_anterior, :setor_id_novo, 
-                :status_id_anterior, :status_id_novo, :usuario_id, 
-                :observacao, :data_criacao
-            )";
+            chamado_id, setor_id_anterior, setor_id_novo, 
+            status_id_anterior, status_id_novo, usuario_id, 
+            observacao, data_criacao
+        ) VALUES (
+            :chamado_id, :setor_id_anterior, :setor_id_novo, 
+            :status_id_anterior, :status_id_novo, :usuario_id, 
+            :observacao, :data_criacao
+        )";
 
             $historicoStmt = $this->historicoModel->getDb()->prepare($historicoSql);
             $historicoStmt->bindValue(':chamado_id', $chamadoId, PDO::PARAM_INT);
@@ -581,6 +581,24 @@ class ChamadosController extends Controller
             $historicoStmt->bindValue(':data_criacao', date('Y-m-d H:i:s'), PDO::PARAM_STR);
 
             $historicoStmt->execute();
+
+            // NOVO CÓDIGO: Criar notificações para todos os usuários do setor
+            $notificacaoModel = new Notificacao();
+
+            // Preparar os dados da notificação
+            $descricaoResumida = substr($descricao, 0, 100) . (strlen($descricao) > 100 ? '...' : '');
+            $tipoServicoTexto = $tipo_servico ? " - $tipo_servico" : "";
+
+            $dadosNotificacao = [
+                'tipo' => 'novo_chamado',
+                'titulo' => "Novo chamado #$chamadoId para seu setor",
+                'descricao' => "Solicitante: $solicitante$tipoServicoTexto - $descricaoResumida",
+                'referencia_id' => $chamadoId,
+                'referencia_tipo' => 'chamado'
+            ];
+
+            // Notificar todos os usuários do setor
+            $notificacaoModel->notificarSetor($setor_id, $dadosNotificacao);
 
             set_flash_message('success', 'Chamado criado com sucesso.');
             redirect('chamados/visualizar/' . $chamadoId);
@@ -820,6 +838,39 @@ class ChamadosController extends Controller
 
             $historicoStmt->execute();
 
+            // NOVO CÓDIGO: Criar notificações para todos os usuários do setor
+            $notificacaoModel = new Notificacao();
+
+            // Obter nome do usuário que alterou o status
+            $usuario = $this->usuarioModel->findById($usuarioId);
+            $usuarioNome = $usuario ? $usuario['nome'] : 'Um usuário';
+
+            // Obter nome do status anterior
+            $statusAnterior = $this->statusModel->findById($chamado['status_id']);
+            $statusAnteriorNome = $statusAnterior ? $statusAnterior['nome'] : 'desconhecido';
+
+            // Determinar o tipo de notificação com base no novo status
+            $tipoNotificacao = 'chamado_atualizado';
+            if ($status_id == 4) { // Assumindo que 4 é o ID do status "Concluído"
+                $tipoNotificacao = 'chamado_concluido';
+            } elseif ($status_id == 2) { // Assumindo que 2 é o ID do status "Em andamento"
+                $tipoNotificacao = 'chamado_em_andamento';
+            } elseif ($status_id == 3) { // Assumindo que 3 é o ID do status "Pendente"
+                $tipoNotificacao = 'chamado_pendente';
+            }
+
+            // Preparar os dados da notificação
+            $dadosNotificacao = [
+                'tipo' => $tipoNotificacao,
+                'titulo' => "Status do chamado #$id alterado",
+                'descricao' => "$usuarioNome alterou o status de '$statusAnteriorNome' para '{$status['nome']}'" . ($observacao ? ". Obs: $observacao" : ""),
+                'referencia_id' => $id,
+                'referencia_tipo' => 'chamado'
+            ];
+
+            // Notificar todos os usuários do setor (exceto o autor da alteração)
+            $notificacaoModel->notificarSetorExcetoUsuario($chamado['setor_id'], $usuarioId, $dadosNotificacao);
+
             set_flash_message('success', 'Status do chamado alterado com sucesso.');
             redirect('chamados/visualizar/' . $id);
         } catch (Exception $e) {
@@ -913,6 +964,27 @@ class ChamadosController extends Controller
 
             $historicoStmt->execute();
 
+            // NOVO CÓDIGO: Criar notificações para todos os usuários do novo setor
+            $notificacaoModel = new Notificacao();
+
+            // Obter nome do setor anterior para a notificação
+            $setorAnterior = $this->setorModel->findById($chamado['setor_id']);
+            $setorAnteriorNome = $setorAnterior ? $setorAnterior['nome'] : 'outro setor';
+
+            // Preparar os dados da notificação
+            $descricaoResumida = substr($chamado['descricao'], 0, 100) . (strlen($chamado['descricao']) > 100 ? '...' : '');
+
+            $dadosNotificacao = [
+                'tipo' => 'chamado_transferido',
+                'titulo' => "Chamado #$id transferido para seu setor",
+                'descricao' => "Transferido de $setorAnteriorNome. " . ($observacao ? "Obs: $observacao" : $descricaoResumida),
+                'referencia_id' => $id,
+                'referencia_tipo' => 'chamado'
+            ];
+
+            // Notificar todos os usuários do novo setor
+            $notificacaoModel->notificarSetor($setor_id, $dadosNotificacao);
+
             set_flash_message('success', 'Chamado transferido para outro setor com sucesso.');
             redirect('chamados/visualizar/' . $id);
         } catch (Exception $e) {
@@ -972,6 +1044,28 @@ class ChamadosController extends Controller
             $comentarioStmt->bindValue(':data_criacao', date('Y-m-d H:i:s'), PDO::PARAM_STR);
 
             $comentarioStmt->execute();
+            $comentarioId = $this->comentarioModel->getDb()->lastInsertId();
+
+            // NOVO CÓDIGO: Criar notificações para todos os usuários do setor
+            $notificacaoModel = new Notificacao();
+
+            // Obter nome do usuário que comentou
+            $usuario = $this->usuarioModel->findById($usuarioId);
+            $usuarioNome = $usuario ? $usuario['nome'] : 'Um usuário';
+
+            // Preparar os dados da notificação
+            $comentarioResumido = substr($comentario, 0, 100) . (strlen($comentario) > 100 ? '...' : '');
+
+            $dadosNotificacao = [
+                'tipo' => 'comentario_adicionado',
+                'titulo' => "Novo comentário no chamado #$id",
+                'descricao' => "$usuarioNome comentou: $comentarioResumido",
+                'referencia_id' => $id,
+                'referencia_tipo' => 'chamado'
+            ];
+
+            // Notificar todos os usuários do setor (exceto o autor do comentário)
+            $notificacaoModel->notificarSetorExcetoUsuario($chamado['setor_id'], $usuarioId, $dadosNotificacao);
 
             set_flash_message('success', 'Comentário adicionado com sucesso.');
             redirect('chamados/visualizar/' . $id);

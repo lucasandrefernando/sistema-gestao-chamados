@@ -165,6 +165,8 @@ class NotificacoesController extends Controller
         redirect('notificacoes');
     }
 
+    
+
     /**
      * Busca notificações não lidas para exibição no header
      * Endpoint AJAX

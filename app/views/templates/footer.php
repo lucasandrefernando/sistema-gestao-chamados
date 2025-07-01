@@ -50,6 +50,8 @@
 
     <script src="<?= base_url('public/js/dashboard.js') ?>"></script>
 
+    <script src="<?= base_url('public/js/notificacoes.js') ?>"></script>
+
 
 
 

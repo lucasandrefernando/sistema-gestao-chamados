@@ -127,6 +127,48 @@ class Notificacao extends Model
         return $sucesso;
     }
 
+
+    /**
+     * Cria notificações para todos os usuários de um setor, exceto um usuário específico
+     * 
+     * @param int $setorId ID do setor
+     * @param int $excluirUsuarioId ID do usuário a ser excluído da notificação
+     * @param array $dados Dados da notificação
+     * @return bool Sucesso ou falha
+     */
+    public function notificarSetorExcetoUsuario($setorId, $excluirUsuarioId, $dados)
+    {
+        // Buscar usuários do setor usando a tabela usuarios_setores
+        $sql = "SELECT u.id FROM usuarios u 
+            INNER JOIN usuarios_setores us ON u.id = us.usuario_id 
+            WHERE us.setor_id = :setor_id AND u.ativo = 1 AND u.id != :excluir_usuario_id";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'setor_id' => $setorId,
+            'excluir_usuario_id' => $excluirUsuarioId
+        ]);
+
+        $usuarios = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if (empty($usuarios)) {
+            return false;
+        }
+
+        // Criar notificação para cada usuário
+        $sucesso = true;
+        foreach ($usuarios as $usuarioId) {
+            $dados['usuario_id'] = $usuarioId;
+            if (!$this->criarNotificacao($dados)) {
+                $sucesso = false;
+            }
+        }
+
+        return $sucesso;
+    }
+
+
+
     /**
      * Cria notificações para usuários baseado no e-mail do setor
      * 

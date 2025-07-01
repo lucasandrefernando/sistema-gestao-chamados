@@ -1,5 +1,6 @@
 <?php
 require_once ROOT_DIR . '/app/models/Model.php';
+require_once ROOT_DIR . '/app/models/Notificacao.php';
 
 /**
  * Model para gerenciamento de chamados
@@ -64,8 +65,6 @@ class Chamado extends Model
             ];
         }
     }
-
-
 
 
     /**
