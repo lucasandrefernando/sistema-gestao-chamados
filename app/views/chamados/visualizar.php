@@ -10,13 +10,13 @@
         </div>
         <div class="chamado-acoes-header">
             <div class="chamado-btn-group">
-                <a href="<?= base_url('chamados/listar') ?>" class="chamado-btn chamado-btn-voltar">
+                <a href="javascript:history.back();" class="chamado-btn chamado-btn-voltar">
                     <i class="fas fa-arrow-left"></i> Voltar
                 </a>
                 <a href="<?= base_url('chamados/editar/' . $chamado['id']) ?>" class="chamado-btn chamado-btn-editar">
                     <i class="fas fa-edit"></i> Editar
                 </a>
-            </div>
+            </div> 
             <button type="button" class="chamado-btn chamado-btn-status" data-bs-toggle="modal" data-bs-target="#alterarStatusModal">
                 <i class="fas fa-exchange-alt"></i> Alterar Status
             </button>

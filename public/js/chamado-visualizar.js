@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Inicializa tooltips do Bootstrap
     initTooltips();
 
+    // Configura o botão voltar
+    setupBotaoVoltar();
+
     // Configura o contador de tempo em aberto
     setupTempoAberto();
 
@@ -345,4 +348,22 @@ function adicionarComentarioDOM(comentario) {
         novoComentario.style.opacity = '1';
         novoComentario.style.transform = 'translateY(0)';
     }, 10);
+}
+
+/**
+ * Configura o botão voltar para retornar à página anterior
+ */
+function setupBotaoVoltar() {
+    const botoesVoltar = document.querySelectorAll('.chamado-btn-voltar');
+
+    botoesVoltar.forEach(botao => {
+        botao.addEventListener('click', function (e) {
+            // Verifica se há uma página anterior no histórico
+            if (window.history.length <= 1) {
+                e.preventDefault();
+                window.location.href = BASE_URL + 'chamados/listar';
+            }
+            // Caso contrário, o comportamento padrão (history.back()) será executado
+        });
+    });
 }

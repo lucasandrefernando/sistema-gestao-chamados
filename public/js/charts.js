@@ -8,6 +8,9 @@ if (!window.chartsScriptLoaded) {
     // Marca o script como carregado
     window.chartsScriptLoaded = true;
 
+    // Array para armazenar referências a todas as instâncias de gráficos criadas
+    window.chartInstances = [];
+
     // Configurações padrão para todos os gráficos
     window.chartDefaults = {
         responsive: true,
@@ -38,7 +41,7 @@ if (!window.chartsScriptLoaded) {
         const ctx = element.getContext('2d');
 
         // Cria o gráfico de rosca
-        return new Chart(ctx, {
+        const chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: labels,
@@ -64,6 +67,11 @@ if (!window.chartsScriptLoaded) {
                 }
             }
         });
+
+        // Armazena a referência ao gráfico
+        window.chartInstances.push(chart);
+
+        return chart;
     };
 
     /**
@@ -85,7 +93,7 @@ if (!window.chartsScriptLoaded) {
         const ctx = element.getContext('2d');
 
         // Cria o gráfico de barras
-        return new Chart(ctx, {
+        const chart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
@@ -123,6 +131,11 @@ if (!window.chartsScriptLoaded) {
                 }
             }
         });
+
+        // Armazena a referência ao gráfico
+        window.chartInstances.push(chart);
+
+        return chart;
     };
 
     /**
@@ -144,7 +157,7 @@ if (!window.chartsScriptLoaded) {
         const ctx = element.getContext('2d');
 
         // Cria o gráfico de linha
-        return new Chart(ctx, {
+        const chart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
@@ -177,6 +190,11 @@ if (!window.chartsScriptLoaded) {
                 }
             }
         });
+
+        // Armazena a referência ao gráfico
+        window.chartInstances.push(chart);
+
+        return chart;
     };
 
     /**
@@ -198,7 +216,7 @@ if (!window.chartsScriptLoaded) {
         const ctx = element.getContext('2d');
 
         // Cria o gráfico de barras horizontais
-        return new Chart(ctx, {
+        const chart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
@@ -230,6 +248,11 @@ if (!window.chartsScriptLoaded) {
                 }
             }
         });
+
+        // Armazena a referência ao gráfico
+        window.chartInstances.push(chart);
+
+        return chart;
     };
 
     /**
@@ -255,6 +278,12 @@ if (!window.chartsScriptLoaded) {
      */
     window.destroyChart = function (chart) {
         if (chart) {
+            // Remove do array de instâncias
+            const index = window.chartInstances.indexOf(chart);
+            if (index > -1) {
+                window.chartInstances.splice(index, 1);
+            }
+
             chart.destroy();
         }
     };
@@ -282,8 +311,19 @@ if (!window.chartsScriptLoaded) {
         mutations.forEach(function (mutation) {
             if (mutation.attributeName === 'class') {
                 window.applyChartTheme();
-                // Atualiza todos os gráficos ativos
-                Chart.instances.forEach(chart => chart.update());
+
+                // Atualiza todos os gráficos armazenados
+                if (window.chartInstances && Array.isArray(window.chartInstances)) {
+                    window.chartInstances.forEach(chart => {
+                        if (chart && typeof chart.update === 'function') {
+                            try {
+                                chart.update();
+                            } catch (e) {
+                                console.warn('Erro ao atualizar gráfico:', e);
+                            }
+                        }
+                    });
+                }
             }
         });
     });

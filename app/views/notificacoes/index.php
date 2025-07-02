@@ -63,42 +63,48 @@ $breadcrumbs = [
     <div class="row">
         <div class="col-12">
             <!-- Cabeçalho da página -->
-            <div class="page-header d-flex justify-content-between align-items-center mb-4">
+            <div class="notif-page-header">
                 <div>
-                    <!-- Botão Voltar -->
-                    <a href="<?= base_url('dashboard') ?>" class="btn-back mb-2">
+                    <h1 class="notif-page-title">
+                        <i class="fas fa-bell notif-icon"></i>
+                        Notificações
+                    </h1>
+                    <p class="notif-page-subtitle">Gerencie suas notificações do sistema</p>
+                </div>
+
+                <div class="d-flex align-items-center">
+                    <!-- Botão voltar para a página anterior -->
+                    <a href="javascript:history.back();" class="notif-btn-back">
                         <i class="fas fa-arrow-left"></i> Voltar
                     </a>
 
-                    <h1 class="page-title">Notificações</h1>
-                    <p class="page-subtitle">Gerencie suas notificações do sistema</p>
-                </div>
-
-                <!-- Botões de ação para todas as notificações -->
-                <div class="notification-actions-global">
-                    <?php if (!empty($notificacoes)): ?>
-                        <button id="markAllReadBtn" class="btn btn-sm btn-outline-primary me-2">
-                            <i class="fas fa-check-double me-1"></i> Marcar todas
-                        </button>
-                        <button id="deleteAllBtn" class="btn btn-sm btn-outline-danger">
-                            <i class="fas fa-trash-alt me-1"></i> Excluir todas
-                        </button>
-                    <?php endif; ?>
+                    <!-- Botões de ação para todas as notificações -->
+                    <div class="notif-actions-global">
+                        <?php if (!empty($notificacoes)): ?>
+                            <button id="markAllReadBtn" class="btn btn-outline-primary">
+                                <i class="fas fa-check-double me-1"></i> Marcar todas
+                            </button>
+                            <button id="deleteAllBtn" class="btn btn-outline-danger">
+                                <i class="fas fa-trash-alt me-1"></i> Excluir todas
+                            </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
 
             <!-- Cartão contendo a lista de notificações -->
-            <div class="card shadow-sm">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h2 class="card-title h5 mb-0">Suas notificações</h2>
-                    <?php if ($naoLidas > 0): ?>
-                        <span class="badge bg-primary rounded-pill"><?= $naoLidas ?> não <?= $naoLidas == 1 ? 'lida' : 'lidas' ?></span>
-                    <?php endif; ?>
+            <div class="notif-card">
+                <div class="notif-card-header">
+                    <h2 class="notif-card-title">Suas notificações
+                        <?php if ($naoLidas > 0): ?>
+                            <span class="badge bg-primary rounded-pill"><?= $naoLidas ?> não <?= $naoLidas == 1 ? 'lida' : 'lidas' ?></span>
+                        <?php endif; ?>
+                    </h2>
                 </div>
 
-                <div class="card-body">
+                <div class="notif-card-body">
                     <!-- Lista de notificações -->
-                    <div class="notifications-list">
+                    <div class="notif-list">
                         <?php if (empty($notificacoes)): ?>
                             <!-- Estado vazio - sem notificações -->
                             <div class="empty-state">
@@ -110,9 +116,10 @@ $breadcrumbs = [
                             </div>
                         <?php else: ?>
                             <!-- Loop de notificações -->
-                            <?php foreach ($notificacoes as $notificacao): ?>
+                            <?php foreach ($notificacoes as $index => $notificacao): ?>
                                 <div class="notification-item <?= isset($notificacao['lida']) && $notificacao['lida'] ? 'read' : 'unread' ?>"
-                                    data-id="<?= $notificacao['id'] ?? 0 ?>">
+                                    data-id="<?= $notificacao['id'] ?? 0 ?>"
+                                    style="--animation-order: <?= $index ?>">
                                     <!-- Conteúdo da notificação -->
                                     <div class="notification-content">
                                         <!-- Ícone da notificação -->
@@ -179,7 +186,7 @@ $breadcrumbs = [
 </div>
 
 <!-- Modal de confirmação para excluir todas as notificações -->
-<div class="modal fade" id="deleteAllModal" tabindex="-1" aria-labelledby="deleteAllModalLabel" aria-hidden="true">
+<div class="modal fade notif-modal" id="deleteAllModal" tabindex="-1" aria-labelledby="deleteAllModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
