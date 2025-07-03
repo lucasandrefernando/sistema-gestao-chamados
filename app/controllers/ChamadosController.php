@@ -171,7 +171,20 @@ class ChamadosController extends Controller
 
         // Parâmetros de paginação
         $paginaAtual = isset($_GET['pagina']) && is_numeric($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
-        $itensPorPagina = 10; // Número de chamados por página
+
+
+        // Parâmetros de paginação
+        $paginaAtual = isset($_GET['pagina']) && is_numeric($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+        $itensPorPaginaPadrao = 5; // Valor padrão
+        $itensPorPagina = isset($_GET['itens_por_pagina']) && is_numeric($_GET['itens_por_pagina'])
+            ? (int)$_GET['itens_por_pagina']
+            : $itensPorPaginaPadrao;
+
+        // Limita as opções para evitar problemas de desempenho
+        $opcoesPorPaginaPermitidas = [5, 10, 25, 50];
+        if (!in_array($itensPorPagina, $opcoesPorPaginaPermitidas)) {
+            $itensPorPagina = $itensPorPaginaPadrao;
+        }
 
         try {
             // Log dos filtros recebidos
@@ -485,7 +498,7 @@ class ChamadosController extends Controller
             'tiposServico' => $tiposServico
         ]);
     }
- 
+
     /**
      * Salva um novo chamado
      */

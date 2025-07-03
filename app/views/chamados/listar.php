@@ -1,6 +1,6 @@
 <div class="chamados-listar">
     <!-- Cabeçalho da Página -->
-    <div class="chamados-listar-header"> 
+    <div class="chamados-listar-header">
         <div class="chamados-listar-header-content">
             <div class="chamados-listar-titulo-secao">
                 <h1 class="chamados-listar-titulo">
@@ -440,124 +440,127 @@
         </div>
     </div>
 
-    <!-- Paginação -->
+    <!-- Paginação com seletor de registros por página -->
     <?php if (!empty($chamados) && isset($paginacao) && $paginacao['total_paginas'] > 1): ?>
-        <div class="chamados-listar-paginacao" data-total-pages="<?= $paginacao['total_paginas'] ?>">
-            <ul class="chamados-listar-paginacao-lista">
-                <li class="chamados-listar-paginacao-item">
-                    <a href="#" class="chamados-listar-paginacao-link chamados-listar-paginacao-link-anterior<?= $paginacao['pagina_atual'] <= 1 ? ' chamados-listar-paginacao-link-desabilitado' : '' ?>">
-                        <i class="fas fa-chevron-left"></i>
-                    </a>
-                </li>
+        <div class="pagination-container">
+            <div class="pagination-info">
+                <?php
+                // Verifica se a chave total_itens existe no array de paginação
+                $total_itens = isset($paginacao['total_itens']) ? $paginacao['total_itens'] : count($chamados);
+                ?>
+                Mostrando <?= count($chamados) ?> de <?= $total_itens ?> chamados
+            </div>
+
+            <ul class="pagination">
+                <?php if ($paginacao['pagina_atual'] > 1): ?>
+                    <li>
+                        <a href="<?= base_url('chamados/listar?pagina=1' . (isset($_GET) && !empty($_GET) ? '&' . http_build_query(array_diff_key($_GET, ['pagina' => ''])) : '')) ?>"
+                            class="pagination-link"
+                            title="Primeira Página">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= base_url('chamados/listar?pagina=' . ($paginacao['pagina_atual'] - 1) . (isset($_GET) && !empty($_GET) ? '&' . http_build_query(array_diff_key($_GET, ['pagina' => ''])) : '')) ?>"
+                            class="pagination-link"
+                            title="Página Anterior">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                <?php else: ?>
+                    <li>
+                        <a href="javascript:void(0)"
+                            class="pagination-link disabled"
+                            title="Você está na primeira página">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="javascript:void(0)"
+                            class="pagination-link disabled"
+                            title="Você está na primeira página">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                <?php endif; ?>
 
                 <?php
-                // Determina quais páginas mostrar
-                $pagina_atual = $paginacao['pagina_atual'];
-                $total_paginas = $paginacao['total_paginas'];
+                // Determina o intervalo de páginas a mostrar
+                $inicio = max(1, $paginacao['pagina_atual'] - 2);
+                $fim = min($paginacao['total_paginas'], $paginacao['pagina_atual'] + 2);
 
-                // Sempre mostra a primeira página
-                if ($pagina_atual > 1) {
-                    echo '<li class="chamados-listar-paginacao-item">';
-                    echo '<a href="#" class="chamados-listar-paginacao-link">1</a>';
-                    echo '</li>';
+                // Garante que pelo menos 5 páginas sejam mostradas, se disponíveis
+                if ($fim - $inicio + 1 < 5) {
+                    if ($inicio == 1) {
+                        $fim = min($paginacao['total_paginas'], $inicio + 4);
+                    } elseif ($fim == $paginacao['total_paginas']) {
+                        $inicio = max(1, $fim - 4);
+                    }
                 }
 
-                // Adiciona reticências se necessário
-                if ($pagina_atual > 3) {
-                    echo '<li class="chamados-listar-paginacao-item chamados-listar-paginacao-item-ellipsis">...</li>';
-                }
-
-                // Mostra páginas ao redor da página atual
-                for ($i = max(2, $pagina_atual - 1); $i <= min($total_paginas - 1, $pagina_atual + 1); $i++) {
-                    echo '<li class="chamados-listar-paginacao-item">';
-                    echo '<a href="#" class="chamados-listar-paginacao-link' . ($i == $pagina_atual ? ' chamados-listar-paginacao-link-ativo' : '') . '">' . $i . '</a>';
-                    echo '</li>';
-                }
-
-                // Adiciona reticências se necessário
-                if ($pagina_atual < $total_paginas - 2) {
-                    echo '<li class="chamados-listar-paginacao-item chamados-listar-paginacao-item-ellipsis">...</li>';
-                }
-
-                // Sempre mostra a última página
-                if ($pagina_atual < $total_paginas) {
-                    echo '<li class="chamados-listar-paginacao-item">';
-                    echo '<a href="#" class="chamados-listar-paginacao-link">' . $total_paginas . '</a>';
-                    echo '</li>';
-                }
+                // Exibe as páginas
+                for ($i = $inicio; $i <= $fim; $i++):
+                    $isActive = $i == $paginacao['pagina_atual'];
+                    $title = $isActive ? "Página Atual" : "Ir para Página $i";
+                    $queryParams = isset($_GET) ? array_diff_key($_GET, ['pagina' => '']) : [];
+                    $queryParams['pagina'] = $i;
+                    $url = $isActive ? 'javascript:void(0)' : base_url('chamados/listar?' . http_build_query($queryParams));
                 ?>
+                    <li>
+                        <a href="<?= $url ?>"
+                            class="pagination-link <?= $isActive ? 'active' : '' ?>"
+                            title="<?= $title ?>">
+                            <?= $i ?>
+                        </a>
+                    </li>
+                <?php endfor; ?>
 
-                <li class="chamados-listar-paginacao-item">
-                    <a href="#" class="chamados-listar-paginacao-link chamados-listar-paginacao-link-proximo<?= $paginacao['pagina_atual'] >= $paginacao['total_paginas'] ? ' chamados-listar-paginacao-link-desabilitado' : '' ?>">
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                </li>
+                <?php if ($paginacao['pagina_atual'] < $paginacao['total_paginas']): ?>
+                    <li>
+                        <a href="<?= base_url('chamados/listar?pagina=' . ($paginacao['pagina_atual'] + 1) . (isset($_GET) && !empty($_GET) ? '&' . http_build_query(array_diff_key($_GET, ['pagina' => ''])) : '')) ?>"
+                            class="pagination-link"
+                            title="Próxima Página">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= base_url('chamados/listar?pagina=' . $paginacao['total_paginas'] . (isset($_GET) && !empty($_GET) ? '&' . http_build_query(array_diff_key($_GET, ['pagina' => ''])) : '')) ?>"
+                            class="pagination-link"
+                            title="Última Página">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                <?php else: ?>
+                    <li>
+                        <a href="javascript:void(0)"
+                            class="pagination-link disabled"
+                            title="Você está na última página">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="javascript:void(0)"
+                            class="pagination-link disabled"
+                            title="Você está na última página">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                <?php endif; ?>
             </ul>
+
+            <div class="registros-por-pagina">
+                <label for="por-pagina">Registros por página:</label>
+                <select id="por-pagina" class="por-pagina-select" onchange="mudarRegistrosPorPagina(this.value)">
+                    <option value="3" <?= isset($paginacao['itens_por_pagina']) && $paginacao['itens_por_pagina'] == 3 ? 'selected' : '' ?>>3</option>
+                    <option value="10" <?= isset($paginacao['itens_por_pagina']) && $paginacao['itens_por_pagina'] == 10 ? 'selected' : '' ?>>10</option>
+                    <option value="25" <?= isset($paginacao['itens_por_pagina']) && $paginacao['itens_por_pagina'] == 25 ? 'selected' : '' ?>>25</option>
+                    <option value="50" <?= isset($paginacao['itens_por_pagina']) && $paginacao['itens_por_pagina'] == 50 ? 'selected' : '' ?>>50</option>
+                </select>
+            </div>
         </div>
     <?php endif; ?>
 
-    <!-- Resumo de Estatísticas -->
-    <div class="chamados-listar-resumo">
-        <div class="chamados-listar-resumo-header">
-            <h3 class="chamados-listar-resumo-titulo">
-                <i class="fas fa-chart-pie"></i> Resumo de Estatísticas
-            </h3>
-            <a href="<?= base_url('chamados/relatorio') ?>" class="chamados-listar-resumo-link">
-                Ver relatório completo <i class="fas fa-arrow-right"></i>
-            </a>
-        </div>
-        <div class="chamados-listar-resumo-grid">
-            <div class="chamados-listar-resumo-card">
-                <div class="chamados-listar-resumo-card-header">
-                    <h4 class="chamados-listar-resumo-card-titulo">Chamados por Status</h4>
-                </div>
-                <div class="chamados-listar-resumo-card-body">
-                    <canvas id="graficoStatus" height="200"></canvas>
-                </div>
-            </div>
-            <div class="chamados-listar-resumo-card">
-                <div class="chamados-listar-resumo-card-header">
-                    <h4 class="chamados-listar-resumo-card-titulo">Chamados por Setor</h4>
-                </div>
-                <div class="chamados-listar-resumo-card-body">
-                    <canvas id="graficoSetor" height="200"></canvas>
-                </div>
-            </div>
-            <div class="chamados-listar-resumo-card">
-                <div class="chamados-listar-resumo-card-header">
-                    <h4 class="chamados-listar-resumo-card-titulo">Chamados por Mês (<?= date('Y') ?>)</h4>
-                </div>
-                <div class="chamados-listar-resumo-card-body">
-                    <canvas id="graficoMensal" height="200"></canvas>
-                </div>
-            </div>
-            <div class="chamados-listar-resumo-card">
-                <div class="chamados-listar-resumo-card-header">
-                    <h4 class="chamados-listar-resumo-card-titulo">Tempo Médio de Resolução</h4>
-                </div>
-                <div class="chamados-listar-resumo-card-body">
-                    <div class="chamados-listar-resumo-tempo">
-                        <div class="chamados-listar-resumo-tempo-valor">
-                            <?php
-                            // Obtém o tempo médio real do banco de dados
-                            $tempoMedio = 0;
-                            if (isset($tempoMedioAtendimento) && !empty($tempoMedioAtendimento['data'])) {
-                                $tempoMedio = array_sum($tempoMedioAtendimento['data']) / count($tempoMedioAtendimento['data']);
-                            }
-                            echo number_format($tempoMedio, 1);
-                            ?>
-                            <span>horas</span>
-                        </div>
-                        <div class="chamados-listar-resumo-tempo-info">
-                            Tempo médio para resolução de chamados
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Dados para os gráficos -->
+    <!-- Dados para os gráficos (mantido para compatibilidade com o JS) -->
     <div id="chamados-listar-dados"
         data-status='<?= json_encode($chamadosPorStatus ?? []) ?>'
         data-setor='<?= json_encode($chamadosPorSetor ?? []) ?>'

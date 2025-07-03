@@ -24,9 +24,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Configura os cards de estatísticas clicáveis
     setupClickableStatCards();
 
-    // Inicializa os gráficos com dados reais
-    initChartsWithRealData();
-
     // Configura o modal de exportação
     setupExportModal();
 
@@ -112,208 +109,6 @@ function setupClickableStatCards() {
             card.classList.add('active');
         }
     });
-}
-
-/**
- * Inicializa os gráficos com dados reais do banco de dados
- */
-function initChartsWithRealData() {
-    if (typeof Chart === 'undefined') {
-        console.warn('Chart.js não está disponível. Os gráficos não serão renderizados.');
-        return;
-    }
-
-    // Obtém os dados dos gráficos
-    const dataElement = document.getElementById('chamados-listar-dados');
-    if (!dataElement) {
-        console.warn('Elemento de dados não encontrado.');
-        return;
-    }
-
-    // Configurações comuns para os gráficos
-    Chart.defaults.font.family = "'Inter', sans-serif";
-    Chart.defaults.font.size = 12;
-    Chart.defaults.plugins.legend.position = 'bottom';
-    Chart.defaults.plugins.legend.labels.usePointStyle = true;
-    Chart.defaults.plugins.legend.labels.padding = 15;
-
-    // Gráfico de Status
-    try {
-        const statusData = JSON.parse(dataElement.dataset.status || '{}');
-        const ctxStatus = document.getElementById('graficoStatus');
-
-        if (ctxStatus && statusData.labels && statusData.data) {
-            new Chart(ctxStatus, {
-                type: 'doughnut',
-                data: {
-                    labels: statusData.labels,
-                    datasets: [{
-                        data: statusData.data,
-                        backgroundColor: statusData.backgroundColor || [
-                            'rgba(255, 99, 132, 0.7)',   // Vermelho
-                            'rgba(255, 206, 86, 0.7)',   // Amarelo
-                            'rgba(75, 192, 192, 0.7)',   // Verde
-                            'rgba(153, 102, 255, 0.7)',  // Roxo
-                            'rgba(54, 162, 235, 0.7)'    // Azul
-                        ],
-                        borderColor: 'white',
-                        borderWidth: 2,
-                        hoverOffset: 10
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                boxWidth: 12,
-                                padding: 15
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    const label = context.label || '';
-                                    const value = context.raw || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = Math.round((value / total) * 100);
-                                    return `${label}: ${value} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Erro ao inicializar gráfico de status:', error);
-    }
-
-    // Gráfico de Setor
-    try {
-        const setorData = JSON.parse(dataElement.dataset.setor || '{}');
-        const ctxSetor = document.getElementById('graficoSetor');
-
-        if (ctxSetor && setorData.labels && setorData.data) {
-            new Chart(ctxSetor, {
-                type: 'pie',
-                data: {
-                    labels: setorData.labels,
-                    datasets: [{
-                        data: setorData.data,
-                        backgroundColor: setorData.backgroundColor || [
-                            'rgba(54, 162, 235, 0.7)',   // Azul
-                            'rgba(255, 99, 132, 0.7)',   // Vermelho
-                            'rgba(255, 206, 86, 0.7)',   // Amarelo
-                            'rgba(75, 192, 192, 0.7)',   // Verde
-                            'rgba(153, 102, 255, 0.7)',  // Roxo
-                            'rgba(255, 159, 64, 0.7)',   // Laranja
-                            'rgba(199, 199, 199, 0.7)'   // Cinza
-                        ],
-                        borderColor: 'white',
-                        borderWidth: 2,
-                        hoverOffset: 10
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                boxWidth: 12,
-                                padding: 15
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Erro ao inicializar gráfico de setor:', error);
-    }
-
-    // Gráfico Mensal
-    try {
-        const mensalData = JSON.parse(dataElement.dataset.mensal || '{}');
-        const ctxMensal = document.getElementById('graficoMensal');
-
-        if (ctxMensal && mensalData.labels && mensalData.data) {
-            new Chart(ctxMensal, {
-                type: 'bar',
-                data: {
-                    labels: mensalData.labels,
-                    datasets: [{
-                        label: 'Chamados',
-                        data: mensalData.data,
-                        backgroundColor: 'rgba(67, 97, 238, 0.7)',
-                        borderColor: 'rgba(67, 97, 238, 1)',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        hoverBackgroundColor: 'rgba(67, 97, 238, 0.9)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                precision: 0
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Erro ao inicializar gráfico mensal:', error);
-    }
-
-    // Tempo Médio de Atendimento (exibido como valor numérico)
-    try {
-        const tempoData = JSON.parse(dataElement.dataset.tempo || '{}');
-        if (tempoData.data && tempoData.data.length > 0) {
-            // Calcula a média dos tempos
-            const tempoMedio = tempoData.data.reduce((a, b) => a + b, 0) / tempoData.data.length;
-
-            // Atualiza o elemento na página
-            const tempoElement = document.querySelector('.chamados-listar-resumo-tempo-valor');
-            if (tempoElement) {
-                // Formata o tempo médio
-                let tempoFormatado;
-                if (tempoMedio < 24) {
-                    tempoFormatado = tempoMedio.toFixed(1);
-                } else {
-                    const dias = Math.floor(tempoMedio / 24);
-                    const horas = (tempoMedio % 24).toFixed(1);
-                    tempoFormatado = `${dias}d ${horas}h`;
-                }
-
-                // Atualiza o texto
-                tempoElement.innerHTML = tempoFormatado + '<span>horas</span>';
-            }
-        }
-    } catch (error) {
-        console.error('Erro ao processar dados de tempo médio:', error);
-    }
 }
 
 /**
@@ -844,8 +639,6 @@ function exportToCSV(headers, data) {
     document.body.removeChild(link);
 }
 
-
-
 /**
  * Configura comportamentos responsivos específicos
  */
@@ -888,28 +681,23 @@ function setupResponsiveBehavior() {
 
     // Adiciona listener para redimensionamento da janela
     window.addEventListener('resize', adjustTableForSmallScreens);
+}
 
-    // Ajusta os gráficos em telas pequenas
-    function adjustChartsForSmallScreens() {
-        const chartContainers = document.querySelectorAll('.chamados-listar-resumo-card-body');
-        if (chartContainers.length === 0) return;
+/**
+ * Função para mudar a quantidade de registros por página
+ */
+function mudarRegistrosPorPagina(valor) {
+    // Obtém os parâmetros atuais da URL
+    const urlParams = new URLSearchParams(window.location.search);
 
-        if (window.innerWidth < 768) {
-            chartContainers.forEach(container => {
-                container.style.height = '250px';
-            });
-        } else {
-            chartContainers.forEach(container => {
-                container.style.height = '200px';
-            });
-        }
-    }
+    // Atualiza ou adiciona o parâmetro itens_por_pagina
+    urlParams.set('itens_por_pagina', valor);
 
-    // Executa o ajuste inicial dos gráficos
-    adjustChartsForSmallScreens();
+    // Volta para a primeira página ao mudar a quantidade de registros
+    urlParams.set('pagina', '1');
 
-    // Adiciona listener para redimensionamento da janela
-    window.addEventListener('resize', adjustChartsForSmallScreens);
+    // Redireciona para a nova URL
+    window.location.href = `${window.location.pathname}?${urlParams.toString()}`;
 }
 
 /**
@@ -1021,38 +809,73 @@ function updateProgressBars(stats) {
  * Configura a paginação da tabela de chamados
  */
 function setupPagination() {
-    const paginationContainer = document.querySelector('.chamados-listar-paginacao');
+    const paginationContainer = document.querySelector('.pagination-container');
     if (!paginationContainer) return;
 
-    const paginationLinks = paginationContainer.querySelectorAll('.chamados-listar-paginacao-link');
-    const previousLink = paginationContainer.querySelector('.chamados-listar-paginacao-link-anterior');
-    const nextLink = paginationContainer.querySelector('.chamados-listar-paginacao-link-proximo');
+    const paginationLinks = paginationContainer.querySelectorAll('.pagination-link');
 
-    // Obtém a página atual da URL
-    const urlParams = new URLSearchParams(window.location.search);
-    let currentPage = parseInt(urlParams.get('pagina')) || 1;
-
-    // Configura os links de paginação
+    // Adiciona efeito de hover aos links de paginação
     paginationLinks.forEach(link => {
-        if (!link.classList.contains('chamados-listar-paginacao-link-anterior') &&
-            !link.classList.contains('chamados-listar-paginacao-link-proximo')) {
-
-            const pageNumber = parseInt(link.textContent);
-            if (isNaN(pageNumber)) return; // Ignora links que não são números (como reticências)
-
-            // Adiciona o evento de clique
-            link.addEventListener('click', function (e) {
-                e.preventDefault();
-                navigateToPage(pageNumber);
+        if (!link.classList.contains('disabled') && !link.classList.contains('active')) {
+            link.addEventListener('mouseenter', function () {
+                this.style.backgroundColor = 'var(--chamados-listar-primary-light)';
+                this.style.color = 'var(--chamados-listar-primary)';
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 3px 8px rgba(0, 0, 0, 0.1)';
             });
 
-            // Marca a página atual como ativa
-            if (pageNumber === currentPage) {
-                link.classList.add('chamados-listar-paginacao-link-ativo');
-            } else {
-                link.classList.remove('chamados-listar-paginacao-link-ativo');
-            }
+            link.addEventListener('mouseleave', function () {
+                this.style.backgroundColor = '';
+                this.style.color = '';
+                this.style.transform = '';
+                this.style.boxShadow = '';
+            });
         }
+    });
+
+    // Adiciona comportamento responsivo
+    function adjustPaginationForSmallScreens() {
+        if (window.innerWidth < 576) {
+            // Em telas pequenas, mostra menos links de página
+            const pageItems = paginationContainer.querySelectorAll('.pagination li');
+            const pagina_atual = parseInt(paginationContainer.querySelector('.pagination-link.active')?.textContent || '1');
+            const total_paginas = pageItems.length - 4; // Subtrai os botões de navegação
+
+            pageItems.forEach((item, index) => {
+                // Mantém visíveis: primeira, última, atual, anterior e próxima
+                const link = item.querySelector('.pagination-link');
+                if (link) {
+                    const pageNumber = parseInt(link.textContent);
+
+                    // Esconde páginas que não são importantes em telas pequenas
+                    if (!isNaN(pageNumber) &&
+                        pageNumber !== 1 &&
+                        pageNumber !== total_paginas &&
+                        pageNumber !== pagina_atual &&
+                        pageNumber !== pagina_atual - 1 &&
+                        pageNumber !== pagina_atual + 1) {
+
+                        item.style.display = 'none';
+                    } else {
+                        item.style.display = '';
+                    }
+                }
+            });
+        } else {
+            // Em telas maiores, mostra todos os links
+            const pageItems = paginationContainer.querySelectorAll('.pagination li');
+            pageItems.forEach(item => {
+                item.style.display = '';
+            });
+        }
+    }
+
+    // Executa o ajuste inicial
+    adjustPaginationForSmallScreens();
+
+    // Adiciona listener para redimensionamento da janela
+    window.addEventListener('resize', function () {
+        adjustPaginationForSmallScreens();
     });
 
     // Configura o link "Anterior"
@@ -1072,9 +895,9 @@ function setupPagination() {
     }
 
     /**
-   * Navega para a página especificada mantendo os filtros atuais
-   * @param {number} page - Número da página
-   */
+    * Navega para a página especificada mantendo os filtros atuais
+    * @param {number} page - Número da página
+    */
     function navigateToPage(page) {
         // Obtém os parâmetros atuais da URL
         const params = new URLSearchParams(window.location.search);
@@ -1158,5 +981,4 @@ function setupPagination() {
 
     // Adiciona listener para redimensionamento da janela
     window.addEventListener('resize', adjustPaginationForSmallScreens);
-
 }
