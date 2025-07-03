@@ -7,7 +7,7 @@ session_start();
 // Informações básicas da aplicação
 define('APP_NAME', 'Sistema de Gestão de Chamados');
 define('APP_VERSION', '2.0.0');
-//define('APP_URL', 'http://localhost/sistema-gestao-chamados');
+/*define('APP_URL', 'http://localhost/sistema-gestao-chamados');*/
 define('APP_URL', 'https://chamado.eagletelecom.com.br');
 define('APP_PRODUCTION', false);
 
