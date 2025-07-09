@@ -351,43 +351,50 @@
   overflow: hidden;
 }
 
-/* Correção específica para o card "Em Atendimento" (info-card) */
-.stat-card.info-card {
-  display: flex;
-  align-items: flex-start;
-  height: 100%;
-  box-sizing: border-box;
-  opacity: 1;
-  transform: translateY(0);
+/* Classe específica para corrigir o card Em Atendimento */
+.stat-card.info-card-fixed {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  padding: 1.25rem !important;
+  border-radius: 12px !important;
+  background-color: white !important;
+  box-shadow: 0 4px 12px var(--dashboard-shadow) !important;
+  transition: all var(--dashboard-transition-normal) !important;
+  overflow: hidden !important;
+  height: 100% !important;
 }
 
-/* Garantir que o hover funcione corretamente */
-.stat-card.info-card:hover {
-  transform: translateY(-5px) !important;
-  box-shadow: 0 8px 16px var(--dashboard-shadow-hover);
-}
-
-/* Garantir que a animação seja aplicada corretamente */
-.stat-card.info-card.animate-in {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Garantir que o ícone tenha a cor correta */
-.info-card .stat-icon {
+.stat-card.info-card-fixed .stat-icon {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 0.75rem !important;
+  font-size: 1.25rem !important;
   background: linear-gradient(
     135deg,
     rgba(52, 152, 219, 0.1),
     rgba(52, 152, 219, 0.2)
-  );
-  color: var(--dashboard-info);
+  ) !important;
+  color: var(--dashboard-info) !important;
+  flex-shrink: 0 !important;
 }
 
-/* Garantir que a barra de progresso tenha a cor correta */
-.info-card .progress-bar {
-  background-color: #3498db;
+.stat-card.info-card-fixed .stat-content {
+  flex: 1 !important;
+  width: calc(100% - 60px) !important;
+  min-width: 0 !important;
 }
 
+.stat-card.info-card-fixed .stat-value-container {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 0.25rem !important;
+}
 /* Animação de pulso para os contadores */
 @keyframes pulse {
   0% {
@@ -816,5 +823,3 @@
     gap: 0.5rem;
   }
 }
-
-

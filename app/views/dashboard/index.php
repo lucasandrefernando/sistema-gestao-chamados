@@ -89,13 +89,13 @@ function esc($str)
             </div>
         </div>
 
-        <!-- Card: Chamados em Atendimento (CORRIGIDO) -->
-        <div class="stat-card info-card">
-            <div class="stat-icon">
+        <!-- Card: Chamados em Atendimento (COM ESTILO INLINE) -->
+        <div class="stat-card info-card" style="display: flex !important; flex-direction: row !important;">
+            <div class="stat-icon" style="margin-right: 0.75rem !important;">
                 <i class="fas fa-clock"></i>
             </div>
-            <div class="stat-content">
-                <div class="stat-value-container">
+            <div class="stat-content" style="flex: 1 !important; width: auto !important;">
+                <div class="stat-value-container" style="display: flex !important; justify-content: space-between !important;">
                     <div class="stat-value" id="chamados-andamento">
                         <span class="counter-number"><?= $estatisticas['em_andamento'] ?? 0 ?></span>
                     </div>

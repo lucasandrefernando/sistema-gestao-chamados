@@ -1158,7 +1158,7 @@ const DashboardModule = (function () {
             updateThemeIcon();
             updateChartsTheme();
         }
-    };
+    }; 
 })();
 
 // Inicializa o módulo quando o script for carregado
