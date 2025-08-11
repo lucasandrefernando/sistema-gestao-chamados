@@ -35,11 +35,29 @@ class UsuariosController extends Controller
     }
 
     /**
+     * ✅ HELPER: Gera iniciais corretas do nome
+     */
+    private function getIniciais($nomeCompleto)
+    {
+        if (empty($nomeCompleto)) return '?';
+
+        $nomes = array_filter(explode(' ', trim($nomeCompleto)), function ($nome) {
+            return !empty($nome);
+        });
+
+        if (count($nomes) === 0) return '?';
+
+        if (count($nomes) === 1) {
+            // Se só tem um nome, pega as duas primeiras letras
+            return strtoupper(substr($nomes[0], 0, 2));
+        } else {
+            // Se tem mais de um nome, pega primeira letra do primeiro e último nome
+            return strtoupper($nomes[0][0] . $nomes[count($nomes) - 1][0]);
+        }
+    }
+
+    /**
      * Função auxiliar para formatar o tempo decorrido desde uma data
-     * 
-     * @param string $datetime Data e hora no formato Y-m-d H:i:s
-     * @param bool $full Se true, retorna a descrição completa
-     * @return string Tempo decorrido em formato legível (ex: "há 2 dias")
      */
     public function time_elapsed_string($datetime, $full = false)
     {
@@ -111,62 +129,148 @@ class UsuariosController extends Controller
     }
 
     /**
-     * Lista de usuários
+     * ✅ MÉTODO COMPLETO: FILTROS + MODAIS AJAX
      */
     public function index()
     {
         $empresaId = get_empresa_id();
 
-        // Verifica se deve mostrar usuários removidos
-        $mostrarRemovidos = isset($_GET['mostrar_removidos']) && $_GET['mostrar_removidos'] == 1;
+        // ✅ RESPOSTA AJAX PARA MODAIS
+        if (isset($_GET['ajax'])) {
+            header('Content-Type: application/json');
 
-        // Obtém o número da página atual da URL
-        $paginaAtual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+            if ($_GET['ajax'] === 'licencas_utilizadas') {
+                try {
+                    $sql = "SELECT * FROM usuarios WHERE empresa_id = :empresa_id AND ativo = 1 AND (removido = 0 OR removido IS NULL) ORDER BY nome ASC";
+                    $stmt = $this->usuarioModel->getDb()->prepare($sql);
+                    $stmt->bindValue(':empresa_id', $empresaId);
+                    $stmt->execute();
+                    $usuariosAtivos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Define o número de registros por página
-        $registrosPorPagina = 4;
+                    // Adiciona iniciais para cada usuário
+                    foreach ($usuariosAtivos as &$usuario) {
+                        $usuario['iniciais'] = $this->getIniciais($usuario['nome']);
+                    }
 
-        // Condição para filtrar usuários
-        $condicaoAdicional = '';
-        $parametrosAdicionais = [];
+                    echo json_encode(['usuarios' => $usuariosAtivos]);
+                } catch (Exception $e) {
+                    error_log("Erro ao buscar licenças utilizadas: " . $e->getMessage());
+                    echo json_encode(['usuarios' => [], 'error' => 'Erro ao carregar dados']);
+                }
+                exit;
+            }
 
-        if (!$mostrarRemovidos) {
-            $condicaoAdicional = '(removido = 0 OR removido IS NULL)';
+            if ($_GET['ajax'] === 'usuarios_online') {
+                try {
+                    $usuariosOnline = $this->usuarioModel->getUsuariosOnline($empresaId, 50);
+
+                    // Adiciona iniciais para cada usuário online
+                    if (isset($usuariosOnline['usuarios'])) {
+                        foreach ($usuariosOnline['usuarios'] as &$usuario) {
+                            $usuario['iniciais'] = $this->getIniciais($usuario['nome']);
+
+                            // Calcula tempo online se disponível
+                            if (isset($usuario['session_start'])) {
+                                $usuario['tempo_online'] = $this->time_elapsed_string($usuario['session_start']);
+                            }
+                        }
+                    }
+
+                    echo json_encode($usuariosOnline);
+                } catch (Exception $e) {
+                    error_log("Erro ao buscar usuários online: " . $e->getMessage());
+                    echo json_encode(['usuarios' => [], 'total' => 0, 'error' => 'Erro ao carregar dados']);
+                }
+                exit;
+            }
         }
 
-        // Obtém a lista de usuários com paginação
+        $mostrarRemovidos = isset($_GET['mostrar_removidos']) && $_GET['mostrar_removidos'] == 1;
+
+        // ✅ FILTROS
+        $filtros = [
+            'busca' => isset($_GET['busca']) ? trim($_GET['busca']) : '',
+            'status' => isset($_GET['status']) ? $_GET['status'] : 'all',
+            'tipo' => isset($_GET['tipo']) ? $_GET['tipo'] : 'all'
+        ];
+
+        $paginaAtual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+        $registrosPorPagina = 4;
+
+        // ✅ MONTA CONDIÇÕES SEM PLACEHOLDERS PROBLEMÁTICOS
+        $condicoes = [];
+
+        // Filtro de remoção
+        if (!$mostrarRemovidos) {
+            $condicoes[] = '(removido = 0 OR removido IS NULL)';
+        }
+
+        // ✅ FILTRO DE BUSCA
+        if (!empty($filtros['busca'])) {
+            $busca = $this->usuarioModel->getDb()->quote('%' . $filtros['busca'] . '%');
+            $condicoes[] = "(nome LIKE {$busca} OR email LIKE {$busca})";
+        }
+
+        // ✅ FILTRO POR STATUS
+        if ($filtros['status'] !== 'all') {
+            if ($filtros['status'] === 'active') {
+                $condicoes[] = 'ativo = 1';
+            } elseif ($filtros['status'] === 'inactive') {
+                $condicoes[] = 'ativo = 0';
+            } elseif ($filtros['status'] === 'removed') {
+                $condicoes[] = 'removido = 1';
+            }
+        }
+
+        // ✅ FILTRO POR TIPO
+        if ($filtros['tipo'] !== 'all') {
+            if ($filtros['tipo'] === 'admin') {
+                $condicoes[] = 'admin = 1';
+            } elseif ($filtros['tipo'] === 'regular') {
+                $condicoes[] = 'admin = 0';
+            }
+        }
+
+        $condicaoFinal = !empty($condicoes) ? implode(' AND ', $condicoes) : '';
+
+        // ✅ BUSCA USUÁRIOS (SEM PARÂMETROS PROBLEMÁTICOS)
         $resultado = $this->usuarioModel->findByEmpresaPaginado(
             $empresaId,
             $paginaAtual,
             $registrosPorPagina,
-            $condicaoAdicional,
-            $parametrosAdicionais
+            $condicaoFinal,
+            [] // Array vazio - não usa parâmetros
         );
 
         $usuarios = $resultado['usuarios'];
         $paginacao = $resultado['paginacao'];
 
-        // Formata o tempo decorrido desde o último acesso para cada usuário
+        // Formata tempo decorrido e adiciona iniciais
         foreach ($usuarios as &$usuario) {
             if (isset($usuario['ultimo_acesso']) && $usuario['ultimo_acesso']) {
                 $usuario['tempo_decorrido'] = $this->time_elapsed_string($usuario['ultimo_acesso']);
             }
+
+            // ✅ ADICIONA INICIAIS CORRETAS
+            $usuario['iniciais'] = $this->getIniciais($usuario['nome']);
         }
 
-        // Obtém informações sobre licenças
+        // ✅ LICENÇAS (MÉTODO SIMPLES)
         require_once ROOT_DIR . '/app/models/Licenca.php';
         $licencaModel = new Licenca();
         $totalLicencas = $licencaModel->getTotalLicencas($empresaId);
-        $totalUsuariosAtivos = $this->usuarioModel->count('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId]);
-        $licencasDisponiveis = $totalLicencas - $totalUsuariosAtivos;
+
+        $sqlAtivos = "SELECT COUNT(*) FROM usuarios WHERE empresa_id = {$empresaId} AND ativo = 1 AND (removido = 0 OR removido IS NULL)";
+        $stmtAtivos = $this->usuarioModel->getDb()->prepare($sqlAtivos);
+        $stmtAtivos->execute();
+        $totalUsuariosAtivos = (int) $stmtAtivos->fetchColumn();
 
         $licencasInfo = [
             'total' => $totalLicencas,
             'utilizadas' => $totalUsuariosAtivos,
-            'disponiveis' => $licencasDisponiveis
+            'disponiveis' => $totalLicencas - $totalUsuariosAtivos
         ];
 
-        // Obtém informações sobre usuários online
         $usuariosOnlineInfo = $this->usuarioModel->getUsuariosOnline($empresaId);
 
         $this->render('usuarios/index', [
@@ -174,12 +278,13 @@ class UsuariosController extends Controller
             'mostrarRemovidos' => $mostrarRemovidos,
             'licencasInfo' => $licencasInfo,
             'paginacao' => $paginacao,
-            'usuariosOnlineInfo' => $usuariosOnlineInfo
+            'usuariosOnlineInfo' => $usuariosOnlineInfo,
+            'filtros' => $filtros
         ]);
     }
 
     /**
-     * Formulário para criar usuário
+     * Formulário para criar usuário 
      */
     public function criar()
     {
@@ -284,20 +389,38 @@ class UsuariosController extends Controller
         // Obtém os dados do formulário
         $data = $this->getPostData();
 
-        // Valida os campos obrigatórios
+        // --- INÍCIO DAS MUDANÇAS PARA NOME/SOBRENOME E CONFIRMAR SENHA ---
+
+        // 1. Valida os campos obrigatórios, incluindo 'sobrenome' e 'confirmar_senha'
         $requiredFields = [
             'nome' => 'Nome',
+            'sobrenome' => 'Sobrenome', // Adicionado
             'email' => 'E-mail',
-            'senha' => 'Senha'
+            'senha' => 'Senha',
+            'confirmar_senha' => 'Confirmação de Senha' // Adicionado
         ];
 
         $errors = $this->validateRequired($data, $requiredFields);
+
+        // 2. Verifica se as senhas coincidem (se ambas foram fornecidas)
+        if (isset($data['senha']) && isset($data['confirmar_senha']) && $data['senha'] !== $data['confirmar_senha']) {
+            $errors[] = 'A senha e a confirmação de senha não coincidem.';
+        }
 
         if (!empty($errors)) {
             set_flash_message('error', implode('<br>', $errors));
             redirect('usuarios/criar');
             return;
         }
+
+        // 3. Concatena nome e sobrenome na coluna 'nome'
+        $data['nome'] = trim($data['nome'] . ' ' . $data['sobrenome']);
+
+        // 4. Remove o campo 'sobrenome' e 'confirmar_senha' antes de enviar para o modelo
+        unset($data['sobrenome']);
+        unset($data['confirmar_senha']);
+
+        // --- FIM DAS MUDANÇAS PARA NOME/SOBRENOME E CONFIRMAR SENHA ---
 
         // Sempre usa a empresa do usuário logado
         $empresaId = get_empresa_id();
@@ -460,6 +583,17 @@ class UsuariosController extends Controller
             return;
         }
 
+        // Se o usuário tem nome completo (nome + sobrenome), tenta separar para o formulário
+        if (isset($usuario['nome'])) {
+            $partesNome = explode(' ', $usuario['nome'], 2); // Divide em no máximo 2 partes
+            $usuario['nome_primeiro'] = $partesNome[0];
+            $usuario['sobrenome'] = isset($partesNome[1]) ? $partesNome[1] : '';
+        } else {
+            $usuario['nome_primeiro'] = '';
+            $usuario['sobrenome'] = '';
+        }
+
+
         $this->render('usuarios/form', [
             'titulo' => 'Editar Usuário',
             'acao' => 'editar',
@@ -487,19 +621,36 @@ class UsuariosController extends Controller
         // Obtém os dados do formulário
         $data = $this->getPostData();
 
-        // Valida os campos obrigatórios
+        // --- INÍCIO DAS MUDANÇAS PARA NOME/SOBRENOME E CONFIRMAR SENHA ---
+
+        // 1. Valida os campos obrigatórios, incluindo 'sobrenome'
         $requiredFields = [
             'nome' => 'Nome',
+            'sobrenome' => 'Sobrenome', // Adicionado
             'email' => 'E-mail'
         ];
 
         $errors = $this->validateRequired($data, $requiredFields);
+
+        // 2. Verifica se a nova senha e a confirmação de senha coincidem (se ambas foram fornecidas)
+        if (!empty($data['senha']) && isset($data['confirmar_senha']) && $data['senha'] !== $data['confirmar_senha']) {
+            $errors[] = 'A nova senha e a confirmação de senha não coincidem.';
+        }
 
         if (!empty($errors)) {
             set_flash_message('error', implode('<br>', $errors));
             redirect('usuarios/editar/' . $id);
             return;
         }
+
+        // 3. Concatena nome e sobrenome na coluna 'nome'
+        $data['nome'] = trim($data['nome'] . ' ' . $data['sobrenome']);
+
+        // 4. Remove o campo 'sobrenome' e 'confirmar_senha' antes de enviar para o modelo
+        unset($data['sobrenome']);
+        unset($data['confirmar_senha']);
+
+        // --- FIM DAS MUDANÇAS PARA NOME/SOBRENOME E CONFIRMAR SENHA ---
 
         // Verifica se o e-mail já existe NA MESMA EMPRESA (exceto para o próprio usuário)
         $existente = $this->usuarioModel->findOne('email = :email AND empresa_id = :empresa_id AND id != :id', [

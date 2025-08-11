@@ -104,8 +104,12 @@ class Usuario extends Model
      */
     public function verificarLicencasDisponiveis($empresaId)
     {
-        // Conta o número de usuários ativos da empresa
-        $totalUsuarios = $this->count('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId]);
+        // ✅ CORRIGIDO: Conta usuários ativos manualmente
+        $sql = "SELECT COUNT(*) FROM {$this->table} WHERE empresa_id = :empresa_id AND ativo = 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':empresa_id', $empresaId);
+        $stmt->execute();
+        $totalUsuarios = (int) $stmt->fetchColumn();
 
         // Busca o total de licenças da empresa
         require_once ROOT_DIR . '/app/models/Licenca.php';
@@ -579,64 +583,96 @@ class Usuario extends Model
     }
 
     /**
-     * Busca usuários por empresa com paginação
-     * 
-     * @param int $empresaId ID da empresa
-     * @param int $pagina Número da página atual
-     * @param int $porPagina Quantidade de registros por página
-     * @param string $condicaoAdicional Condição adicional para o WHERE (opcional)
-     * @param array $parametrosAdicionais Parâmetros adicionais para a condição (opcional)
-     * @return array Array contendo os usuários e informações de paginação
+     * ✅ MÉTODO CORRIGIDO: Busca usuários por empresa com paginação
      */
     public function findByEmpresaPaginado($empresaId, $pagina = 1, $porPagina = 4, $condicaoAdicional = '', $parametrosAdicionais = [])
     {
-        // Garante que a página é um número positivo
-        $pagina = max(1, (int)$pagina);
+        try {
+            // Garante que a página é um número positivo
+            $pagina = max(1, (int)$pagina);
+            $offset = ($pagina - 1) * $porPagina;
 
-        // Calcula o offset para a consulta SQL
-        $offset = ($pagina - 1) * $porPagina;
+            // ✅ CONSTRÓI A QUERY BASE
+            $whereConditions = ["empresa_id = :empresa_id"];
+            $parametros = ['empresa_id' => $empresaId];
 
-        // Prepara a condição base
-        $condicao = 'empresa_id = :empresa_id';
-        $parametros = ['empresa_id' => $empresaId];
+            // ✅ ADICIONA CONDIÇÕES EXTRAS
+            if (!empty($condicaoAdicional)) {
+                $whereConditions[] = "({$condicaoAdicional})";
 
-        // Adiciona condição adicional se fornecida
-        if (!empty($condicaoAdicional)) {
-            $condicao .= ' AND ' . $condicaoAdicional;
-            $parametros = array_merge($parametros, $parametrosAdicionais);
+                // Mescla os parâmetros adicionais
+                foreach ($parametrosAdicionais as $key => $value) {
+                    $parametros[$key] = $value;
+                }
+            }
+
+            $whereClause = implode(' AND ', $whereConditions);
+
+            // ✅ CONTA TOTAL DE REGISTROS
+            $countSql = "SELECT COUNT(*) FROM {$this->table} WHERE {$whereClause}";
+            $countStmt = $this->db->prepare($countSql);
+
+            foreach ($parametros as $key => $value) {
+                $countStmt->bindValue(":{$key}", $value);
+            }
+
+            $countStmt->execute();
+            $totalRegistros = (int) $countStmt->fetchColumn();
+
+            // Calcula o total de páginas
+            $totalPaginas = ceil($totalRegistros / $porPagina);
+
+            // ✅ BUSCA OS USUÁRIOS
+            $sql = "SELECT * FROM {$this->table} WHERE {$whereClause} ORDER BY nome ASC LIMIT :offset, :limit";
+            $stmt = $this->db->prepare($sql);
+
+            foreach ($parametros as $key => $value) {
+                $stmt->bindValue(":{$key}", $value);
+            }
+
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $porPagina, PDO::PARAM_INT);
+
+            $stmt->execute();
+            $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // ✅ DEBUG
+            error_log("SQL FINAL: " . $sql);
+            error_log("PARÂMETROS: " . json_encode($parametros));
+            error_log("TOTAL REGISTROS: " . $totalRegistros);
+            error_log("USUÁRIOS ENCONTRADOS: " . count($usuarios));
+
+            return [
+                'usuarios' => $usuarios,
+                'paginacao' => [
+                    'pagina_atual' => $pagina,
+                    'total_paginas' => $totalPaginas,
+                    'total_registros' => $totalRegistros,
+                    'por_pagina' => $porPagina
+                ]
+            ];
+        } catch (PDOException $e) {
+            error_log("ERRO findByEmpresaPaginado: " . $e->getMessage());
+
+            // ✅ FALLBACK: Retorna pelo menos os usuários básicos
+            $sql = "SELECT * FROM {$this->table} WHERE empresa_id = :empresa_id ORDER BY nome ASC LIMIT :offset, :limit";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':empresa_id', $empresaId);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $porPagina, PDO::PARAM_INT);
+            $stmt->execute();
+            $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return [
+                'usuarios' => $usuarios,
+                'paginacao' => [
+                    'pagina_atual' => 1,
+                    'total_paginas' => 1,
+                    'total_registros' => count($usuarios),
+                    'por_pagina' => $porPagina
+                ]
+            ];
         }
-
-        // Conta o total de registros para a paginação
-        $totalRegistros = $this->count($condicao, $parametros);
-
-        // Calcula o total de páginas
-        $totalPaginas = ceil($totalRegistros / $porPagina);
-
-        // Busca os usuários para a página atual
-        $sql = "SELECT * FROM {$this->table} WHERE {$condicao} ORDER BY nome ASC LIMIT :offset, :limit";
-        $stmt = $this->db->prepare($sql);
-
-        // Vincula os parâmetros
-        foreach ($parametros as $key => $value) {
-            $stmt->bindValue(':' . $key, $value);
-        }
-
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->bindValue(':limit', $porPagina, PDO::PARAM_INT);
-
-        $stmt->execute();
-        $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Retorna os usuários e informações de paginação
-        return [
-            'usuarios' => $usuarios,
-            'paginacao' => [
-                'pagina_atual' => $pagina,
-                'total_paginas' => $totalPaginas,
-                'total_registros' => $totalRegistros,
-                'por_pagina' => $porPagina
-            ]
-        ];
     }
 
     /**
@@ -725,5 +761,12 @@ class Usuario extends Model
             'usuarios' => $usuariosOnline
         ];
     }
+
+    /**
+     * ✅ NOVO: Retorna a conexão com o banco de dados
+     */
+    public function getDb()
+    {
+        return $this->db;
+    }
 }
-    

@@ -246,6 +246,7 @@ abstract class Model
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    
     /**
      * Executa uma consulta SQL personalizada e retorna um único resultado
      * 

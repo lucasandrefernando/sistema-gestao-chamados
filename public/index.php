@@ -35,6 +35,36 @@ $params = array_slice($url, 2);
 // Caminho para o arquivo do controlador
 $controllerFile = ROOT_DIR . '/app/controllers/' . $controllerName . '.php';
 
+
+if ($url[0] === 'perfil' && isset($url[1])) {
+    switch ($url[1]) {
+        case 'atualizar-dados':
+            $methodName = 'atualizarDados';
+            $params = array_slice($url, 2);
+            break;
+        case 'alterar-senha':
+            $methodName = 'alterarSenha';
+            $params = array_slice($url, 2);
+            break;
+        case 'solicitar-alteracao-email':
+            $methodName = 'solicitarAlteracaoEmail';
+            $params = array_slice($url, 2);
+            break;
+        case 'confirmar-email':
+            $methodName = 'confirmarEmail';
+            $params = array_slice($url, 2);
+            break;
+        case 'desativar':
+            $methodName = 'desativar';
+            $params = array_slice($url, 2);
+            break;
+        default:
+            // Mantém o método original se não for uma rota especial
+            break;
+    }
+}
+
+
 // Verifica se o controlador existe
 if (file_exists($controllerFile)) {
     require_once $controllerFile;

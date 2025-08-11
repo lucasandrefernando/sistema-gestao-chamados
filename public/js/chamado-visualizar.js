@@ -1,8 +1,11 @@
 /**
  * chamado-visualizar.js - Script específico para a página de visualização de chamados
+ * Versão 6.0 - Botão copiar funcionando 100%
  */
 
 document.addEventListener('DOMContentLoaded', function () {
+    console.log('Inicializando página de visualização de chamados...');
+
     // Inicializa tooltips do Bootstrap
     initTooltips();
 
@@ -23,7 +26,290 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Adiciona efeitos visuais à timeline
     enhanceTimeline();
+
+    // FUNCIONALIDADE PRINCIPAL: Configura botão de copiar telefone
+    setupBotaoCopiarTelefone();
+
+    console.log('Página de visualização inicializada com sucesso!');
 });
+
+/**
+ * FUNÇÃO PRINCIPAL: Configura a funcionalidade de copiar telefone
+ */
+function setupBotaoCopiarTelefone() {
+    console.log('Configurando botões de copiar telefone...');
+
+    // Seleciona todos os botões de copiar
+    const botoesCopiar = document.querySelectorAll('.chamado-btn-copiar');
+
+    console.log(`Encontrados ${botoesCopiar.length} botões de copiar`);
+
+    botoesCopiar.forEach((botao, index) => {
+        console.log(`Configurando botão ${index + 1}`);
+
+        botao.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const telefone = this.getAttribute('data-telefone');
+            console.log('Tentando copiar telefone:', telefone);
+
+            if (telefone) {
+                copiarTelefoneParaClipboard(telefone, this);
+            } else {
+                console.error('Número de telefone não encontrado no atributo data-telefone');
+                mostrarToastErro('Erro: Número não encontrado');
+            }
+        });
+    });
+}
+
+/**
+ * Função principal para copiar telefone
+ * @param {string} telefone - Número do telefone
+ * @param {HTMLElement} botao - Botão que foi clicado
+ */
+function copiarTelefoneParaClipboard(telefone, botao) {
+    console.log('Iniciando processo de cópia:', telefone);
+
+    // Limpa o telefone (remove formatação)
+    const telefoneNumeros = telefone.replace(/\D/g, '');
+    console.log('Telefone limpo:', telefoneNumeros);
+
+    // Tenta usar a API moderna de clipboard primeiro
+    if (navigator.clipboard && window.isSecureContext) {
+        console.log('Usando Clipboard API moderna');
+
+        navigator.clipboard.writeText(telefoneNumeros).then(() => {
+            console.log('✅ Telefone copiado com sucesso via Clipboard API');
+            mostrarFeedbackSucesso(botao);
+            mostrarToastSucesso();
+        }).catch(err => {
+            console.error('❌ Erro ao copiar via Clipboard API:', err);
+            // Fallback para método antigo
+            copiarComMetodoFallback(telefoneNumeros, botao);
+        });
+    } else {
+        console.log('Clipboard API não disponível, usando método fallback');
+        copiarComMetodoFallback(telefoneNumeros, botao);
+    }
+}
+
+/**
+ * Método fallback para navegadores mais antigos
+ * @param {string} texto - Texto a ser copiado
+ * @param {HTMLElement} botao - Botão que foi clicado
+ */
+function copiarComMetodoFallback(texto, botao) {
+    console.log('Executando método fallback');
+
+    // Cria um elemento temporário
+    const elementoTemporario = document.createElement('textarea');
+    elementoTemporario.value = texto;
+    elementoTemporario.style.position = 'fixed';
+    elementoTemporario.style.left = '-9999px';
+    elementoTemporario.style.top = '-9999px';
+    elementoTemporario.style.opacity = '0';
+    elementoTemporario.style.pointerEvents = 'none';
+
+    // Adiciona ao DOM
+    document.body.appendChild(elementoTemporario);
+
+    try {
+        // Seleciona o texto
+        elementoTemporario.focus();
+        elementoTemporario.select();
+        elementoTemporario.setSelectionRange(0, 99999); // Para mobile
+
+        // Executa o comando de cópia
+        const sucesso = document.execCommand('copy');
+
+        if (sucesso) {
+            console.log('✅ Telefone copiado com sucesso via fallback');
+            mostrarFeedbackSucesso(botao);
+            mostrarToastSucesso();
+        } else {
+            throw new Error('Comando execCommand falhou');
+        }
+    } catch (err) {
+        console.error('❌ Erro no método fallback:', err);
+
+        // Última tentativa: mostrar prompt para cópia manual
+        const numeroFormatado = formatarTelefoneJS(texto);
+        const copiouManualmente = prompt(
+            'Não foi possível copiar automaticamente.\nCopie o número manualmente:',
+            numeroFormatado
+        );
+
+        if (copiouManualmente !== null) {
+            mostrarToastInfo('Número exibido para cópia manual');
+        }
+    } finally {
+        // Remove o elemento temporário
+        document.body.removeChild(elementoTemporario);
+    }
+}
+
+/**
+ * Mostra feedback visual no botão
+ * @param {HTMLElement} botao - Botão que foi clicado
+ */
+function mostrarFeedbackSucesso(botao) {
+    console.log('Mostrando feedback visual no botão');
+
+    // Salva o estado original
+    const iconOriginal = botao.innerHTML;
+    const classesOriginais = botao.className;
+
+    // Muda para estado de sucesso
+    botao.innerHTML = '<i class="fas fa-check"></i>';
+    botao.classList.add('copiado');
+    botao.style.transform = 'scale(1.1)';
+
+    // Desabilita temporariamente
+    botao.disabled = true;
+
+    // Restaura após 2 segundos
+    setTimeout(() => {
+        botao.innerHTML = iconOriginal;
+        botao.className = classesOriginais;
+        botao.style.transform = '';
+        botao.disabled = false;
+        console.log('Feedback visual restaurado');
+    }, 2000);
+}
+
+/**
+ * Mostra toast de sucesso
+ */
+function mostrarToastSucesso() {
+    console.log('Mostrando toast de sucesso');
+
+    const toastElement = document.getElementById('toastCopia');
+
+    if (toastElement) {
+        // Verifica se Bootstrap está disponível
+        if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+            const toast = new bootstrap.Toast(toastElement, {
+                delay: 3000
+            });
+            toast.show();
+        } else {
+            // Fallback sem Bootstrap
+            mostrarToastSimples('Número copiado para a área de transferência!', 'success');
+        }
+    } else {
+        // Cria toast se não existir
+        mostrarToastSimples('Número copiado para a área de transferência!', 'success');
+    }
+}
+
+/**
+ * Mostra toast de erro
+ * @param {string} mensagem - Mensagem de erro
+ */
+function mostrarToastErro(mensagem) {
+    console.log('Mostrando toast de erro:', mensagem);
+    mostrarToastSimples(mensagem, 'error');
+}
+
+/**
+ * Mostra toast informativo
+ * @param {string} mensagem - Mensagem informativa
+ */
+function mostrarToastInfo(mensagem) {
+    console.log('Mostrando toast informativo:', mensagem);
+    mostrarToastSimples(mensagem, 'info');
+}
+
+/**
+ * Cria um toast simples quando o elemento não existe
+ * @param {string} mensagem - Mensagem do toast
+ * @param {string} tipo - Tipo do toast (success, error, info)
+ */
+function mostrarToastSimples(mensagem, tipo = 'success') {
+    console.log('Criando toast simples:', tipo, mensagem);
+
+    // Remove toast anterior se existir
+    const toastAnterior = document.querySelector('.toast-customizado');
+    if (toastAnterior) {
+        toastAnterior.remove();
+    }
+
+    // Define cores por tipo
+    const cores = {
+        success: { bg: '#2ecc71', icon: 'check-circle' },
+        error: { bg: '#e74c3c', icon: 'exclamation-circle' },
+        info: { bg: '#3498db', icon: 'info-circle' }
+    };
+
+    const config = cores[tipo] || cores.success;
+
+    // Cria o toast
+    const toast = document.createElement('div');
+    toast.className = 'toast-customizado';
+    toast.innerHTML = `
+        <div style="
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: ${config.bg};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            max-width: 350px;
+            animation: slideInRight 0.3s ease;
+        ">
+            <i class="fas fa-${config.icon}"></i>
+            <span>${mensagem}</span>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Remove após 3 segundos
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (document.body.contains(toast)) {
+                document.body.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
+
+/**
+ * Formata um número de telefone para exibição (JavaScript)
+ * @param {string} telefone - Número de telefone (apenas números)
+ * @returns {string} - Telefone formatado
+ */
+function formatarTelefoneJS(telefone) {
+    if (!telefone) return '';
+
+    // Remove caracteres não numéricos
+    const numeros = telefone.replace(/\D/g, '');
+
+    // Formata conforme o padrão brasileiro
+    if (numeros.length === 11) {
+        // Celular: (11) 91234-5678
+        return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 7)}-${numeros.substring(7)}`;
+    } else if (numeros.length === 10) {
+        // Fixo: (11) 1234-5678
+        return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 6)}-${numeros.substring(6)}`;
+    }
+
+    return telefone;
+}
+
+// ================================
+// FUNÇÕES EXISTENTES MANTIDAS
+// ================================
 
 /**
  * Inicializa os tooltips do Bootstrap
@@ -99,7 +385,10 @@ function setupModals() {
         alterarStatusModal.addEventListener('show.bs.modal', function () {
             // Foca no select quando o modal é aberto
             setTimeout(() => {
-                document.getElementById('status_id').focus();
+                const statusSelect = document.getElementById('status_id');
+                if (statusSelect) {
+                    statusSelect.focus();
+                }
             }, 500);
         });
 
@@ -124,7 +413,10 @@ function setupModals() {
         transferirSetorModal.addEventListener('show.bs.modal', function () {
             // Foca no select quando o modal é aberto
             setTimeout(() => {
-                document.getElementById('setor_id').focus();
+                const setorSelect = document.getElementById('setor_id');
+                if (setorSelect) {
+                    setorSelect.focus();
+                }
             }, 500);
         });
 
@@ -199,15 +491,17 @@ function setupComentarioForm() {
 
             // Adiciona efeito de loading ao botão
             const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
-            submitBtn.disabled = true;
+            if (submitBtn) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+                submitBtn.disabled = true;
 
-            // Simula o envio (você pode remover isso em produção)
-            setTimeout(() => {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }, 2000);
+                // Remove o loading após o envio (será recarregado pela página)
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 2000);
+            }
         });
 
         // Remove a classe de erro quando o usuário começa a digitar
@@ -259,98 +553,6 @@ function enhanceTimeline() {
 }
 
 /**
- * Função para adicionar um novo comentário via AJAX
- * Esta é uma função de exemplo que pode ser implementada para adicionar comentários sem recarregar a página
- */
-function adicionarComentarioAjax(chamadoId, comentario, callback) {
-    // Implementação de exemplo - substitua por sua lógica real de AJAX
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/chamados/adicionarComentarioAjax/${chamadoId}`, true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-
-    xhr.onload = function () {
-        if (xhr.status === 200) {
-            try {
-                const response = JSON.parse(xhr.responseText);
-                if (response.success) {
-                    // Adiciona o novo comentário à lista
-                    adicionarComentarioDOM(response.comentario);
-                    if (callback) callback(null, response);
-                } else {
-                    if (callback) callback(new Error(response.message || 'Erro ao adicionar comentário'), null);
-                }
-            } catch (e) {
-                if (callback) callback(new Error('Erro ao processar resposta do servidor'), null);
-            }
-        } else {
-            if (callback) callback(new Error('Erro na requisição: ' + xhr.status), null);
-        }
-    };
-
-    xhr.onerror = function () {
-        if (callback) callback(new Error('Erro de rede'), null);
-    };
-
-    xhr.send(`comentario=${encodeURIComponent(comentario)}`);
-}
-
-/**
- * Função para adicionar um novo comentário ao DOM
- */
-function adicionarComentarioDOM(comentario) {
-    const comentariosList = document.querySelector('.chamado-comentarios-lista');
-    const semComentarios = document.querySelector('.chamado-sem-comentarios');
-
-    if (semComentarios) {
-        semComentarios.remove();
-    }
-
-    if (!comentariosList) {
-        // Cria a lista de comentários se não existir
-        const novaLista = document.createElement('div');
-        novaLista.className = 'chamado-comentarios-lista';
-
-        const cardBody = document.querySelector('.chamado-comentarios-card .chamado-card-body');
-        if (cardBody) {
-            cardBody.insertBefore(novaLista, cardBody.firstChild);
-        }
-    }
-
-    // Cria o elemento do novo comentário
-    const novoComentario = document.createElement('div');
-    novoComentario.className = 'chamado-comentario';
-    novoComentario.style.opacity = '0';
-    novoComentario.style.transform = 'translateY(20px)';
-
-    // Preenche o HTML do comentário
-    novoComentario.innerHTML = `
-        <div class="chamado-comentario-avatar">
-            <i class="fas fa-user"></i>
-        </div>
-        <div class="chamado-comentario-conteudo">
-            <div class="chamado-comentario-header">
-                <h4 class="chamado-comentario-autor">${comentario.usuario_nome || 'Usuário'}</h4>
-                <span class="chamado-comentario-data">${comentario.data_formatada || 'Agora'}</span>
-            </div>
-            <div class="chamado-comentario-texto">
-                ${comentario.comentario.replace(/\n/g, '<br>')}
-            </div>
-        </div>
-    `;
-
-    // Adiciona o comentário à lista
-    document.querySelector('.chamado-comentarios-lista').appendChild(novoComentario);
-
-    // Anima a entrada do comentário
-    setTimeout(() => {
-        novoComentario.style.transition = 'all 0.5s ease';
-        novoComentario.style.opacity = '1';
-        novoComentario.style.transform = 'translateY(0)';
-    }, 10);
-}
-
-/**
  * Configura o botão voltar para retornar à página anterior
  */
 function setupBotaoVoltar() {
@@ -361,9 +563,32 @@ function setupBotaoVoltar() {
             // Verifica se há uma página anterior no histórico
             if (window.history.length <= 1) {
                 e.preventDefault();
-                window.location.href = BASE_URL + 'chamados/listar';
+                // Fallback para URL base se BASE_URL não estiver definida
+                const baseUrl = typeof BASE_URL !== 'undefined' ? BASE_URL : '/';
+                window.location.href = baseUrl + 'chamados/listar';
             }
             // Caso contrário, o comportamento padrão (history.back()) será executado
         });
     });
 }
+
+// Adiciona CSS para animações se não estiver presente
+document.addEventListener('DOMContentLoaded', function () {
+    if (!document.querySelector('#chamado-visualizar-animations')) {
+        const style = document.createElement('style');
+        style.id = 'chamado-visualizar-animations';
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+});

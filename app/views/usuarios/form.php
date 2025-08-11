@@ -5,6 +5,7 @@
             <div class="header-content">
                 <div class="header-title">
                     <h1>
+                        <!-- Ícone dinâmico baseado na ação (criar/editar) -->
                         <i class="fas fa-user-<?= $acao == 'criar' ? 'plus' : 'edit' ?>"></i>
                         <?= $titulo ?>
                     </h1>
@@ -26,8 +27,11 @@
             <div class="form-card-header">
                 <h2>Informações do Usuário</h2>
                 <?php if ($acao == 'editar' && isset($usuario['nome'])): ?>
+                    <!-- Preview do Avatar - Será atualizado dinamicamente pelo JS -->
                     <div class="user-avatar-preview">
                         <div class="avatar-circle <?= isset($usuario['admin']) && $usuario['admin'] ? (isset($usuario['admin_tipo']) && $usuario['admin_tipo'] == 'master' ? 'admin-master' : 'admin') : 'user' ?>">
+                            <!-- O JS (setupAvatarUpdates) vai preencher as iniciais corretamente -->
+                            <!-- PHP fallback para a primeira letra do nome, caso o JS demore a carregar -->
                             <?= strtoupper(substr($usuario['nome'], 0, 1)) ?>
                         </div>
                     </div>
@@ -35,175 +39,217 @@
             </div>
 
             <div class="form-card-body">
+                <!-- Adicionado a classe 'user-form' para o JS de validação -->
                 <form action="<?= base_url('usuarios/' . ($acao == 'criar' ? 'store' : 'update/' . $usuario['id'])) ?>" method="post" class="user-form">
-                    <div class="form-grid">
-                        <!-- Nome e Email -->
-                        <div class="form-group">
-                            <label for="nome">
-                                Nome <span class="required">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-icon">
-                                    <i class="fas fa-user"></i>
-                                </span>
-                                <input type="text" id="nome" name="nome" value="<?= $usuario['nome'] ?? '' ?>" required placeholder="Nome completo">
-                            </div>
-                        </div>
 
-                        <div class="form-group">
-                            <label for="email">
-                                E-mail <span class="required">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-icon">
-                                    <i class="fas fa-envelope"></i>
-                                </span>
-                                <input type="email" id="email" name="email" value="<?= $usuario['email'] ?? '' ?>" required placeholder="exemplo@email.com">
-                            </div>
-                        </div>
-
-                        <!-- Senha e Cargo -->
-                        <div class="form-group">
-                            <label for="senha">
-                                <?= $acao == 'criar' ? 'Senha <span class="required">*</span>' : 'Nova Senha <span class="optional">(opcional)</span>' ?>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-icon">
-                                    <i class="fas fa-lock"></i>
-                                </span>
-                                <input type="password" id="senha" name="senha" <?= $acao == 'criar' ? 'required' : '' ?> placeholder="<?= $acao == 'criar' ? 'Mínimo 8 caracteres' : 'Deixe em branco para manter a atual' ?>">
-                                <button type="button" class="toggle-password" id="togglePassword">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                            <?php if ($acao == 'criar'): ?>
-                                <div class="form-hint">
-                                    <i class="fas fa-info-circle"></i> A senha deve ter pelo menos 8 caracteres.
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="cargo">
-                                Cargo <span class="optional">(opcional)</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-icon">
-                                    <i class="fas fa-briefcase"></i>
-                                </span>
-                                <input type="text" id="cargo" name="cargo" value="<?= $usuario['cargo'] ?? '' ?>" placeholder="Ex: Analista de Suporte">
-                            </div>
-                        </div>
-
-                        <!-- Empresa e Tipo de Usuário -->
-                        <div class="form-group">
-                            <label for="empresa_nome">
-                                Empresa
-                            </label>
-                            <div class="input-group">
-                                <span class="input-icon">
-                                    <i class="fas fa-building"></i>
-                                </span>
-                                <input type="text" id="empresa_nome" value="<?= $_SESSION['empresa_nome'] ?>" readonly class="readonly">
-                                <input type="hidden" name="empresa_id" value="<?= get_empresa_id() ?>">
-                            </div>
-                            <div class="form-hint">
-                                <i class="fas fa-info-circle"></i> Os usuários são criados na empresa atual.
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <!-- Espaço vazio para manter o grid alinhado -->
-                        </div>
-                    </div>
-
-                    <!-- Seção de Permissões -->
-                    <div class="permissions-section">
-                        <h3 class="section-title">Permissões de Acesso</h3>
-
-                        <div class="permission-toggle">
-                            <div class="toggle-header">
-                                <div class="toggle-info">
-                                    <h4>Usuário Administrador</h4>
-                                    <p>Concede permissões administrativas ao usuário</p>
-                                </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="admin" name="admin" value="1" <?= (isset($usuario['admin']) && $usuario['admin']) ? 'checked' : '' ?>>
-                                    <span class="slider"></span>
+                    <!-- Seção: Informações Pessoais -->
+                    <section class="form-section">
+                        <h3 class="form-section-title"><i class="fas fa-id-card"></i> Informações Pessoais</h3>
+                        <div class="form-grid">
+                            <!-- Nome -->
+                            <div class="form-group">
+                                <label for="nome">
+                                    Nome <span class="required">*</span>
                                 </label>
+                                <div class="input-group">
+                                    <span class="input-icon">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <input type="text" id="nome" name="nome" value="<?= $usuario['nome_primeiro'] ?? '' ?>" required placeholder="Primeiro nome">
+                                </div>
+                            </div>
+
+                            <!-- Sobrenome - NOVO CAMPO -->
+                            <div class="form-group">
+                                <label for="sobrenome">
+                                    Sobrenome <span class="required">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-icon">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <input type="text" id="sobrenome" name="sobrenome" value="<?= $usuario['sobrenome'] ?? '' ?>" required placeholder="Sobrenome">
+                                </div>
+                            </div>
+
+                            <!-- E-mail -->
+                            <div class="form-group">
+                                <label for="email">
+                                    E-mail <span class="required">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-icon">
+                                        <i class="fas fa-envelope"></i>
+                                    </span>
+                                    <input type="email" id="email" name="email" value="<?= $usuario['email'] ?? '' ?>" required placeholder="exemplo@email.com">
+                                </div>
+                            </div>
+
+                            <!-- Cargo -->
+                            <div class="form-group">
+                                <label for="cargo">
+                                    Cargo <span class="optional">(opcional)</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-icon">
+                                        <i class="fas fa-briefcase"></i>
+                                    </span>
+                                    <input type="text" id="cargo" name="cargo" value="<?= $usuario['cargo'] ?? '' ?>" placeholder="Ex: Analista de Suporte">
+                                </div>
                             </div>
                         </div>
+                    </section>
 
-                        <div id="adminTipoContainer" class="admin-tipo-container">
-                            <?php if (is_admin_master()): ?>
-                                <div class="admin-tipo-header">
-                                    <h4>Tipo de Administrador</h4>
-                                    <p>Selecione o nível de acesso administrativo</p>
+                    <!-- Seção: Dados de Acesso -->
+                    <section class="form-section">
+                        <h3 class="form-section-title"><i class="fas fa-key"></i> Dados de Acesso</h3>
+                        <div class="form-grid">
+                            <!-- Senha -->
+                            <div class="form-group">
+                                <label for="senha">
+                                    <?= $acao == 'criar' ? 'Senha <span class="required">*</span>' : 'Nova Senha <span class="optional">(opcional)</span>' ?>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-icon">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                    <input type="password" id="senha" name="senha" <?= $acao == 'criar' ? 'required' : '' ?> placeholder="<?= $acao == 'criar' ? 'Mínimo 8 caracteres' : 'Deixe em branco para manter a atual' ?>">
+                                    <button type="button" class="toggle-password" data-target="senha">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
                                 </div>
+                            </div>
 
-                                <div class="admin-tipo-options">
-                                    <label class="admin-tipo-card">
-                                        <input type="radio" name="admin_tipo" value="regular" <?= (!isset($usuario['admin_tipo']) || $usuario['admin_tipo'] == 'regular') ? 'checked' : '' ?>>
-                                        <div class="admin-tipo-content">
-                                            <div class="admin-tipo-icon regular">
-                                                <i class="fas fa-user-cog"></i>
-                                            </div>
-                                            <div class="admin-tipo-details">
-                                                <h5>Administrador Regular</h5>
-                                                <ul>
-                                                    <li>Gerenciar usuários comuns</li>
-                                                    <li>Visualizar relatórios básicos</li>
-                                                    <li>Acesso limitado às configurações</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </label>
+                            <!-- Confirmar Senha - NOVO CAMPO -->
+                            <div class="form-group">
+                                <label for="confirmar_senha">
+                                    Confirmar Senha <span class="required">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-icon">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                    <input type="password" id="confirmar_senha" name="confirmar_senha" <?= $acao == 'criar' ? 'required' : '' ?> placeholder="Confirme sua senha">
+                                    <button type="button" class="toggle-password" data-target="confirmar_senha">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-                                    <label class="admin-tipo-card">
-                                        <input type="radio" name="admin_tipo" value="master" <?= (isset($usuario['admin_tipo']) && $usuario['admin_tipo'] == 'master') ? 'checked' : '' ?>>
-                                        <div class="admin-tipo-content">
-                                            <div class="admin-tipo-icon master">
-                                                <i class="fas fa-user-shield"></i>
-                                            </div>
-                                            <div class="admin-tipo-details">
-                                                <h5>Administrador Master</h5>
-                                                <ul>
-                                                    <li>Acesso completo ao sistema</li>
-                                                    <li>Gerenciar todos os usuários</li>
-                                                    <li>Configurações avançadas</li>
-                                                </ul>
-                                            </div>
-                                        </div>
+                    <!-- Seção: Informações da Empresa (Somente Leitura) -->
+                    <section class="form-section">
+                        <h3 class="form-section-title"><i class="fas fa-building"></i> Informações da Empresa</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="empresa_nome">
+                                    Empresa
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-icon">
+                                        <i class="fas fa-building"></i>
+                                    </span>
+                                    <input type="text" id="empresa_nome" value="<?= $_SESSION['empresa_nome'] ?>" readonly class="readonly">
+                                    <input type="hidden" name="empresa_id" value="<?= get_empresa_id() ?>">
+                                </div>
+                                <div class="form-hint">
+                                    <i class="fas fa-info-circle"></i> Os usuários são criados na empresa atual.
+                                </div>
+                            </div>
+                            <!-- Espaço vazio para manter o grid alinhado, se necessário -->
+                            <div></div>
+                        </div>
+                    </section>
+
+                    <!-- Seção: Permissões de Acesso -->
+                    <section class="form-section">
+                        <h3 class="form-section-title"><i class="fas fa-shield-alt"></i> Permissões de Acesso</h3>
+                        <div class="permissions-section">
+                            <div class="permission-toggle">
+                                <div class="toggle-header">
+                                    <div class="toggle-info">
+                                        <h4>Usuário Administrador</h4>
+                                        <p>Concede permissões administrativas ao usuário</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="admin" name="admin" value="1" <?= (isset($usuario['admin']) && $usuario['admin']) ? 'checked' : '' ?>>
+                                        <span class="slider"></span>
                                     </label>
                                 </div>
-                            <?php else: ?>
-                                <!-- Para administradores regulares, apenas mostra o tipo sem opção de alterar -->
-                                <?php if (isset($usuario['admin_tipo']) && $usuario['admin_tipo'] == 'master'): ?>
-                                    <input type="hidden" name="admin_tipo" value="master">
-                                    <div class="admin-tipo-info master">
-                                        <div class="info-icon">
-                                            <i class="fas fa-shield-alt"></i>
-                                        </div>
-                                        <div class="info-content">
-                                            <h4>Administrador Master</h4>
-                                            <p>Este usuário tem acesso completo ao sistema, incluindo todas as configurações e gerenciamento de usuários.</p>
-                                        </div>
+                            </div>
+
+                            <div id="adminTipoContainer" class="admin-tipo-container">
+                                <?php if (is_admin_master()): ?>
+                                    <div class="admin-tipo-header">
+                                        <h4>Tipo de Administrador</h4>
+                                        <p>Selecione o nível de acesso administrativo</p>
+                                    </div>
+
+                                    <div class="admin-tipo-options">
+                                        <label class="admin-tipo-card">
+                                            <input type="radio" name="admin_tipo" value="regular" <?= (!isset($usuario['admin_tipo']) || $usuario['admin_tipo'] == 'regular') ? 'checked' : '' ?>>
+                                            <div class="admin-tipo-content">
+                                                <div class="admin-tipo-icon regular">
+                                                    <i class="fas fa-user-cog"></i>
+                                                </div>
+                                                <div class="admin-tipo-details">
+                                                    <h5>Administrador Regular</h5>
+                                                    <ul>
+                                                        <li>Gerenciar usuários comuns</li>
+                                                        <li>Visualizar relatórios básicos</li>
+                                                        <li>Acesso limitado às configurações</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </label>
+
+                                        <label class="admin-tipo-card">
+                                            <input type="radio" name="admin_tipo" value="master" <?= (isset($usuario['admin_tipo']) && $usuario['admin_tipo'] == 'master') ? 'checked' : '' ?>>
+                                            <div class="admin-tipo-content">
+                                                <div class="admin-tipo-icon master">
+                                                    <i class="fas fa-user-shield"></i>
+                                                </div>
+                                                <div class="admin-tipo-details">
+                                                    <h5>Administrador Master</h5>
+                                                    <ul>
+                                                        <li>Acesso completo ao sistema</li>
+                                                        <li>Gerenciar todos os usuários</li>
+                                                        <li>Configurações avançadas</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </label>
                                     </div>
                                 <?php else: ?>
-                                    <input type="hidden" name="admin_tipo" value="regular">
-                                    <div class="admin-tipo-info regular">
-                                        <div class="info-icon">
-                                            <i class="fas fa-user-cog"></i>
+                                    <!-- Para administradores regulares, apenas mostra o tipo sem opção de alterar -->
+                                    <?php if (isset($usuario['admin_tipo']) && $usuario['admin_tipo'] == 'master'): ?>
+                                        <input type="hidden" name="admin_tipo" value="master">
+                                        <div class="admin-tipo-info master">
+                                            <div class="info-icon">
+                                                <i class="fas fa-shield-alt"></i>
+                                            </div>
+                                            <div class="info-content">
+                                                <h4>Administrador Master</h4>
+                                                <p>Este usuário tem acesso completo ao sistema, incluindo todas as configurações e gerenciamento de usuários.</p>
+                                            </div>
                                         </div>
-                                        <div class="info-content">
-                                            <h4>Administrador Regular</h4>
-                                            <p>Este usuário terá permissões para gerenciar usuários comuns e acessar relatórios básicos.</p>
+                                    <?php else: ?>
+                                        <input type="hidden" name="admin_tipo" value="regular">
+                                        <div class="admin-tipo-info regular">
+                                            <div class="info-icon">
+                                                <i class="fas fa-user-cog"></i>
+                                            </div>
+                                            <div class="info-content">
+                                                <h4>Administrador Regular</h4>
+                                                <p>Este usuário terá permissões para gerenciar usuários comuns e acessar relatórios básicos.</p>
+                                            </div>
                                         </div>
-                                    </div>
+                                    <?php endif; ?>
                                 <?php endif; ?>
-                            <?php endif; ?>
+                            </div>
                         </div>
-                    </div>
+                    </section>
 
                     <!-- Botões de ação -->
                     <div class="form-actions">
@@ -218,4 +264,4 @@
             </div>
         </div>
     </div>
-</div>  
+</div>

@@ -1,6 +1,6 @@
 /**
  * chamados-form.js - Script para a página de formulário de chamados hospitalares
- * Versão 4.2 - Com tipos de serviço baseados nos setores
+ * Versão 5.0 - Máscara de celular brasileiro inteligente e automática
  */
 
 /**
@@ -9,7 +9,10 @@
  * @param {Object} tiposServicoPorSetor - Mapeamento de tipos de serviço por setor
  */
 function initChamadosForm(sugestoesDescricao, tiposServicoPorSetor) {
-    // Inicializa os componentes
+    console.log('Inicializando formulário de chamados...');
+
+    // Inicializa os componentes na ordem correta
+    setupTelefoneMask(); // PRIMEIRA FUNÇÃO - Máscara de telefone
     setupSetorTipoServico(tiposServicoPorSetor);
     setupOutroTipoServico();
     setupFormValidation();
@@ -22,6 +25,301 @@ function initChamadosForm(sugestoesDescricao, tiposServicoPorSetor) {
     // Adiciona sugestões de descrição
     if (sugestoesDescricao && Array.isArray(sugestoesDescricao)) {
         adicionarSugestoesDescricao(sugestoesDescricao);
+    }
+
+    console.log('Formulário de chamados inicializado com sucesso!');
+
+    /**
+     * Configura a máscara para o campo de telefone - VERSÃO CELULAR BRASILEIRO
+     */
+    function setupTelefoneMask() {
+        const telefoneInput = document.getElementById('numero_solicitante');
+
+        if (!telefoneInput) {
+            console.log('Campo telefone não encontrado');
+            return;
+        }
+
+        console.log('Configurando máscara de celular brasileiro...');
+
+        // Atualiza o placeholder e label
+        telefoneInput.placeholder = '(11) 91234-5678';
+        const label = document.querySelector('label[for="numero_solicitante"]');
+        if (label) {
+            label.innerHTML = '<i class="fas fa-mobile-alt"></i> Celular do Solicitante';
+        }
+
+        /**
+         * Aplica a máscara de celular brasileiro de forma inteligente
+         * @param {string} value - Valor a ser formatado
+         * @returns {string} - Valor formatado
+         */
+        function aplicarMascaraCelular(value) {
+            // Remove tudo que não é número
+            let numeros = value.replace(/\D/g, '');
+
+            console.log('Números extraídos:', numeros);
+
+            // Se começar com 0, remove (código de área não pode começar com 0)
+            if (numeros.startsWith('0')) {
+                numeros = numeros.substring(1);
+            }
+
+            // Se não começar com DDD válido, adiciona 11 (São Paulo) como padrão
+            if (numeros.length > 0 && numeros.length < 11) {
+                const ddd = numeros.substring(0, 2);
+                const dddValidos = ['11', '12', '13', '14', '15', '16', '17', '18', '19', // SP
+                    '21', '22', '24', // RJ
+                    '27', '28', // ES
+                    '31', '32', '33', '34', '35', '37', '38', // MG
+                    '41', '42', '43', '44', '45', '46', // PR
+                    '47', '48', '49', // SC
+                    '51', '53', '54', '55', // RS
+                    '61', // DF
+                    '62', '64', // GO
+                    '63', // TO
+                    '65', '66', // MT
+                    '67', // MS
+                    '68', // AC
+                    '69', // RO
+                    '71', '73', '74', '75', '77', // BA
+                    '79', // SE
+                    '81', '87', // PE
+                    '82', // AL
+                    '83', // PB
+                    '84', // RN
+                    '85', '88', // CE
+                    '86', '89', // PI
+                    '91', '93', '94', // PA
+                    '92', '97', // AM
+                    '95', // RR
+                    '96', // AP
+                    '98', '99']; // MA
+
+                // Se não é um DDD válido e tem menos de 2 dígitos, não faz nada ainda
+                if (numeros.length < 2) {
+                    return numeros;
+                }
+
+                // Se não é um DDD válido, adiciona 11 na frente
+                if (!dddValidos.includes(ddd)) {
+                    numeros = '11' + numeros;
+                }
+            }
+
+            // Garante que após o DDD vem o 9 (celular)
+            if (numeros.length >= 3) {
+                const ddd = numeros.substring(0, 2);
+                const terceiroDigito = numeros.substring(2, 3);
+                const resto = numeros.substring(3);
+
+                // Se o terceiro dígito não é 9, adiciona o 9
+                if (terceiroDigito !== '9') {
+                    numeros = ddd + '9' + terceiroDigito + resto;
+                }
+            }
+
+            // Limita a 11 dígitos (DDD + 9 + 8 dígitos)
+            numeros = numeros.substring(0, 11);
+
+            // Aplica a formatação baseada na quantidade de dígitos
+            if (numeros.length === 0) {
+                return '';
+            } else if (numeros.length === 1) {
+                return `(${numeros}`;
+            } else if (numeros.length === 2) {
+                return `(${numeros})`;
+            } else if (numeros.length <= 7) {
+                return `(${numeros.substring(0, 2)}) ${numeros.substring(2)}`;
+            } else {
+                // Formato final: (11) 91234-5678
+                return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 7)}-${numeros.substring(7)}`;
+            }
+        }
+
+        /**
+         * Extrai apenas os números do telefone
+         * @param {string} value - Valor formatado
+         * @returns {string} - Apenas números
+         */
+        function extrairNumeros(value) {
+            return value.replace(/\D/g, '');
+        }
+
+        // Evento de input para aplicar a máscara em tempo real
+        telefoneInput.addEventListener('input', function (e) {
+            const valorAnterior = e.target.value;
+            const cursorPosition = e.target.selectionStart;
+
+            // Aplica a máscara
+            const valorFormatado = aplicarMascaraCelular(valorAnterior);
+            e.target.value = valorFormatado;
+
+            // Ajusta a posição do cursor
+            let novaPosicao = cursorPosition;
+            if (valorFormatado.length > valorAnterior.length) {
+                novaPosicao = cursorPosition + (valorFormatado.length - valorAnterior.length);
+            }
+
+            // Define a nova posição do cursor
+            setTimeout(() => {
+                e.target.setSelectionRange(novaPosicao, novaPosicao);
+            }, 0);
+
+            console.log('Celular formatado:', valorFormatado);
+
+            // Valida em tempo real
+            validateTelefoneField(e.target);
+        });
+
+        // Evento de keydown para controle de teclas
+        telefoneInput.addEventListener('keydown', function (e) {
+            // Permite: backspace, delete, tab, escape, enter, home, end, setas
+            const allowedKeys = [8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40];
+
+            // Permite: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+Z
+            const ctrlKeys = [65, 67, 86, 88, 90];
+
+            if (allowedKeys.includes(e.keyCode) ||
+                (e.ctrlKey && ctrlKeys.includes(e.keyCode))) {
+                return; // Permite a tecla
+            }
+
+            // Permite apenas números (0-9)
+            if ((e.keyCode >= 48 && e.keyCode <= 57) || // Números do teclado principal
+                (e.keyCode >= 96 && e.keyCode <= 105)) { // Números do teclado numérico
+
+                // Verifica se já atingiu o limite de 11 dígitos
+                const numerosAtuais = extrairNumeros(this.value);
+                if (numerosAtuais.length >= 11) {
+                    e.preventDefault();
+                    return;
+                }
+
+                return; // Permite o número
+            }
+
+            // Bloqueia qualquer outra tecla
+            e.preventDefault();
+        });
+
+        // Evento de paste para formatar o valor colado
+        telefoneInput.addEventListener('paste', function (e) {
+            e.preventDefault();
+
+            // Obtém o texto colado
+            const paste = (e.clipboardData || window.clipboardData).getData('text');
+            console.log('Texto colado:', paste);
+
+            // Aplica a máscara no texto colado
+            const valorFormatado = aplicarMascaraCelular(paste);
+
+            // Define o valor formatado
+            this.value = valorFormatado;
+
+            // Valida o campo
+            validateTelefoneField(this);
+
+            console.log('Celular colado e formatado:', valorFormatado);
+        });
+
+        // Evento de blur para validação final
+        telefoneInput.addEventListener('blur', function () {
+            // Aplica a máscara novamente para garantir formatação correta
+            const valorFormatado = aplicarMascaraCelular(this.value);
+            this.value = valorFormatado;
+
+            // Valida o campo
+            validateTelefoneField(this);
+        });
+
+        // Evento de focus para melhor UX
+        telefoneInput.addEventListener('focus', function () {
+            if (this.value === '') {
+                this.placeholder = '(11) 91234-5678';
+            }
+        });
+
+        // Se já houver um valor no campo (edição), aplica a máscara
+        if (telefoneInput.value && telefoneInput.value.trim() !== '') {
+            const valorFormatado = aplicarMascaraCelular(telefoneInput.value);
+            telefoneInput.value = valorFormatado;
+            console.log('Valor existente formatado:', valorFormatado);
+        }
+
+        console.log('Máscara de celular configurada com sucesso!');
+    }
+
+    /**
+     * Valida especificamente o campo de telefone celular
+     * @param {HTMLElement} field - Campo de telefone
+     * @returns {boolean} - Verdadeiro se válido
+     */
+    function validateTelefoneField(field) {
+        const value = field.value.replace(/\D/g, '');
+        const feedbackElement = field.nextElementSibling;
+
+        // Remove classes existentes
+        field.classList.remove('is-valid', 'is-invalid');
+
+        if (feedbackElement && feedbackElement.classList.contains('chamados-form-feedback')) {
+            feedbackElement.textContent = '';
+            feedbackElement.classList.remove('valid-feedback', 'invalid-feedback');
+        }
+
+        // Se o campo estiver vazio, não é obrigatório
+        if (value === '') {
+            return true;
+        }
+
+        // Valida o formato do celular brasileiro
+        let isValid = true;
+        let errorMessage = '';
+
+        if (value.length < 11) {
+            isValid = false;
+            errorMessage = 'Celular deve ter 11 dígitos (DDD + 9 + 8 dígitos).';
+        } else if (value.length === 11) {
+            // Verifica se é um celular válido: DDD + 9 + 8 dígitos
+            const ddd = value.substring(0, 2);
+            const nono = value.substring(2, 3);
+
+            // Lista de DDDs válidos no Brasil
+            const dddValidos = ['11', '12', '13', '14', '15', '16', '17', '18', '19',
+                '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38',
+                '41', '42', '43', '44', '45', '46', '47', '48', '49', '51', '53', '54', '55',
+                '61', '62', '64', '63', '65', '66', '67', '68', '69',
+                '71', '73', '74', '75', '77', '79', '81', '87', '82', '83', '84',
+                '85', '88', '86', '89', '91', '93', '94', '92', '97', '95', '96', '98', '99'];
+
+            if (!dddValidos.includes(ddd)) {
+                isValid = false;
+                errorMessage = 'DDD inválido. Use um DDD brasileiro válido.';
+            } else if (nono !== '9') {
+                isValid = false;
+                errorMessage = 'Celular deve começar com 9 após o DDD.';
+            }
+        } else {
+            isValid = false;
+            errorMessage = 'Celular deve ter exatamente 11 dígitos.';
+        }
+
+        // Atualiza as classes e feedback
+        if (isValid) {
+            field.classList.add('is-valid');
+            if (feedbackElement && feedbackElement.classList.contains('chamados-form-feedback')) {
+                feedbackElement.textContent = 'Celular válido';
+                feedbackElement.classList.add('valid-feedback');
+            }
+        } else {
+            field.classList.add('is-invalid');
+            if (feedbackElement && feedbackElement.classList.contains('chamados-form-feedback')) {
+                feedbackElement.textContent = errorMessage;
+                feedbackElement.classList.add('invalid-feedback');
+            }
+        }
+
+        return isValid;
     }
 
     /**
@@ -47,7 +345,9 @@ function initChamadosForm(sugestoesDescricao, tiposServicoPorSetor) {
                 preencherTiposServico(setorNome, tipoServicoSelect, tiposServicoPorSetor);
 
                 // Atualiza as dicas contextuais com base no setor selecionado
-                updateContextualTipsBySetor(setorNome);
+                if (typeof updateContextualTipsBySetor === 'function') {
+                    updateContextualTipsBySetor(setorNome);
+                }
             } else {
                 // Se nenhum setor for selecionado, desabilita o select de tipo de serviço
                 tipoServicoSelect.disabled = true;
@@ -90,7 +390,9 @@ function initChamadosForm(sugestoesDescricao, tiposServicoPorSetor) {
             }
 
             // Atualiza as dicas contextuais com base no tipo de serviço selecionado
-            updateContextualTips(this.options[this.selectedIndex].textContent);
+            if (typeof updateContextualTips === 'function') {
+                updateContextualTips(this.options[this.selectedIndex].textContent);
+            }
         });
     }
 
@@ -209,6 +511,14 @@ function initChamadosForm(sugestoesDescricao, tiposServicoPorSetor) {
                 }
             });
 
+            // Valida o campo de celular (não obrigatório, mas se preenchido deve ser válido)
+            const telefoneField = document.getElementById('numero_solicitante');
+            if (telefoneField && telefoneField.value.trim() !== '') {
+                if (!validateTelefoneField(telefoneField)) {
+                    isValid = false;
+                }
+            }
+
             // Verifica o campo de outro tipo de serviço
             const tipoServicoSelect = document.getElementById('tipo_servico');
             const outroTipoServicoInput = document.getElementById('outro_tipo_servico');
@@ -247,6 +557,12 @@ function initChamadosForm(sugestoesDescricao, tiposServicoPorSetor) {
             // Se o tipo de serviço for "outro", substitui pelo valor digitado
             if (tipoServicoSelect && tipoServicoSelect.value === 'outro' && outroTipoServicoInput) {
                 formData.set('tipo_servico', outroTipoServicoInput.value.trim());
+            }
+
+            // Limpa a formatação do celular antes de enviar (mantém apenas números)
+            if (telefoneField && telefoneField.value.trim() !== '') {
+                const telefoneNumeros = telefoneField.value.replace(/\D/g, '');
+                formData.set('numero_solicitante', telefoneNumeros);
             }
 
             // Adiciona efeito de loading ao botão de salvar
@@ -289,7 +605,9 @@ function initChamadosForm(sugestoesDescricao, tiposServicoPorSetor) {
         setTimeout(() => {
             toast.style.opacity = '0';
             setTimeout(() => {
-                document.body.removeChild(toast);
+                if (document.body.contains(toast)) {
+                    document.body.removeChild(toast);
+                }
             }, 300);
         }, 3000);
     }
@@ -369,6 +687,10 @@ function initChamadosForm(sugestoesDescricao, tiposServicoPorSetor) {
                     }
                 }
                 break;
+
+            case 'numero_solicitante':
+                // Validação específica já é feita na função validateTelefoneField
+                return validateTelefoneField(field);
         }
 
         // Atualiza as classes e o feedback
@@ -703,3 +1025,124 @@ function initChamadosForm(sugestoesDescricao, tiposServicoPorSetor) {
 
 // Exporta a função de inicialização para uso global
 window.initChamadosForm = initChamadosForm;
+
+// Inicialização automática quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('DOM carregado, verificando campo celular...');
+
+    // Aplica a máscara de celular imediatamente se o campo existir
+    const telefoneInput = document.getElementById('numero_solicitante');
+    if (telefoneInput) {
+        console.log('Campo celular encontrado, aplicando máscara...');
+
+        // Atualiza o placeholder
+        telefoneInput.placeholder = '(11) 91234-5678';
+
+        // Função de backup para aplicar máscara
+        function aplicarMascaraBackup(value) {
+            let numeros = value.replace(/\D/g, '');
+            // Remove zero inicial se houver
+            if (numeros.startsWith('0')) {
+                numeros = numeros.substring(1);
+            }
+
+            // Se não começar com DDD válido, adiciona 11 como padrão
+            if (numeros.length > 0 && numeros.length < 11) {
+                const ddd = numeros.substring(0, 2);
+                const dddValidos = ['11', '12', '13', '14', '15', '16', '17', '18', '19',
+                    '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38',
+                    '41', '42', '43', '44', '45', '46', '47', '48', '49', '51', '53', '54', '55',
+                    '61', '62', '64', '63', '65', '66', '67', '68', '69',
+                    '71', '73', '74', '75', '77', '79', '81', '87', '82', '83', '84',
+                    '85', '88', '86', '89', '91', '93', '94', '92', '97', '95', '96', '98', '99'];
+
+                if (numeros.length < 2) {
+                    return numeros;
+                }
+
+                if (!dddValidos.includes(ddd)) {
+                    numeros = '11' + numeros;
+                }
+            }
+
+            // Garante que após o DDD vem o 9 (celular)
+            if (numeros.length >= 3) {
+                const ddd = numeros.substring(0, 2);
+                const terceiroDigito = numeros.substring(2, 3);
+                const resto = numeros.substring(3);
+
+                if (terceiroDigito !== '9') {
+                    numeros = ddd + '9' + terceiroDigito + resto;
+                }
+            }
+
+            // Limita a 11 dígitos
+            numeros = numeros.substring(0, 11);
+
+            // Aplica formatação
+            if (numeros.length === 0) {
+                return '';
+            } else if (numeros.length === 1) {
+                return `(${numeros}`;
+            } else if (numeros.length === 2) {
+                return `(${numeros})`;
+            } else if (numeros.length <= 7) {
+                return `(${numeros.substring(0, 2)}) ${numeros.substring(2)}`;
+            } else {
+                return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 7)}-${numeros.substring(7)}`;
+            }
+        }
+
+        // Aplica eventos de backup
+        telefoneInput.addEventListener('input', function (e) {
+            const valorFormatado = aplicarMascaraBackup(e.target.value);
+            e.target.value = valorFormatado;
+            console.log('Máscara de backup aplicada:', valorFormatado);
+        });
+
+        telefoneInput.addEventListener('keydown', function (e) {
+            // Permite: backspace, delete, tab, escape, enter, home, end, setas
+            const allowedKeys = [8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40];
+
+            // Permite: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+Z
+            const ctrlKeys = [65, 67, 86, 88, 90];
+
+            if (allowedKeys.includes(e.keyCode) ||
+                (e.ctrlKey && ctrlKeys.includes(e.keyCode))) {
+                return;
+            }
+
+            // Permite apenas números (0-9)
+            if ((e.keyCode >= 48 && e.keyCode <= 57) ||
+                (e.keyCode >= 96 && e.keyCode <= 105)) {
+
+                // Verifica se já atingiu o limite de 11 dígitos
+                const numerosAtuais = this.value.replace(/\D/g, '');
+                if (numerosAtuais.length >= 11) {
+                    e.preventDefault();
+                    return;
+                }
+
+                return;
+            }
+
+            // Bloqueia qualquer outra tecla
+            e.preventDefault();
+        });
+
+        telefoneInput.addEventListener('paste', function (e) {
+            e.preventDefault();
+            const paste = (e.clipboardData || window.clipboardData).getData('text');
+            const valorFormatado = aplicarMascaraBackup(paste);
+            this.value = valorFormatado;
+            console.log('Máscara de backup aplicada no paste:', valorFormatado);
+        });
+
+        // Se já houver valor, aplica a máscara
+        if (telefoneInput.value && telefoneInput.value.trim() !== '') {
+            const valorFormatado = aplicarMascaraBackup(telefoneInput.value);
+            telefoneInput.value = valorFormatado;
+            console.log('Valor existente formatado com backup:', valorFormatado);
+        }
+    }
+});

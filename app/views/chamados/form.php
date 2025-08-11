@@ -4,7 +4,7 @@
  * Formulário de Criação/Edição de Chamados Hospitalares
  * Esta página permite criar ou editar chamados no sistema de atendimento hospitalar
  * 
- * @version 3.2
+ * @version 3.3 - Adicionado campo telefone do solicitante
  */
 
 // Título da página
@@ -93,6 +93,7 @@ $tiposServicoPorSetorJSON = json_encode($tiposServicoPorSetor);
 ?>
 
 <div class="chamados-form">
+    <!-- Cabeçalho do formulário -->
     <div class="chamados-form-header">
         <div class="chamados-form-header-content">
             <h1 class="chamados-form-titulo">
@@ -110,6 +111,7 @@ $tiposServicoPorSetorJSON = json_encode($tiposServicoPorSetor);
         </div>
     </div>
 
+    <!-- Alertas de erro -->
     <?php if (isset($erro) && !empty($erro)): ?>
         <div class="chamados-form-alert chamados-form-alert-error">
             <div class="chamados-form-alert-icon">
@@ -125,6 +127,7 @@ $tiposServicoPorSetorJSON = json_encode($tiposServicoPorSetor);
         </div>
     <?php endif; ?>
 
+    <!-- Alertas de sucesso -->
     <?php if (isset($sucesso) && !empty($sucesso)): ?>
         <div class="chamados-form-alert chamados-form-alert-success">
             <div class="chamados-form-alert-icon">
@@ -140,6 +143,7 @@ $tiposServicoPorSetorJSON = json_encode($tiposServicoPorSetor);
         </div>
     <?php endif; ?>
 
+    <!-- Card principal do formulário -->
     <div class="chamados-form-card">
         <div class="chamados-form-card-header">
             <h2 class="chamados-form-card-titulo">
@@ -148,6 +152,8 @@ $tiposServicoPorSetorJSON = json_encode($tiposServicoPorSetor);
         </div>
         <div class="chamados-form-card-body">
             <form id="chamadoForm" action="<?= $formAction ?>" method="post" class="chamados-form-formulario">
+
+                <!-- Seção 1: Setor e Tipo de Serviço -->
                 <div class="chamados-form-grid">
                     <div class="chamados-form-grupo">
                         <label for="setor_id" class="chamados-form-label">
@@ -201,6 +207,7 @@ $tiposServicoPorSetorJSON = json_encode($tiposServicoPorSetor);
                     </div>
                 </div>
 
+                <!-- Seção 2: Dados do Solicitante -->
                 <div class="chamados-form-grid">
                     <div class="chamados-form-grupo">
                         <label for="solicitante" class="chamados-form-label">
@@ -223,26 +230,52 @@ $tiposServicoPorSetorJSON = json_encode($tiposServicoPorSetor);
                     </div>
                 </div>
 
+                <!-- Seção 3: Telefone e Paciente - ATUALIZADA PARA CELULAR -->
                 <div class="chamados-form-grid">
                     <div class="chamados-form-grupo">
+                        <label for="numero_solicitante" class="chamados-form-label">
+                            <i class="fas fa-mobile-alt"></i> Celular do Solicitante
+                        </label>
+                        <input type="tel" id="numero_solicitante" name="numero_solicitante" class="chamados-form-input"
+                            value="<?= isset($chamado) ? htmlspecialchars($chamado['numero_solicitante']) : '' ?>"
+                            placeholder="(11) 91234-5678" maxlength="15">
+                        <div class="chamados-form-feedback"></div>
+                        <small class="chamados-form-help-text">
+                            <i class="fas fa-info-circle"></i> Apenas números de celular brasileiro (DDD + 9 + 8 dígitos)
+                        </small>
+                    </div>
+
+                    <div class="chamados-form-grupo">
                         <label for="paciente" class="chamados-form-label">
-                            Paciente
+                            <i class="fas fa-user-injured"></i> Paciente
                         </label>
                         <input type="text" id="paciente" name="paciente" class="chamados-form-input"
                             value="<?= isset($chamado) ? htmlspecialchars($chamado['paciente']) : '' ?>"
                             placeholder="Nome do paciente (se aplicável)">
                         <div class="chamados-form-feedback"></div>
+                        <small class="chamados-form-help-text">
+                            <i class="fas fa-info-circle"></i> Informe apenas se o chamado for relacionado a um paciente específico
+                        </small>
                     </div>
+                </div>
 
+                <!-- Seção 4: Localização -->
+                <div class="chamados-form-grid">
                     <div class="chamados-form-grupo">
                         <label for="quarto_leito" class="chamados-form-label">
-                            Quarto/Leito
+                            <i class="fas fa-bed"></i> Quarto/Leito
                         </label>
                         <input type="text" id="quarto_leito" name="quarto_leito" class="chamados-form-input"
                             value="<?= isset($chamado) ? htmlspecialchars($chamado['quarto_leito']) : '' ?>"
                             placeholder="Ex: 101/A">
                         <div class="chamados-form-feedback"></div>
+                        <small class="chamados-form-help-text">
+                            <i class="fas fa-info-circle"></i> Formato: Número do quarto / Leito (ex: 101/A)
+                        </small>
                     </div>
+
+                    <!-- Campo vazio para manter o grid balanceado -->
+                    <div class="chamados-form-grupo"></div>
                 </div>
 
                 <!-- Dicas contextuais para ambiente hospitalar -->
@@ -250,19 +283,25 @@ $tiposServicoPorSetorJSON = json_encode($tiposServicoPorSetor);
                     <!-- As dicas serão inseridas via JavaScript -->
                 </div>
 
+                <!-- Seção 5: Descrição do Chamado -->
                 <div class="chamados-form-grupo">
                     <label for="descricao" class="chamados-form-label">
-                        Descrição do Chamado <span class="chamados-form-obrigatorio">*</span>
+                        <i class="fas fa-align-left"></i> Descrição do Chamado <span class="chamados-form-obrigatorio">*</span>
                     </label>
                     <textarea id="descricao" name="descricao" class="chamados-form-textarea"
                         placeholder="Descreva detalhadamente sua solicitação. Quanto mais informações, mais rápido poderemos atendê-lo."
                         rows="5" required><?= isset($chamado) ? htmlspecialchars($chamado['descricao']) : '' ?></textarea>
                     <div class="chamados-form-contador">0 caracteres</div>
                     <div class="chamados-form-feedback"></div>
+                    <small class="chamados-form-help-text">
+                        <i class="fas fa-lightbulb"></i> Seja específico: inclua sintomas, localização, urgência e qualquer detalhe relevante
+                    </small>
                 </div>
 
+                <!-- Container para sugestões de descrição -->
                 <div id="sugestoesDescricao" class="chamados-form-sugestoes-container"></div>
 
+                <!-- Botões de ação do formulário -->
                 <div class="chamados-form-acoes-form">
                     <button type="button" onclick="history.back()" class="chamados-form-btn-cancelar">
                         <i class="fas fa-times"></i> Cancelar

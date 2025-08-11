@@ -158,33 +158,55 @@
                 </div>
             </div>
 
-            <!-- Filtros e pesquisa -->
+            <!-- ✅ FILTROS SERVER-SIDE -->
             <div class="filters-section">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="userSearch" placeholder="Buscar por nome ou email...">
-                </div>
-                <div class="filter-options">
-                    <div class="filter-group">
-                        <label for="statusFilter">Status:</label>
-                        <select id="statusFilter">
-                            <option value="all">Todos</option>
-                            <option value="active">Ativos</option>
-                            <option value="inactive">Inativos</option>
-                            <?php if (isset($mostrarRemovidos) && $mostrarRemovidos): ?>
-                                <option value="removed">Removidos</option>
-                            <?php endif; ?>
-                        </select>
+                <form method="GET" action="<?= base_url('usuarios') ?>" class="filters-form">
+                    <!-- ✅ MANTÉM OS PARÂMETROS EXISTENTES -->
+                    <?php if (isset($mostrarRemovidos) && $mostrarRemovidos): ?>
+                        <input type="hidden" name="mostrar_removidos" value="1">
+                    <?php endif; ?>
+
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text"
+                            name="busca"
+                            id="userSearch"
+                            placeholder="Buscar por nome ou email..."
+                            value="<?= htmlspecialchars($filtros['busca'] ?? '') ?>">
                     </div>
-                    <div class="filter-group">
-                        <label for="adminFilter">Tipo:</label>
-                        <select id="adminFilter">
-                            <option value="all">Todos</option>
-                            <option value="admin">Administradores</option>
-                            <option value="regular">Usuários Regulares</option>
-                        </select>
+
+                    <div class="filter-options">
+                        <div class="filter-group">
+                            <label for="statusFilter">Status:</label>
+                            <select name="status" id="statusFilter">
+                                <option value="all" <?= ($filtros['status'] ?? 'all') === 'all' ? 'selected' : '' ?>>Todos</option>
+                                <option value="active" <?= ($filtros['status'] ?? '') === 'active' ? 'selected' : '' ?>>Ativos</option>
+                                <option value="inactive" <?= ($filtros['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inativos</option>
+                                <?php if (isset($mostrarRemovidos) && $mostrarRemovidos): ?>
+                                    <option value="removed" <?= ($filtros['status'] ?? '') === 'removed' ? 'selected' : '' ?>>Removidos</option>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="adminFilter">Tipo:</label>
+                            <select name="tipo" id="adminFilter">
+                                <option value="all" <?= ($filtros['tipo'] ?? 'all') === 'all' ? 'selected' : '' ?>>Todos</option>
+                                <option value="admin" <?= ($filtros['tipo'] ?? '') === 'admin' ? 'selected' : '' ?>>Administradores</option>
+                                <option value="regular" <?= ($filtros['tipo'] ?? '') === 'regular' ? 'selected' : '' ?>>Usuários Regulares</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                            <a href="<?= base_url('usuarios' . (isset($mostrarRemovidos) && $mostrarRemovidos ? '?mostrar_removidos=1' : '')) ?>" class="btn-secondary">
+                                <i class="fas fa-times"></i> Limpar
+                            </a>
+                        </div>
                     </div>
-                </div>
+                </form>
             </div>
 
             <!-- Visualização em Cards (padrão) -->
@@ -199,7 +221,7 @@
                                 <div class="card-header">
                                     <div class="user-avatar-container">
                                         <div class="user-avatar <?= $usuario['admin'] ? ($usuario['admin_tipo'] == 'master' ? 'admin-master' : 'admin') : 'user' ?>">
-                                            <?= strtoupper(substr($usuario['nome'], 0, 1)) ?>
+                                            <?= $usuario['iniciais'] ?? strtoupper(substr($usuario['nome'], 0, 1)) ?>
                                             <?php if (!empty($usuario['session_id'])): ?>
                                                 <span class="online-indicator" title="Online desde <?= date('d/m/Y H:i', strtotime($usuario['session_start'])) ?>"></span>
                                             <?php endif; ?>
@@ -349,7 +371,7 @@
 
                                 <div class="user-list-main">
                                     <div class="user-avatar <?= $usuario['admin'] ? ($usuario['admin_tipo'] == 'master' ? 'admin-master' : 'admin') : 'user' ?>">
-                                        <?= strtoupper(substr($usuario['nome'], 0, 1)) ?>
+                                        <?= $usuario['iniciais'] ?? strtoupper(substr($usuario['nome'], 0, 1)) ?>
                                         <?php if (!empty($usuario['session_id'])): ?>
                                             <span class="online-indicator" title="Online desde <?= date('d/m/Y H:i', strtotime($usuario['session_start'])) ?>"></span>
                                         <?php endif; ?>
@@ -452,7 +474,7 @@
                 <?php endif; ?>
             </div>
 
-            <!-- Paginação -->
+            <!-- ✅ PAGINAÇÃO SERVER-SIDE -->
             <?php if (isset($paginacao) && $paginacao['total_paginas'] > 1): ?>
                 <div class="pagination-container">
                     <div class="pagination-info">
@@ -461,14 +483,14 @@
                     <ul class="pagination">
                         <?php if ($paginacao['pagina_atual'] > 1): ?>
                             <li>
-                                <a href="<?= base_url('usuarios?pagina=1' . ($mostrarRemovidos ? '&mostrar_removidos=1' : '')) ?>"
+                                <a href="<?= base_url('usuarios?' . http_build_query(array_merge($_GET, ['pagina' => 1]))) ?>"
                                     class="pagination-link"
                                     title="Primeira Página">
                                     <i class="fas fa-angle-double-left"></i>
                                 </a>
                             </li>
                             <li>
-                                <a href="<?= base_url('usuarios?pagina=' . ($paginacao['pagina_atual'] - 1) . ($mostrarRemovidos ? '&mostrar_removidos=1' : '')) ?>"
+                                <a href="<?= base_url('usuarios?' . http_build_query(array_merge($_GET, ['pagina' => $paginacao['pagina_atual'] - 1]))) ?>"
                                     class="pagination-link"
                                     title="Página Anterior">
                                     <i class="fas fa-angle-left"></i>
@@ -511,7 +533,7 @@
                             $title = $isActive ? "Página Atual" : "Ir para Página $i";
                         ?>
                             <li>
-                                <a href="<?= $isActive ? 'javascript:void(0)' : base_url('usuarios?pagina=' . $i . ($mostrarRemovidos ? '&mostrar_removidos=1' : '')) ?>"
+                                <a href="<?= $isActive ? 'javascript:void(0)' : base_url('usuarios?' . http_build_query(array_merge($_GET, ['pagina' => $i]))) ?>"
                                     class="pagination-link <?= $isActive ? 'active' : '' ?>"
                                     title="<?= $title ?>">
                                     <?= $i ?>
@@ -521,14 +543,14 @@
 
                         <?php if ($paginacao['pagina_atual'] < $paginacao['total_paginas']): ?>
                             <li>
-                                <a href="<?= base_url('usuarios?pagina=' . ($paginacao['pagina_atual'] + 1) . ($mostrarRemovidos ? '&mostrar_removidos=1' : '')) ?>"
+                                <a href="<?= base_url('usuarios?' . http_build_query(array_merge($_GET, ['pagina' => $paginacao['pagina_atual'] + 1]))) ?>"
                                     class="pagination-link"
                                     title="Próxima Página">
                                     <i class="fas fa-angle-right"></i>
                                 </a>
                             </li>
                             <li>
-                                <a href="<?= base_url('usuarios?pagina=' . $paginacao['total_paginas'] . ($mostrarRemovidos ? '&mostrar_removidos=1' : '')) ?>"
+                                <a href="<?= base_url('usuarios?' . http_build_query(array_merge($_GET, ['pagina' => $paginacao['total_paginas']]))) ?>"
                                     class="pagination-link"
                                     title="Última Página">
                                     <i class="fas fa-angle-double-right"></i>
@@ -556,119 +578,109 @@
         </div>
     </div>
 
-    <!-- Modais -->
+    <!-- ✅ MODAL DE REMOÇÃO CORRIGIDO -->
     <div class="modal fade" id="removerModal" tabindex="-1" aria-labelledby="removerModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="removerModalLabel">Confirmar Remoção</h5>
+                    <h5 class="modal-title" id="removerModalLabel">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Confirmar Remoção
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="modal-icon warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <h5 class="modal-message">Tem certeza que deseja remover este usuário?</h5>
-                    <div class="modal-alert warning">
-                        <i class="fas fa-info-circle"></i>
-                        <p>O usuário será marcado como removido, mas seus dados permanecerão no sistema. Você poderá restaurá-lo posteriormente se necessário.</p>
-                    </div>
-                    <div class="modal-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Nome:</span>
-                            <span class="detail-value" id="removerNome"></span>
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h5>Tem certeza que deseja remover este usuário?</h5>
+                    <p>O usuário será marcado como removido, mas seus dados permanecerão no sistema. Você poderá restaurá-lo posteriormente se necessário.</p>
+
+                    <div>
+                        <div>
+                            <strong>Nome:</strong> <span id="removerNome"></span>
                         </div>
-                        <div class="detail-item">
-                            <span class="detail-label">E-mail:</span>
-                            <span class="detail-value" id="removerEmail"></span>
+                        <div>
+                            <strong>E-mail:</strong> <span id="removerEmail"></span>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <a href="#" id="confirmarRemover" class="btn-danger">Confirmar Remoção</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a href="#" id="confirmarRemover" class="btn btn-danger">Confirmar Remoção</a>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ✅ MODAL DE RESTAURAÇÃO CORRIGIDO -->
     <div class="modal fade" id="restaurarModal" tabindex="-1" aria-labelledby="restaurarModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="restaurarModalLabel">Confirmar Restauração</h5>
+                    <h5 class="modal-title" id="restaurarModalLabel">
+                        <i class="fas fa-user-check"></i>
+                        Confirmar Restauração
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="modal-icon success">
-                        <i class="fas fa-user-check"></i>
-                    </div>
-                    <h5 class="modal-message">Tem certeza que deseja restaurar este usuário?</h5>
-                    <div class="modal-alert info">
-                        <i class="fas fa-info-circle"></i>
-                        <p>O usuário será restaurado e poderá acessar o sistema novamente.</p>
-                    </div>
-                    <div class="modal-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Nome:</span>
-                            <span class="detail-value" id="restaurarNome"></span>
+                    <i class="fas fa-user-check"></i>
+                    <h5>Tem certeza que deseja restaurar este usuário?</h5>
+                    <p>O usuário será restaurado e poderá acessar o sistema novamente.</p>
+
+                    <div>
+                        <div>
+                            <strong>Nome:</strong> <span id="restaurarNome"></span>
                         </div>
-                        <div class="detail-item">
-                            <span class="detail-label">E-mail:</span>
-                            <span class="detail-value" id="restaurarEmail"></span>
+                        <div>
+                            <strong>E-mail:</strong> <span id="restaurarEmail"></span>
                         </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Removido em:</span>
-                            <span class="detail-value" id="restaurarData"></span>
+                        <div>
+                            <strong>Removido em:</strong> <span id="restaurarData"></span>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <a href="#" id="confirmarRestaurar" class="btn-success">Confirmar Restauração</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a href="#" id="confirmarRestaurar" class="btn btn-success">Confirmar Restauração</a>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ✅ MODAL DE ENCERRAR SESSÃO CORRIGIDO -->
     <div class="modal fade" id="encerrarSessaoModal" tabindex="-1" aria-labelledby="encerrarSessaoModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="encerrarSessaoModalLabel">Encerrar Sessão do Usuário</h5>
+                    <h5 class="modal-title" id="encerrarSessaoModalLabel">
+                        <i class="fas fa-user-slash"></i>
+                        Encerrar Sessão do Usuário
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="modal-icon danger">
-                        <i class="fas fa-user-slash"></i>
-                    </div>
-                    <h5 class="modal-message">Tem certeza que deseja encerrar a sessão deste usuário?</h5>
-                    <div class="modal-alert warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <p>O usuário será desconectado imediatamente e perderá qualquer trabalho não salvo.</p>
-                    </div>
-                    <div class="modal-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Nome:</span>
-                            <span class="detail-value" id="encerrarNome"></span>
+                    <i class="fas fa-user-slash"></i>
+                    <h5>Tem certeza que deseja encerrar a sessão deste usuário?</h5>
+                    <p>O usuário será desconectado imediatamente e perderá qualquer trabalho não salvo.</p>
+
+                    <div>
+                        <div>
+                            <strong>Nome:</strong> <span id="encerrarNome"></span>
                         </div>
-                        <div class="detail-item">
-                            <span class="detail-label">E-mail:</span>
-                            <span class="detail-value" id="encerrarEmail"></span>
+                        <div>
+                            <strong>E-mail:</strong> <span id="encerrarEmail"></span>
                         </div>
-                        <div class="detail-item">
-                            <span class="detail-label">IP:</span>
-                            <span class="detail-value" id="encerrarIP"></span>
+                        <div>
+                            <strong>IP:</strong> <span id="encerrarIP"></span>
                         </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Logado desde:</span>
-                            <span class="detail-value" id="encerrarData"></span>
+                        <div>
+                            <strong>Logado desde:</strong> <span id="encerrarData"></span>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <a href="#" id="confirmarEncerrarSessao" class="btn-danger">Encerrar Sessão</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a href="#" id="confirmarEncerrarSessao" class="btn btn-danger">Encerrar Sessão</a>
                 </div>
             </div>
         </div>

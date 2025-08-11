@@ -54,6 +54,9 @@
     <script src="<?= base_url('public/js/notificacoes.js') ?>"></script>
     <script src="<?= base_url('public/js/notificacoes-page.js') ?>"></script>
 
+    <script src="<?= base_url('public/js/perfil-form.js') ?>"></script>
+    <script src="<?= base_url('public/js/perfil.js') ?>"></script>
+
 
 
 
@@ -61,7 +64,7 @@
         <?php foreach ($page_scripts as $script): ?>
             <script src="<?= base_url('public/js/' . $script) ?>"></script>
         <?php endforeach; ?>
-    <?php endif; ?> 
+    <?php endif; ?>
 
 
     </body>

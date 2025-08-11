@@ -1,0 +1,490 @@
+/* ======================================
+   PÁGINA DE GERENCIAMENTO DE CONTA (PERFIL)
+   Versão: 1.0.0 - Novo Design
+====================================== */
+
+/* Variáveis (reaproveitar do main.css ou definir aqui se for específico) */
+:root {
+  --primary: #4361ee;
+  --primary-light: #eef2ff;
+  --primary-dark: #3a56d4;
+  --secondary: #6c757d;
+  --success: #2ecc71;
+  --success-light: #e8f8f0;
+  --warning: #f39c12;
+  --warning-light: #fef5e7;
+  --danger: #e74c3c;
+  --danger-light: #fdedeb;
+  --info: #3498db;
+  --info-light: #ebf5fb;
+
+  --dark: #2c3e50;
+  --gray: #95a5a6;
+  --light-gray: #ecf0f1;
+  --white: #ffffff;
+
+  --border-radius-sm: 4px;
+  --border-radius: 8px;
+  --border-radius-lg: 12px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --transition: all 0.3s ease;
+
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+}
+
+.perfil-form-container {
+  max-width: 800px;
+  margin: var(--spacing-xl) auto;
+  padding: 0 var(--spacing-md);
+  font-family: "Inter", sans-serif;
+  color: var(--dark);
+}
+
+.perfil-form-card {
+  background-color: var(--white);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--box-shadow);
+  overflow: hidden;
+  border: 1px solid var(--light-gray);
+}
+
+.perfil-form-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--light-gray);
+  background-color: #f8f9fa;
+}
+
+.perfil-form-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--dark);
+  margin: 0;
+}
+
+.perfil-form-body {
+  padding: var(--spacing-xl);
+}
+
+/* Seções do formulário */
+.form-section {
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--light-gray);
+  border-radius: var(--border-radius);
+  background-color: var(--white);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.form-section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--dark);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.form-section-title i {
+  color: var(--primary);
+}
+
+.form-section.danger-zone .form-section-title i {
+  color: var(--danger);
+}
+
+/* Grid para campos */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Grupos de formulário */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+  color: var(--dark);
+  font-size: 0.95rem;
+}
+
+.required {
+  color: var(--danger);
+  margin-left: var(--spacing-xs);
+}
+
+.optional {
+  color: var(--gray);
+  font-size: 0.85rem;
+  margin-left: var(--spacing-xs);
+}
+
+/* Inputs */
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-icon {
+  position: absolute;
+  left: var(--spacing-md);
+  color: var(--gray);
+  z-index: 1;
+}
+
+.input-group input {
+  width: 100%;
+  height: 48px;
+  padding: 0 var(--spacing-lg) 0 3rem;
+  border: 1px solid var(--light-gray);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  transition: var(--transition);
+  background-color: var(--white);
+  color: var(--dark);
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+}
+
+.input-group input:focus + .input-icon {
+  color: var(--primary);
+}
+
+.input-group input[readonly] {
+  background-color: var(--light-gray);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.input-group input::placeholder {
+  color: #bdc3c7;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+/* Toggle de senha */
+.toggle-password {
+  position: absolute;
+  right: var(--spacing-md);
+  background: none;
+  border: none;
+  color: var(--gray);
+  cursor: pointer;
+  padding: 0;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.toggle-password:hover {
+  color: var(--primary);
+  transform: scale(1.1);
+}
+
+/* Dicas de formulário */
+.form-hint {
+  margin-top: var(--spacing-xs);
+  font-size: 0.85rem;
+  color: var(--gray);
+  display: flex;
+  align-items: center;
+  padding-left: var(--spacing-xs);
+}
+
+.form-hint i {
+  margin-right: var(--spacing-xs);
+  color: var(--info);
+  font-size: 0.9rem;
+}
+
+.form-hint.danger-text {
+  color: var(--danger);
+}
+
+.form-hint.danger-text i {
+  color: var(--danger);
+}
+
+/* Força da senha (reaproveitar de usuario-form.css) */
+.password-strength {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--light-gray);
+  border-radius: var(--border-radius);
+  border: 1px solid #e0e0e0;
+  display: none;
+}
+
+.password-strength.show {
+  display: block;
+  animation: slideDown 0.3s ease;
+}
+
+.strength-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+  color: var(--dark);
+}
+
+.strength-bar {
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: var(--spacing-sm);
+}
+
+.strength-fill {
+  height: 100%;
+  transition: var(--transition);
+  border-radius: 3px;
+}
+
+.strength-fill.weak {
+  width: 25%;
+  background: var(--danger);
+}
+.strength-fill.fair {
+  width: 50%;
+  background: var(--warning);
+}
+.strength-fill.good {
+  width: 75%;
+  background: var(--info);
+}
+.strength-fill.strong {
+  width: 100%;
+  background: var(--success);
+}
+
+.strength-requirements {
+  font-size: 0.8rem;
+}
+
+.strength-requirements ul {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+  list-style: none;
+}
+
+.strength-requirements li {
+  margin-bottom: var(--spacing-xs);
+  color: var(--gray);
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.strength-requirements li i {
+  margin-right: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--gray);
+  transition: color 0.3s ease;
+}
+
+.strength-requirements li.valid {
+  color: var(--success);
+}
+
+/* Botões de ação dentro das seções */
+.form-actions-small {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-lg);
+}
+
+/* Botões de ação na parte inferior da página */
+.form-actions-bottom {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--light-gray);
+}
+
+/* Botões (reaproveitar do main.css ou definir aqui) */
+.btn-primary,
+.btn-danger,
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.5rem;
+  border-radius: 50px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid transparent;
+  font-size: 0.95rem;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--white);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(67, 97, 238, 0.2);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: var(--white);
+  border-color: var(--danger);
+}
+
+.btn-danger:hover {
+  background-color: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(231, 76, 60, 0.2);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--gray);
+  border-color: var(--gray);
+}
+
+.btn-outline:hover {
+  background-color: var(--light-gray);
+  color: var(--dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Validação de formulário (reaproveitar de usuario-form.css) */
+.invalid-field {
+  border: 2px solid var(--danger) !important;
+  background-color: var(--danger-light) !important;
+}
+
+.valid-field {
+  border-color: var(--success) !important;
+  background-color: var(--success-light) !important;
+}
+
+.invalid-group {
+  position: relative;
+}
+
+.invalid-group::after {
+  content: "!";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  background-color: var(--danger);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 2;
+}
+
+.error-message {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+}
+
+.error-message i {
+  margin-right: var(--spacing-xs);
+}
+
+/* Animações (reaproveitar de usuario-form.css) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .perfil-form-container {
+    margin: var(--spacing-lg) auto;
+  }
+  .perfil-form-body {
+    padding: var(--spacing-lg);
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-actions-small,
+  .form-actions-bottom {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  .btn-primary,
+  .btn-danger,
+  .btn-outline {
+    width: 100%;
+  }
+}

@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Gera o QR Code
     generateQRCode();
 
-    // Configura o modal de compartilhamento
+    // Configura o modal de compartilhamento 
     setupShareModal();
 
     // Adiciona marca d'água para impressão

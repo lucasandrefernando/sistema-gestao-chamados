@@ -890,8 +890,6 @@ class Chamado extends Model
     }
 
 
-
-
     /**
      * Insere um novo chamado
      * 
@@ -909,20 +907,20 @@ class Chamado extends Model
                 }
             }
 
-            // Constrói a query manualmente
+            // Constrói a query manualmente - VERSÃO CORRIGIDA
             $sql = "INSERT INTO {$this->table} (
-                    empresa_id, setor_id, status_id, solicitante, 
-                    paciente, quarto_leito, descricao, tipo_servico, 
-                    data_solicitacao, data_criacao, data_atualizacao
-                ) VALUES (
-                    :empresa_id, :setor_id, :status_id, :solicitante, 
-                    :paciente, :quarto_leito, :descricao, :tipo_servico, 
-                    :data_solicitacao, :data_criacao, :data_atualizacao
-                )";
+                empresa_id, setor_id, status_id, solicitante, 
+                paciente, quarto_leito, descricao, tipo_servico, 
+                numero_solicitante, data_solicitacao, data_criacao, data_atualizacao
+            ) VALUES (
+                :empresa_id, :setor_id, :status_id, :solicitante, 
+                :paciente, :quarto_leito, :descricao, :tipo_servico, 
+                :numero_solicitante, :data_solicitacao, :data_criacao, :data_atualizacao
+            )";
 
             $stmt = $this->db->prepare($sql);
 
-            // Bind dos parâmetros
+            // Bind dos parâmetros - ADICIONADO numero_solicitante
             $stmt->bindValue(':empresa_id', $data['empresa_id'], PDO::PARAM_INT);
             $stmt->bindValue(':setor_id', $data['setor_id'], PDO::PARAM_INT);
             $stmt->bindValue(':status_id', $data['status_id'], PDO::PARAM_INT);
@@ -931,6 +929,7 @@ class Chamado extends Model
             $stmt->bindValue(':quarto_leito', $data['quarto_leito'] ?? null, PDO::PARAM_STR);
             $stmt->bindValue(':descricao', $data['descricao'], PDO::PARAM_STR);
             $stmt->bindValue(':tipo_servico', $data['tipo_servico'] ?? null, PDO::PARAM_STR);
+            $stmt->bindValue(':numero_solicitante', $data['numero_solicitante'] ?? null, PDO::PARAM_STR); // ADICIONADO
             $stmt->bindValue(':data_solicitacao', $data['data_solicitacao'], PDO::PARAM_STR);
             $stmt->bindValue(':data_criacao', $data['data_criacao'], PDO::PARAM_STR);
             $stmt->bindValue(':data_atualizacao', $data['data_atualizacao'], PDO::PARAM_STR);

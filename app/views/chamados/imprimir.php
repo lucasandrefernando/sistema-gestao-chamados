@@ -94,6 +94,19 @@
             </div>
         </div>
 
+        <!-- NOVO: Resumo do Telefone -->
+        <?php if (!empty($chamado['numero_solicitante'])): ?>
+            <div class="chamados-imprimir-resumo-item">
+                <div class="chamados-imprimir-resumo-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <div class="chamados-imprimir-resumo-content">
+                    <div class="chamados-imprimir-resumo-label">Contato</div>
+                    <div class="chamados-imprimir-resumo-value"><?= formatarTelefone($chamado['numero_solicitante']) ?></div>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <div class="chamados-imprimir-resumo-item">
             <div class="chamados-imprimir-resumo-icon">
                 <i class="fas fa-building"></i>
@@ -137,62 +150,127 @@
         </h3>
         <div class="chamados-imprimir-card">
             <div class="chamados-imprimir-grid">
+                <!-- Coluna 1: Informações Básicas -->
                 <div class="chamados-imprimir-coluna">
                     <table class="chamados-imprimir-tabela">
                         <tr>
-                            <th>Número do Chamado:</th>
+                            <th><i class="fas fa-hashtag"></i> Número do Chamado:</th>
                             <td><strong>#<?= $chamado['id'] ?></strong></td>
                         </tr>
                         <tr>
-                            <th>Solicitante:</th>
+                            <th><i class="fas fa-user"></i> Solicitante:</th>
                             <td><?= htmlspecialchars($chamado['solicitante']) ?></td>
                         </tr>
+
+                        <!-- CAMPO TELEFONE IMPLEMENTADO -->
+                        <?php if (!empty($chamado['numero_solicitante'])): ?>
+                            <tr>
+                                <th><i class="fas fa-mobile-alt"></i> Contato do Solicitante:</th>
+                                <td>
+                                    <div class="chamados-imprimir-contato">
+                                        <span class="chamados-imprimir-telefone"><?= formatarTelefone($chamado['numero_solicitante']) ?></span>
+                                        <span class="chamados-imprimir-telefone-tipo">Celular</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+
+                        <!-- Email (se disponível) -->
+                        <?php if (!empty($chamado['email_origem'])): ?>
+                            <tr>
+                                <th><i class="fas fa-envelope"></i> Email:</th>
+                                <td>
+                                    <span class="chamados-imprimir-email"><?= htmlspecialchars($chamado['email_origem']) ?></span>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+
                         <tr>
-                            <th>Setor:</th>
+                            <th><i class="fas fa-building"></i> Setor:</th>
                             <td><?= htmlspecialchars($setor['nome']) ?></td>
                         </tr>
                         <tr>
-                            <th>Status:</th>
+                            <th><i class="fas fa-flag"></i> Status:</th>
                             <td>
                                 <span class="chamados-imprimir-status <?= $statusColorClass ?>">
-                                    <?= htmlspecialchars($status['nome']) ?>
+                                    <i class="fas fa-circle"></i> <?= htmlspecialchars($status['nome']) ?>
                                 </span>
                             </td>
                         </tr>
                         <tr>
-                            <th>Tipo de Serviço:</th>
+                            <th><i class="fas fa-cogs"></i> Tipo de Serviço:</th>
                             <td><?= htmlspecialchars($chamado['tipo_servico'] ?? 'Não especificado') ?></td>
                         </tr>
                     </table>
                 </div>
+
+                <!-- Coluna 2: Datas e Informações Complementares -->
                 <div class="chamados-imprimir-coluna">
                     <table class="chamados-imprimir-tabela">
                         <tr>
-                            <th>Data de Solicitação:</th>
+                            <th><i class="fas fa-calendar-plus"></i> Data de Solicitação:</th>
                             <td><?= formatarData($chamado['data_solicitacao']) ?></td>
                         </tr>
                         <?php if (!empty($chamado['data_conclusao'])): ?>
                             <tr>
-                                <th>Data de Conclusão:</th>
+                                <th><i class="fas fa-calendar-check"></i> Data de Conclusão:</th>
                                 <td><?= formatarData($chamado['data_conclusao']) ?></td>
                             </tr>
                             <tr>
-                                <th>Tempo de Atendimento:</th>
-                                <td><?= $tempoFormatado ?></td>
+                                <th><i class="fas fa-stopwatch"></i> Tempo de Atendimento:</th>
+                                <td>
+                                    <span class="chamados-imprimir-tempo-badge chamados-imprimir-tempo-concluido">
+                                        <?= $tempoFormatado ?>
+                                    </span>
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <tr>
+                                <th><i class="fas fa-hourglass-half"></i> Tempo em Aberto:</th>
+                                <td>
+                                    <span class="chamados-imprimir-tempo-badge chamados-imprimir-tempo-aberto">
+                                        <?php
+                                        $inicio = new DateTime($chamado['data_solicitacao']);
+                                        $agora = new DateTime();
+                                        $diff = $inicio->diff($agora);
+
+                                        $tempoAberto = '';
+                                        if ($diff->d > 0) {
+                                            $tempoAberto .= $diff->d . ' dia(s), ';
+                                        }
+                                        $tempoAberto .= sprintf('%02d:%02d:%02d', $diff->h, $diff->i, $diff->s);
+                                        echo $tempoAberto;
+                                        ?>
+                                    </span>
+                                </td>
                             </tr>
                         <?php endif; ?>
+
+                        <!-- Informações do Paciente -->
                         <?php if (!empty($chamado['paciente'])): ?>
                             <tr>
-                                <th>Paciente:</th>
+                                <th><i class="fas fa-user-injured"></i> Paciente:</th>
                                 <td><?= htmlspecialchars($chamado['paciente']) ?></td>
                             </tr>
                         <?php endif; ?>
                         <?php if (!empty($chamado['quarto_leito'])): ?>
                             <tr>
-                                <th>Quarto/Leito:</th>
-                                <td><?= htmlspecialchars($chamado['quarto_leito']) ?></td>
+                                <th><i class="fas fa-bed"></i> Quarto/Leito:</th>
+                                <td>
+                                    <span class="chamados-imprimir-quarto-badge"><?= htmlspecialchars($chamado['quarto_leito']) ?></span>
+                                </td>
                             </tr>
                         <?php endif; ?>
+
+                        <!-- Informações de Sistema -->
+                        <tr>
+                            <th><i class="fas fa-clock"></i> Última Atualização:</th>
+                            <td><?= formatarData($chamado['data_atualizacao'] ?? $chamado['data_solicitacao']) ?></td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-user-cog"></i> Responsável:</th>
+                            <td><?= htmlspecialchars($chamado['responsavel'] ?? 'Não atribuído') ?></td>
+                        </tr>
                     </table>
                 </div>
             </div>
@@ -205,8 +283,10 @@
             <i class="fas fa-align-left"></i> Descrição do Chamado
         </h3>
         <div class="chamados-imprimir-card">
-            <div class="chamados-imprimir-descricao-texto">
-                <?= nl2br(htmlspecialchars($chamado['descricao'])) ?>
+            <div class="chamados-imprimir-descricao-container">
+                <div class="chamados-imprimir-descricao-texto">
+                    <?= nl2br(htmlspecialchars($chamado['descricao'])) ?>
+                </div>
             </div>
         </div>
     </div>
@@ -346,12 +426,16 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="shareModalLabel">Compartilhar Chamado</h5>
+                <h5 class="modal-title" id="shareModalLabel">
+                    <i class="fas fa-share-alt"></i> Compartilhar Chamado
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label for="shareLink" class="form-label">Link do Chamado</label>
+                    <label for="shareLink" class="form-label">
+                        <i class="fas fa-link"></i> Link do Chamado
+                    </label>
                     <div class="input-group">
                         <input type="text" class="form-control" id="shareLink" readonly>
                         <button class="btn btn-outline-secondary" type="button" id="copyLinkBtn">

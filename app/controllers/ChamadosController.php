@@ -514,6 +514,7 @@ class ChamadosController extends Controller
         $quarto_leito = isset($_POST['quarto_leito']) ? sanitize_input($_POST['quarto_leito']) : null;
         $descricao = isset($_POST['descricao']) ? sanitize_input($_POST['descricao']) : '';
         $tipo_servico = isset($_POST['tipo_servico']) ? sanitize_input($_POST['tipo_servico']) : null;
+        $numero_solicitante = isset($_POST['numero_solicitante']) ? sanitize_input($_POST['numero_solicitante']) : null; // ADICIONADO
 
         // Validação básica
         if (empty($setor_id) || empty($solicitante) || empty($descricao)) {
@@ -540,6 +541,7 @@ class ChamadosController extends Controller
             'quarto_leito' => $quarto_leito,
             'descricao' => $descricao,
             'tipo_servico' => $tipo_servico,
+            'numero_solicitante' => $numero_solicitante, // ADICIONADO
             'data_solicitacao' => date('Y-m-d H:i:s'),
             'data_criacao' => date('Y-m-d H:i:s'),
             'data_atualizacao' => date('Y-m-d H:i:s')
@@ -550,11 +552,11 @@ class ChamadosController extends Controller
             $sql = "INSERT INTO chamados (
             empresa_id, setor_id, status_id, solicitante, 
             paciente, quarto_leito, descricao, tipo_servico, 
-            data_solicitacao, data_criacao, data_atualizacao
+            numero_solicitante, data_solicitacao, data_criacao, data_atualizacao
         ) VALUES (
             :empresa_id, :setor_id, :status_id, :solicitante, 
             :paciente, :quarto_leito, :descricao, :tipo_servico, 
-            :data_solicitacao, :data_criacao, :data_atualizacao
+            :numero_solicitante, :data_solicitacao, :data_criacao, :data_atualizacao
         )";
 
             $stmt = $this->chamadoModel->getDb()->prepare($sql);
@@ -566,6 +568,7 @@ class ChamadosController extends Controller
             $stmt->bindValue(':quarto_leito', $data['quarto_leito'], PDO::PARAM_STR);
             $stmt->bindValue(':descricao', $data['descricao'], PDO::PARAM_STR);
             $stmt->bindValue(':tipo_servico', $data['tipo_servico'], PDO::PARAM_STR);
+            $stmt->bindValue(':numero_solicitante', $data['numero_solicitante'], PDO::PARAM_STR); // ADICIONADO
             $stmt->bindValue(':data_solicitacao', $data['data_solicitacao'], PDO::PARAM_STR);
             $stmt->bindValue(':data_criacao', $data['data_criacao'], PDO::PARAM_STR);
             $stmt->bindValue(':data_atualizacao', $data['data_atualizacao'], PDO::PARAM_STR);
@@ -695,6 +698,7 @@ class ChamadosController extends Controller
         $quarto_leito = isset($_POST['quarto_leito']) ? sanitize_input($_POST['quarto_leito']) : null;
         $descricao = isset($_POST['descricao']) ? sanitize_input($_POST['descricao']) : '';
         $tipo_servico = isset($_POST['tipo_servico']) ? sanitize_input($_POST['tipo_servico']) : null;
+        $numero_solicitante = isset($_POST['numero_solicitante']) ? sanitize_input($_POST['numero_solicitante']) : null; // ADICIONADO
 
         // Validação básica
         if (empty($setor_id) || empty($solicitante) || empty($descricao)) {
@@ -726,6 +730,7 @@ class ChamadosController extends Controller
             'quarto_leito' => $quarto_leito,
             'descricao' => $descricao,
             'tipo_servico' => $tipo_servico,
+            'numero_solicitante' => $numero_solicitante, // ADICIONADO
             'data_atualizacao' => date('Y-m-d H:i:s')
         ];
 
@@ -757,7 +762,7 @@ class ChamadosController extends Controller
 
                 $historicoStmt->execute();
             }
-
+ 
             set_flash_message('success', 'Chamado atualizado com sucesso.');
             redirect('chamados/visualizar/' . $id);
         } catch (Exception $e) {
