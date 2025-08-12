@@ -318,7 +318,7 @@ function exportToCSV() {
     link.setAttribute('download', filename);
 
     document.body.appendChild(link);
-    link.click();
+    link.click(); 
     document.body.removeChild(link);
 }
 

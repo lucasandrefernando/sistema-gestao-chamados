@@ -1,13 +1,17 @@
 /**
- * Estilos modernos para o header e componentes relacionados
+ * HEADER CSS - Sistema de Gestão de Chamados
  * 
- * Design moderno e eficiente para a barra de navegação, 
- * notificações, ações rápidas e perfil do usuário.
+ * Estilos para o cabeçalho da aplicação incluindo navbar, dropdowns,
+ * notificações e perfil do usuário. Totalmente responsivo e acessível.
  * 
- * @version 2.0.0
+ * @version 1.0.0
+ * @author Sistema de Gestão de Chamados
  */
 
-/* ========== VARIÁVEIS ========== */
+/* ============================================================================
+   VARIÁVEIS CSS CUSTOMIZADAS
+   ============================================================================ */
+
 :root {
   /* Cores principais */
   --primary: #4361ee;
@@ -19,23 +23,24 @@
   --light: #f8f9fa;
   --dark: #343a40;
 
-  /* Cores de interface */
+  /* Cores do layout */
   --body-bg: #f5f7fa;
-  --navbar-bg: #2c3e50; /* Cor mais escura e suave para o header */
+  --navbar-bg: #2c3e50;
   --navbar-text: #ffffff;
   --navbar-text-muted: rgba(255, 255, 255, 0.7);
+
+  /* Cores de texto */
   --text-primary: #2d3748;
   --text-secondary: #718096;
   --text-muted: #a0aec0;
-  --border-color: #e2e8f0;
 
-  /* Cores de componentes */
+  /* Cores de dropdown */
   --dropdown-bg: #ffffff;
   --dropdown-shadow: rgba(0, 0, 0, 0.1);
   --dropdown-border: #edf2f7;
   --dropdown-hover: #f7fafc;
 
-  /* Dimensões e espaçamentos */
+  /* Dimensões */
   --navbar-height: 60px;
   --border-radius-sm: 4px;
   --border-radius: 8px;
@@ -46,20 +51,36 @@
   --transition-normal: 0.25s ease;
 }
 
-/* ========== ESTILOS GERAIS ========== */
+/* ============================================================================
+   CONFIGURAÇÕES BASE
+   ============================================================================ */
+
 body {
   background-color: var(--body-bg);
   color: var(--text-primary);
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    sans-serif;
 }
 
-/* ========== NAVBAR ========== */
+/* Ajuste para o conteúdo principal */
+main {
+  padding-top: calc(var(--navbar-height) + 1rem);
+}
+
+/* ============================================================================
+   NAVBAR PRINCIPAL
+   ============================================================================ */
+
 .app-navbar {
   height: var(--navbar-height);
   background-color: var(--navbar-bg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   padding: 0;
+  z-index: 1030;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 .navbar-wrapper {
@@ -71,7 +92,11 @@ body {
   padding: 0 1rem;
 }
 
-/* Seção esquerda */
+/* ============================================================================
+   SEÇÕES DA NAVBAR
+   ============================================================================ */
+
+/* Seção esquerda - Logo/Brand */
 .navbar-left {
   display: flex;
   align-items: center;
@@ -89,7 +114,7 @@ body {
   color: var(--navbar-text);
 }
 
-/* Seção central */
+/* Seção central - Título do sistema */
 .navbar-center {
   display: flex;
   justify-content: center;
@@ -104,7 +129,7 @@ body {
   text-align: center;
 }
 
-/* Seção direita */
+/* Seção direita - Ações do usuário */
 .navbar-right {
   display: flex;
   align-items: center;
@@ -115,7 +140,11 @@ body {
   position: relative;
 }
 
-/* Botões de ícone */
+/* ============================================================================
+   BOTÕES E CONTROLES
+   ============================================================================ */
+
+/* Botões circulares de ícone */
 .btn-icon {
   width: 40px;
   height: 40px;
@@ -128,6 +157,7 @@ body {
   color: var(--navbar-text);
   cursor: pointer;
   transition: background-color var(--transition-fast);
+  position: relative;
 }
 
 .btn-icon:hover {
@@ -136,13 +166,14 @@ body {
 
 .btn-icon:focus {
   outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
 }
 
 .btn-icon i {
   font-size: 1.1rem;
 }
 
-/* Botão de texto */
+/* Botões de texto */
 .btn-text {
   background: none;
   border: none;
@@ -158,7 +189,6 @@ body {
   text-decoration: underline;
 }
 
-/* Botão de link */
 .btn-link {
   color: var(--primary);
   text-decoration: none;
@@ -171,7 +201,10 @@ body {
   text-decoration: underline;
 }
 
-/* Badge contador */
+/* ============================================================================
+   BADGE DE NOTIFICAÇÕES
+   ============================================================================ */
+
 .badge-counter {
   position: absolute;
   top: 0;
@@ -186,9 +219,32 @@ body {
   align-items: center;
   justify-content: center;
   font-weight: 600;
+  z-index: 1;
 }
 
-/* ========== DROPDOWNS ========== */
+/* ============================================================================
+   DROPDOWNS - CONFIGURAÇÃO PRINCIPAL
+   ============================================================================ */
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-toggle::after {
+  display: none; /* Remove seta padrão do Bootstrap */
+}
+
+[data-bs-toggle="dropdown"] {
+  cursor: pointer !important;
+  position: relative;
+  z-index: 1051;
+}
+
+[data-bs-toggle="dropdown"]:focus {
+  outline: none;
+}
+
+/* Menu dropdown */
 .dropdown-menu {
   padding: 0;
   margin: 0;
@@ -197,14 +253,30 @@ body {
   box-shadow: 0 4px 12px var(--dropdown-shadow);
   overflow: hidden;
   background-color: var(--dropdown-bg);
+  z-index: 1050 !important;
+  position: absolute !important;
+  min-width: 280px;
 }
 
+.dropdown-menu.show {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+
+/* ============================================================================
+   ESTRUTURA DOS DROPDOWNS
+   ============================================================================ */
+
+/* Cabeçalho do dropdown */
 .dropdown-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
   border-bottom: 1px solid var(--dropdown-border);
+  background-color: var(--dropdown-bg);
 }
 
 .dropdown-header h6 {
@@ -214,15 +286,19 @@ body {
   color: var(--text-primary);
 }
 
+/* Corpo do dropdown */
 .dropdown-body {
   max-height: 350px;
   overflow-y: auto;
+  background-color: var(--dropdown-bg);
 }
 
+/* Rodapé do dropdown */
 .dropdown-footer {
   padding: 0.75rem 1rem;
   border-top: 1px solid var(--dropdown-border);
   text-align: center;
+  background-color: var(--dropdown-bg);
 }
 
 .dropdown-divider {
@@ -230,7 +306,10 @@ body {
   border-top: 1px solid var(--dropdown-border);
 }
 
-/* ========== NOTIFICAÇÕES ========== */
+/* ============================================================================
+   DROPDOWN DE NOTIFICAÇÕES
+   ============================================================================ */
+
 .notification-dropdown {
   width: 350px;
   max-width: 90vw;
@@ -241,12 +320,14 @@ body {
   flex-direction: column;
 }
 
+/* Item de notificação */
 .notification-item {
   display: flex;
   padding: 1rem;
   border-bottom: 1px solid var(--dropdown-border);
   transition: background-color var(--transition-fast);
   position: relative;
+  background-color: var(--dropdown-bg);
 }
 
 .notification-item:last-child {
@@ -257,6 +338,7 @@ body {
   background-color: var(--dropdown-hover);
 }
 
+/* Notificação não lida */
 .notification-item.unread {
   background-color: rgba(67, 97, 238, 0.05);
 }
@@ -271,6 +353,7 @@ body {
   background-color: var(--primary);
 }
 
+/* Elementos da notificação */
 .notification-icon {
   width: 40px;
   height: 40px;
@@ -315,6 +398,7 @@ body {
   color: var(--text-muted);
 }
 
+/* Ações da notificação */
 .notification-actions {
   display: flex;
   gap: 0.5rem;
@@ -324,7 +408,7 @@ body {
   padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   border-radius: var(--border-radius-sm);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--dropdown-border);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -346,39 +430,10 @@ body {
   border-color: #3651d1;
 }
 
-/* Estado vazio */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
-  text-align: center;
-}
+/* ============================================================================
+   DROPDOWN DE AÇÕES RÁPIDAS
+   ============================================================================ */
 
-.empty-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background-color: var(--dropdown-hover);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
-
-.empty-icon i {
-  font-size: 1.25rem;
-  color: var(--text-muted);
-}
-
-.empty-state p {
-  color: var(--text-muted);
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-/* ========== AÇÕES RÁPIDAS ========== */
 .quick-actions-dropdown {
   width: 280px;
   max-width: 90vw;
@@ -389,6 +444,7 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
   padding: 1rem;
+  background-color: var(--dropdown-bg);
 }
 
 .quick-action-item {
@@ -400,10 +456,13 @@ body {
   border-radius: var(--border-radius);
   transition: background-color var(--transition-fast);
   text-decoration: none;
+  color: inherit;
 }
 
 .quick-action-item:hover {
   background-color: var(--dropdown-hover);
+  text-decoration: none;
+  color: inherit;
 }
 
 .quick-action-icon {
@@ -423,7 +482,11 @@ body {
   font-weight: 500;
 }
 
-/* ========== PERFIL DO USUÁRIO ========== */
+/* ============================================================================
+   DROPDOWN DO PERFIL DO USUÁRIO
+   ============================================================================ */
+
+/* Botão do perfil */
 .user-profile-toggle {
   display: flex;
   align-items: center;
@@ -433,12 +496,19 @@ body {
   border-radius: var(--border-radius);
   cursor: pointer;
   transition: background-color var(--transition-fast);
+  color: inherit;
 }
 
 .user-profile-toggle:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+.user-profile-toggle:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+/* Avatar do usuário */
 .user-avatar {
   width: 36px;
   height: 36px;
@@ -453,6 +523,7 @@ body {
   margin-right: 0.75rem;
 }
 
+/* Informações do usuário */
 .user-info {
   text-align: left;
 }
@@ -470,7 +541,7 @@ body {
   line-height: 1.2;
 }
 
-/* Dropdown do usuário */
+/* Menu do usuário */
 .user-dropdown {
   width: 280px;
   max-width: 90vw;
@@ -480,6 +551,7 @@ body {
   display: flex;
   align-items: center;
   padding: 1.25rem 1rem;
+  background-color: var(--dropdown-bg);
 }
 
 .user-avatar-large {
@@ -540,9 +612,10 @@ body {
   letter-spacing: 0.5px;
 }
 
-/* Menu do usuário */
+/* Menu de opções */
 .user-menu {
   padding: 0.5rem 0;
+  background-color: var(--dropdown-bg);
 }
 
 .menu-item {
@@ -556,6 +629,8 @@ body {
 
 .menu-item:hover {
   background-color: var(--dropdown-hover);
+  color: var(--text-primary);
+  text-decoration: none;
 }
 
 .menu-item i {
@@ -569,9 +644,10 @@ body {
   font-size: 0.9rem;
 }
 
-/* Rodapé do usuário */
+/* Botão de logout */
 .user-footer {
   padding: 0.75rem 1rem;
+  background-color: var(--dropdown-bg);
 }
 
 .btn-logout {
@@ -590,6 +666,8 @@ body {
 
 .btn-logout:hover {
   background-color: rgba(231, 76, 60, 0.2);
+  color: var(--danger);
+  text-decoration: none;
 }
 
 .btn-logout i {
@@ -600,32 +678,70 @@ body {
   font-weight: 500;
 }
 
-/* ========== CORES DE FUNDO ========== */
+/* ============================================================================
+   ESTADO VAZIO
+   ============================================================================ */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+  background-color: var(--dropdown-bg);
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: var(--dropdown-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.empty-icon i {
+  font-size: 1.25rem;
+  color: var(--text-muted);
+}
+
+.empty-state p {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* ============================================================================
+   CORES DE FUNDO UTILITÁRIAS
+   ============================================================================ */
+
 .bg-primary {
   background-color: var(--primary);
 }
-
 .bg-secondary {
   background-color: var(--secondary);
 }
-
 .bg-success {
   background-color: var(--success);
 }
-
 .bg-danger {
   background-color: var(--danger);
 }
-
 .bg-warning {
   background-color: var(--warning);
 }
-
 .bg-info {
   background-color: var(--info);
 }
 
-/* ========== RESPONSIVIDADE ========== */
+/* ============================================================================
+   RESPONSIVIDADE
+   ============================================================================ */
+
+/* Mobile */
 @media (max-width: 767.98px) {
   .dropdown-menu {
     position: fixed !important;
@@ -653,7 +769,7 @@ body {
   }
 }
 
-/* Ajustes para telas médias */
+/* Tablet */
 @media (min-width: 768px) and (max-width: 991.98px) {
   .navbar-center {
     position: static;
@@ -669,7 +785,7 @@ body {
   }
 }
 
-/* Ajustes para telas grandes */
+/* Desktop */
 @media (min-width: 992px) {
   .navbar-center {
     position: absolute;
@@ -682,7 +798,10 @@ body {
   }
 }
 
-/* ========== ANIMAÇÕES ========== */
+/* ============================================================================
+   ANIMAÇÕES
+   ============================================================================ */
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -696,7 +815,23 @@ body {
   animation: fadeIn 0.3s ease;
 }
 
-/* Ajuste para o conteúdo principal */
-main {
-  padding-top: calc(var(--navbar-height) + 1rem);
+/* ============================================================================
+   CORREÇÕES DE COMPATIBILIDADE
+   ============================================================================ */
+
+.dropdown-menu * {
+  pointer-events: auto !important;
+}
+
+.dropdown-menu .notification-item,
+.dropdown-menu .menu-item,
+.dropdown-menu .quick-action-item {
+  cursor: pointer;
+  user-select: none;
+}
+
+.dropdown-menu a,
+.dropdown-menu button {
+  user-select: auto;
+  pointer-events: auto !important;
 }

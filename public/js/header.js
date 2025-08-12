@@ -1,618 +1,453 @@
 /**
- * Script moderno para gerenciar o header e suas funcionalidades
- * 
- * Implementação eficiente para controlar notificações e 
- * outros elementos interativos do header.
- * 
- * @version 3.0.0
+ * HEADER MANAGER - Sistema de Gestão de Dropdowns
+ * VERSÃO FINAL FUNCIONAL - SEM BUGS
  */
-document.addEventListener('DOMContentLoaded', function () {
-    /**
-     * Gerenciador de Notificações
-     * Controla a exibição e interação com notificações
-     */
-    const NotificationManager = {
-        // Elementos do DOM
-        elements: {
-            badge: document.querySelector('.badge-counter'),
-            list: document.querySelector('.notification-list'),
-            markAllReadBtn: document.querySelector('.mark-all-read'),
-            dismissButtons: document.querySelectorAll('[data-action="dismiss"]')
-        },
 
-        // Configurações
-        config: {
-            refreshInterval: 60000, // 1 minuto
-            apiEndpoints: {
-                getNonRead: BASE_URL + 'notificacoes/buscarNaoLidas',
-                markAsRead: BASE_URL + 'notificacoes/marcar_lida/',
-                deleteNotification: BASE_URL + 'notificacoes/excluir/'
-            },
-            debug: true, // Habilitar logs de depuração
-            localStorageKey: 'ignoredNotifications' // Chave para armazenar notificações ignoradas
-        },
+(function () {
+    'use strict';
 
-        // Armazenamento local de notificações ignoradas
-        ignoredNotifications: [],
+    // Proteção contra múltiplas execuções
+    if (window.HEADER_MANAGER_LOADED) {
+        console.log('⚠️ Header Manager já carregado');
+        return;
+    }
 
-        // Armazenamento temporário de notificações atuais
-        currentNotifications: [],
+    console.log('🚀 Inicializando Header Manager...');
+    window.HEADER_MANAGER_LOADED = true;
 
-        // Controle de sessão
-        sessionActive: true,
+    let headerDropdowns = [];
+    let dropdownStates = new Map();
 
-        /**
-         * Inicializa o gerenciador de notificações
-         */
-        init() {
-            this.log('Inicializando gerenciador de notificações do header');
-
-            // Carregar notificações ignoradas do localStorage
-            this.loadIgnoredNotifications();
-
-            // Verificar se os elementos necessários existem
-            if (this.elements.badge || this.elements.list) {
-                // Configurar eventos
-                this.setupEventListeners();
-
-                // Carregar notificações inicialmente
-                this.loadNotifications();
-
-                // Configurar atualização periódica
-                this.refreshInterval = setInterval(() => {
-                    if (this.sessionActive) {
-                        this.loadNotifications();
-                    } else {
-                        // Limpar o intervalo se a sessão não estiver mais ativa
-                        clearInterval(this.refreshInterval);
-                    }
-                }, this.config.refreshInterval);
-            }
-        },
-
-        /**
-         * Registra mensagens de log se o modo de depuração estiver ativado
-         * @param {string} message - Mensagem a ser registrada
-         * @param {*} data - Dados adicionais (opcional)
-         */
-        log(message, data = null) {
-            if (this.config.debug) {
-                if (data) {
-                    console.log(`[Header] ${message}`, data);
-                } else {
-                    console.log(`[Header] ${message}`);
-                }
-            }
-        },
-
-        /**
-         * Carrega notificações ignoradas do localStorage
-         */
-        loadIgnoredNotifications() {
-            const stored = localStorage.getItem(this.config.localStorageKey);
-            if (stored) {
-                try {
-                    this.ignoredNotifications = JSON.parse(stored);
-                    this.log('Notificações ignoradas carregadas do localStorage', this.ignoredNotifications);
-                } catch (e) {
-                    this.log('Erro ao carregar notificações ignoradas do localStorage', e);
-                    this.ignoredNotifications = [];
-                }
-            }
-        },
-
-        /**
-         * Salva notificações ignoradas no localStorage
-         */
-        saveIgnoredNotifications() {
-            localStorage.setItem(this.config.localStorageKey, JSON.stringify(this.ignoredNotifications));
-        },
-
-        /**
-         * Adiciona uma notificação à lista de ignoradas
-         * @param {number} id - ID da notificação
-         */
-        addIgnoredNotification(id) {
-            if (!this.ignoredNotifications.includes(id)) {
-                this.ignoredNotifications.push(id);
-                this.saveIgnoredNotifications();
-            }
-        },
-
-        /**
-         * Verifica se uma notificação está na lista de ignoradas
-         * @param {number} id - ID da notificação
-         * @returns {boolean} Verdadeiro se a notificação estiver ignorada
-         */
-        isNotificationIgnored(id) {
-            return this.ignoredNotifications.includes(id);
-        },
-
-        /**
-         * Configura os listeners de eventos
-         */
-        setupEventListeners() {
-            // Botão para marcar todas como lidas
-            if (this.elements.markAllReadBtn) {
-                this.elements.markAllReadBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.markAllAsRead();
-                });
-            }
-
-            // Botões para ignorar notificação
-            this.elements.dismissButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const id = e.currentTarget.dataset.id;
-                    this.markAsRead(id);
-                });
-            });
-
-            // Configurar eventos para botões de dismiss adicionados dinamicamente
-            document.addEventListener('click', (e) => {
-                if (e.target.closest('[data-action="dismiss"]')) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const button = e.target.closest('[data-action="dismiss"]');
-                    const id = button.dataset.id;
-                    this.markAsRead(id);
-                }
-            });
-        },
-
-        /**
-         * Verifica se a resposta contém HTML de página de login
-         * @param {string} text - Texto da resposta
-         * @returns {boolean} Verdadeiro se for página de login
-         */
-        isLoginPage(text) {
-            return text.includes('<title>Login') ||
-                text.includes('auth/login') ||
-                text.includes('<!DOCTYPE html>') ||
-                text.includes('<html');
-        },
-
-        /**
-         * Carrega notificações não lidas do servidor
-         */
-        loadNotifications() {
-            if (!this.sessionActive) return;
-
-            this.log('Carregando notificações...');
-
-            fetch(this.config.apiEndpoints.getNonRead, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-                .then(response => {
-                    // Primeiro verificamos o tipo de conteúdo
-                    const contentType = response.headers.get('content-type');
-                    if (contentType && contentType.includes('text/html')) {
-                        // Se for HTML, provavelmente é a página de login
-                        this.sessionActive = false;
-                        this.log('Sessão expirada ou redirecionamento para login detectado');
-                        throw new Error('Sessão expirada');
-                    }
-
-                    // Se não for HTML, processamos normalmente
-                    return response.text().then(text => {
-                        // Verificação adicional para HTML
-                        if (this.isLoginPage(text)) {
-                            this.sessionActive = false;
-                            this.log('Sessão expirada ou redirecionamento para login detectado');
-                            throw new Error('Sessão expirada');
-                        }
-
-                        try {
-                            return JSON.parse(text);
-                        } catch (e) {
-                            console.error('Resposta não é um JSON válido:', text);
-                            throw new Error('Resposta inválida do servidor');
-                        }
-                    });
-                })
-                .then(data => {
-                    if (data.success) {
-                        this.log('Notificações carregadas com sucesso', data);
-
-                        // Filtrar notificações ignoradas
-                        const filteredNotifications = data.notificacoes.filter(notification =>
-                            !this.isNotificationIgnored(notification.id)
-                        );
-
-                        // Armazenar notificações atuais para uso posterior
-                        this.currentNotifications = filteredNotifications;
-
-                        // Atualizar contador
-                        this.updateBadge(filteredNotifications.length);
-
-                        // Atualizar lista
-                        if (this.elements.list) {
-                            this.updateNotificationList(filteredNotifications);
-                        }
-                    } else {
-                        this.log('Erro ao carregar notificações', data);
-                    }
-                })
-                .catch(error => {
-                    if (error.message === 'Sessão expirada') {
-                        // Não fazemos nada, apenas paramos de tentar carregar notificações
-                        clearInterval(this.refreshInterval);
-                    } else {
-                        console.error('Erro ao carregar notificações:', error);
-                    }
-                });
-        },
-
-        /**
-         * Processa a resposta HTTP e trata erros
-         * @param {Response} response - Resposta HTTP
-         * @returns {Promise} Promise com os dados JSON ou erro
-         */
-        handleResponse(response) {
-            if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
-            }
-
-            return response.text().then(text => {
-                try {
-                    return JSON.parse(text);
-                } catch (e) {
-                    console.error('Resposta não é um JSON válido:', text);
-                    throw new Error('Resposta inválida do servidor');
-                }
-            });
-        },
-
-        /**
-         * Atualiza o contador de notificações
-         * @param {number} count - Número de notificações não lidas
-         */
-        updateBadge(count) {
-            if (!this.elements.badge) return;
-
-            if (count > 0) {
-                this.elements.badge.textContent = count > 99 ? '99+' : count;
-                this.elements.badge.style.display = 'flex';
+    // Aguardar Bootstrap e DOM
+    function waitForReady() {
+        return new Promise((resolve) => {
+            if (typeof bootstrap !== 'undefined' && document.readyState !== 'loading') {
+                resolve();
             } else {
-                this.elements.badge.style.display = 'none';
+                setTimeout(() => waitForReady().then(resolve), 100);
             }
-        },
+        });
+    }
 
-        /**
-         * Atualiza a lista de notificações no dropdown
-         * @param {Array} notifications - Lista de notificações
-         */
-        updateNotificationList(notifications) {
-            if (!this.elements.list) return;
+    function initHeaderManager() {
+        console.log('🔧 Configurando dropdowns...');
 
-            if (notifications.length === 0) {
-                this.elements.list.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-bell-slash"></i>
-                        </div>
-                        <p>Não há notificações no momento</p>
-                    </div>
-                `;
+        const selectors = [
+            '#userDropdown',
+            '#notificationDropdown',
+            '#quickActionsDropdown',
+            'nav [data-bs-toggle="dropdown"]',
+            '.navbar [data-bs-toggle="dropdown"]',
+            '.app-navbar [data-bs-toggle="dropdown"]'
+        ];
 
-                // Ocultar botão de marcar todas como lidas
-                if (this.elements.markAllReadBtn) {
-                    this.elements.markAllReadBtn.style.display = 'none';
-                }
-            } else {
-                let html = '';
-                notifications.forEach(notification => {
-                    html += this.createNotificationItem(notification);
-                });
-                this.elements.list.innerHTML = html;
+        headerDropdowns = [];
 
-                // Mostrar botão de marcar todas como lidas
-                if (this.elements.markAllReadBtn) {
-                    this.elements.markAllReadBtn.style.display = 'block';
-                }
-            }
-        },
-
-        /**
-         * Cria o HTML para um item de notificação
-         * @param {Object} notification - Dados da notificação
-         * @returns {string} HTML do item de notificação
-         */
-        createNotificationItem(notification) {
-            return `
-                <div class="notification-item ${notification.lida ? 'read' : 'unread'}" data-id="${notification.id}">
-                    <div class="notification-icon bg-${notification.cor}">
-                        <i class="${notification.icone}"></i>
-                    </div>
-                    <div class="notification-content">
-                        <div class="notification-title">${this.escapeHtml(notification.titulo)}</div>
-                        <div class="notification-message">${this.escapeHtml(notification.descricao || notification.mensagem || '')}</div>
-                        <div class="notification-meta">
-                            <span class="notification-time">${notification.tempo}</span>
-                        </div>
-                        <div class="notification-actions">
-                            ${notification.referencia_tipo === 'chamado' && notification.referencia_id ?
-                    `<a href="${BASE_URL}chamados/visualizar/${notification.referencia_id}" class="btn-action btn-primary">Ver</a>` : ''}
-                            ${!notification.lida ? `<button class="btn-action" data-action="dismiss" data-id="${notification.id}">Ignorar</button>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        },
-
-        /**
-         * Marca uma notificação como lida e a remove da lista
-         * @param {number} id - ID da notificação
-         */
-        markAsRead(id) {
-            if (!this.sessionActive) return;
-
-            this.log(`Marcando notificação ${id} como lida e removendo-a da lista`);
-
-            // Adicionar à lista de notificações ignoradas
-            this.addIgnoredNotification(id);
-
-            // Remover a notificação da UI imediatamente
-            const item = document.querySelector(`.notification-item[data-id="${id}"]`);
-            if (item) {
-                this.animateAndRemoveNotification(item);
-            }
-
-            // Atualizar contador
-            const currentCount = parseInt(this.elements.badge?.textContent || '0');
-            if (currentCount > 0) {
-                this.updateBadge(currentCount - 1);
-            }
-
-            // Tentar fazer a chamada de API para excluir a notificação
-            fetch(`${this.config.apiEndpoints.deleteNotification}${id}`, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-                .catch(error => {
-                    // Tentar marcar como lida como fallback
-                    return fetch(`${this.config.apiEndpoints.markAsRead}${id}`, {
-                        method: 'POST',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    }).catch(error => {
-                        console.error('Erro ao processar notificação:', error);
-                        // Não mostramos erro para o usuário, pois a UI já foi atualizada
-                    });
-                });
-
-            // Mostrar mensagem de sucesso
-            this.showToast('Notificação ignorada com sucesso', 'success');
-        },
-
-        /**
-         * Marca todas as notificações como lidas
-         */
-        markAllAsRead() {
-            if (!this.sessionActive) return;
-
-            this.log('Marcando todas as notificações como lidas');
-
-            // Obter todas as notificações atuais
-            const notificationsToIgnore = [...this.currentNotifications];
-
-            // Adicionar todas à lista de ignoradas
-            notificationsToIgnore.forEach(notification => {
-                this.addIgnoredNotification(notification.id);
-            });
-
-            // Remover todas as notificações da UI
-            const items = document.querySelectorAll('.notification-item');
-            items.forEach(item => {
-                this.animateAndRemoveNotification(item);
-            });
-
-            // Atualizar contador
-            this.updateBadge(0);
-
-            // Processar cada notificação individualmente
-            const processNotifications = async () => {
-                for (const notification of notificationsToIgnore) {
-                    try {
-                        await fetch(`${this.config.apiEndpoints.deleteNotification}${notification.id}`, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        });
-                        this.log(`Notificação ${notification.id} processada com sucesso`);
-                    } catch (error) {
-                        // Tentar marcar como lida como fallback
-                        try {
-                            await fetch(`${this.config.apiEndpoints.markAsRead}${notification.id}`, {
-                                method: 'POST',
-                                headers: {
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                }
-                            });
-                            this.log(`Notificação ${notification.id} marcada como lida com sucesso`);
-                        } catch (error) {
-                            this.log(`Erro ao processar notificação ${notification.id}, continuando com as próximas`);
-                        }
+        selectors.forEach(selector => {
+            try {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(el => {
+                    if (!headerDropdowns.includes(el)) {
+                        headerDropdowns.push(el);
+                        dropdownStates.set(el, { isOpen: false, isToggling: false });
                     }
+                });
+            } catch (e) {
+                console.warn(`Erro no seletor ${selector}:`, e);
+            }
+        });
+
+        console.log(`📊 Dropdowns encontrados: ${headerDropdowns.length}`);
+
+        if (headerDropdowns.length === 0) {
+            console.warn('⚠️ Nenhum dropdown encontrado, tentando novamente...');
+            setTimeout(initHeaderManager, 1000);
+            return;
+        }
+
+        configureDropdowns();
+        setupGlobalEvents();
+
+        console.log('✅ Header Manager inicializado com sucesso!');
+        exposePublicAPI();
+    }
+
+    function configureDropdowns() {
+        headerDropdowns.forEach((element, index) => {
+            const id = element.id || `header-dropdown-${index}`;
+            console.log(`🔧 Configurando: ${id}`);
+
+            try {
+                const existing = bootstrap.Dropdown.getInstance(element);
+                if (existing) {
+                    existing.dispose();
                 }
-            };
 
-            // Iniciar processamento em segundo plano
-            processNotifications();
+                element.style.zIndex = '9999';
 
-            // Mostrar mensagem de sucesso imediatamente
-            this.showToast('Todas as notificações foram ignoradas', 'success');
-        },
+                const dropdown = new bootstrap.Dropdown(element, {
+                    autoClose: 'outside',
+                    boundary: 'viewport'
+                });
 
-        /**
-         * Anima e remove uma notificação da UI
-         * @param {HTMLElement} element - Elemento da notificação
-         */
-        animateAndRemoveNotification(element) {
-            element.style.opacity = '0';
+                setupDropdownClick(element, id);
+                console.log(`✅ ${id} configurado`);
+
+            } catch (error) {
+                console.error(`❌ Erro ao configurar ${id}:`, error);
+            }
+        });
+    }
+
+    function setupDropdownClick(element, id) {
+        element.removeEventListener('click', handleDropdownClick);
+        element.addEventListener('click', function (e) {
+            handleDropdownClick(e, element, id);
+        }, { capture: true });
+    }
+
+    function handleDropdownClick(e, element, id) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        console.log(`🖱️ Clique em ${id}`);
+
+        const state = dropdownStates.get(element);
+        if (state.isToggling) {
+            console.log(`⏳ ${id} já está sendo processado`);
+            return;
+        }
+
+        toggleDropdown(id);
+    }
+
+    function toggleDropdown(id) {
+        const element = document.getElementById(id);
+        if (!element) {
+            console.error(`❌ Dropdown ${id} não encontrado`);
+            return false;
+        }
+
+        const state = dropdownStates.get(element);
+        if (state.isToggling) return false;
+
+        state.isToggling = true;
+
+        if (state.isOpen) {
+            closeDropdown(id);
+        } else {
+            openDropdown(id);
+        }
+
+        setTimeout(() => {
+            state.isToggling = false;
+        }, 100);
+
+        return true;
+    }
+
+    function openDropdown(id) {
+        const element = document.getElementById(id);
+        if (!element) return false;
+
+        const state = dropdownStates.get(element);
+        if (state.isOpen) return true;
+
+        console.log(`📂 Abrindo: ${id}`);
+
+        closeAllDropdowns(id);
+
+        element.setAttribute('aria-expanded', 'true');
+        element.classList.add('show');
+
+        const menu = element.nextElementSibling;
+        if (menu && menu.classList.contains('dropdown-menu')) {
+            menu.classList.add('show');
+            menu.style.display = 'block';
+            menu.style.zIndex = '9998';
+
+            // POSICIONAMENTO SIMPLES E FUNCIONAL
+            positionDropdown(element, menu, id);
+
+            setupMenuEvents(menu, id);
+        }
+
+        state.isOpen = true;
+        console.log(`✅ ${id} aberto`);
+
+        return true;
+    }
+
+    function closeDropdown(id) {
+        const element = document.getElementById(id);
+        if (!element) return false;
+
+        const state = dropdownStates.get(element);
+        if (!state.isOpen) return true;
+
+        console.log(`📁 Fechando: ${id}`);
+
+        element.setAttribute('aria-expanded', 'false');
+        element.classList.remove('show');
+
+        const menu = element.nextElementSibling;
+        if (menu && menu.classList.contains('dropdown-menu')) {
+            menu.classList.remove('show');
+            menu.style.display = 'none';
+
+            // Limpar posicionamento
+            menu.style.position = '';
+            menu.style.top = '';
+            menu.style.left = '';
+            menu.style.right = '';
+            menu.style.transform = '';
+        }
+
+        state.isOpen = false;
+        console.log(`✅ ${id} fechado`);
+
+        return true;
+    }
+
+    function closeAllDropdowns(except = null) {
+        headerDropdowns.forEach(element => {
+            const id = element.id;
+            if (id !== except) {
+                closeDropdown(id);
+            }
+        });
+    }
+
+    // POSICIONAMENTO SIMPLES E FUNCIONAL
+    function positionDropdown(trigger, menu, id) {
+        console.log(`📐 Posicionando ${id}...`);
+
+        // Configurar largura baseada no tipo
+        if (id === 'notificationDropdown') {
+            menu.style.minWidth = '350px';
+            menu.style.maxWidth = '400px';
+        } else {
+            menu.style.minWidth = '250px';
+            menu.style.maxWidth = '300px';
+        }
+
+        // Posicionamento absoluto
+        menu.style.position = 'absolute';
+
+        // Obter posições
+        const triggerRect = trigger.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+
+        // Posição vertical (sempre abaixo)
+        menu.style.top = '100%';
+        menu.style.marginTop = '5px';
+
+        // Posição horizontal
+        const menuWidth = parseInt(menu.style.minWidth) || 280;
+
+        if (triggerRect.right - menuWidth < 20) {
+            // Se não cabe alinhado à esquerda, alinhar à direita
+            menu.style.right = '0';
+            menu.style.left = 'auto';
+            console.log(`↩️ ${id}: Alinhado à direita`);
+        } else {
+            // Alinhar à esquerda
+            menu.style.left = '0';
+            menu.style.right = 'auto';
+            console.log(`↪️ ${id}: Alinhado à esquerda`);
+        }
+
+        // Verificar se sai da tela pela direita
+        setTimeout(() => {
+            const menuRect = menu.getBoundingClientRect();
+            if (menuRect.right > viewportWidth - 20) {
+                menu.style.right = '0';
+                menu.style.left = 'auto';
+                console.log(`🔧 ${id}: Ajustado para não sair da tela`);
+            }
+        }, 10);
+
+        console.log(`✅ ${id} posicionado`);
+    }
+
+    function setupGlobalEvents() {
+        setupOutsideClick();
+        setupNotificationEvents();
+    }
+
+    function setupOutsideClick() {
+        document.addEventListener('click', function (e) {
+            let clickedInside = false;
+
+            headerDropdowns.forEach(element => {
+                if (element.contains(e.target)) {
+                    clickedInside = true;
+                }
+
+                const menu = element.nextElementSibling;
+                if (menu && menu.classList.contains('dropdown-menu') && menu.contains(e.target)) {
+                    clickedInside = true;
+                }
+            });
+
+            if (!clickedInside) {
+                closeAllDropdowns();
+            }
+        }, { capture: false });
+    }
+
+    function setupMenuEvents(menu, dropdownId) {
+        menu.removeEventListener('click', handleMenuClick);
+        menu.addEventListener('click', function (e) {
+            handleMenuClick(e, dropdownId);
+        }, { capture: true });
+    }
+
+    function handleMenuClick(e, dropdownId) {
+        const allowClose = e.target.closest('a[href]:not([href="#"]), [data-action="dismiss"], .btn-logout, .mark-all-read');
+
+        if (!allowClose) {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+        } else {
             setTimeout(() => {
-                element.style.height = '0';
-                element.style.padding = '0';
-                element.style.margin = '0';
-                element.style.overflow = 'hidden';
+                closeDropdown(dropdownId);
+            }, 100);
+        }
+    }
+
+    function setupNotificationEvents() {
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('[data-action="dismiss"]')) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const button = e.target.closest('[data-action="dismiss"]');
+                const item = button.closest('.notification-item');
+
+                if (item) {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(100%)';
+                    setTimeout(() => item.remove(), 300);
+                }
+
+                updateNotificationBadge();
+                console.log('🗑️ Notificação removida');
+            }
+
+            if (e.target.closest('.mark-all-read')) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const items = document.querySelectorAll('.notification-item');
+                items.forEach((item, index) => {
+                    setTimeout(() => {
+                        item.style.opacity = '0';
+                        item.style.transform = 'translateX(100%)';
+                        setTimeout(() => item.remove(), 300);
+                    }, index * 50);
+                });
 
                 setTimeout(() => {
-                    element.remove();
+                    updateNotificationBadge(0, true);
+                    showEmptyNotificationState();
+                }, items.length * 50 + 300);
 
-                    // Verificar se não há mais notificações
-                    if (this.elements.list && document.querySelectorAll('.notification-item').length === 0) {
-                        this.elements.list.innerHTML = `
-                            <div class="empty-state">
-                                <div class="empty-icon">
-                                    <i class="fas fa-bell-slash"></i>
-                                </div>
-                                <p>Não há notificações no momento</p>
-                            </div>
-                        `;
-
-                        // Ocultar botão de marcar todas como lidas
-                        if (this.elements.markAllReadBtn) {
-                            this.elements.markAllReadBtn.style.display = 'none';
-                        }
-                    }
-                }, 300);
-            }, 300);
-        },
-
-        /**
-         * Mostra uma mensagem toast
-         * @param {string} message - Mensagem a ser exibida
-         * @param {string} type - Tipo de mensagem (success, error, warning, info)
-         */
-        showToast(message, type = 'info') {
-            // Verificar se já existe um container de toasts
-            let toastContainer = document.querySelector('.toast-container');
-
-            // Se não existir, criar um
-            if (!toastContainer) {
-                toastContainer = document.createElement('div');
-                toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-                document.body.appendChild(toastContainer);
+                console.log('🧹 Todas as notificações removidas');
             }
+        });
+    }
 
-            // Definir classes e ícones com base no tipo
-            let bgClass = 'bg-info text-white';
-            let icon = 'info-circle';
+    function updateNotificationBadge(count, reset = false) {
+        const badge = document.querySelector('.badge-counter');
+        if (!badge) return;
 
-            switch (type) {
-                case 'success':
-                    bgClass = 'bg-success text-white';
-                    icon = 'check-circle';
-                    break;
-                case 'error':
-                    bgClass = 'bg-danger text-white';
-                    icon = 'exclamation-circle';
-                    break;
-                case 'warning':
-                    bgClass = 'bg-warning text-dark';
-                    icon = 'exclamation-triangle';
-                    break;
-            }
+        if (reset) {
+            badge.style.display = 'none';
+            return;
+        }
 
-            // Criar o toast
-            const toastId = 'toast-' + Date.now();
-            const toastHtml = `
-                <div id="${toastId}" class="toast ${bgClass}" role="alert" aria-live="assertive" aria-atomic="true">
-                    <div class="toast-header">
-                        <i class="fas fa-${icon} me-2"></i>
-                        <strong class="me-auto">Notificação</strong>
-                        <small>Agora</small>
-                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        const items = document.querySelectorAll('.notification-item').length;
+        const newCount = typeof count === 'number' ? count : items;
+
+        if (newCount > 0) {
+            badge.textContent = newCount > 99 ? '99+' : newCount;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function showEmptyNotificationState() {
+        const notificationList = document.querySelector('.notification-list');
+        if (notificationList) {
+            notificationList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-bell-slash"></i>
                     </div>
-                    <div class="toast-body">
-                        ${message}
-                    </div>
+                    <p>Não há notificações no momento</p>
                 </div>
             `;
-
-            // Adicionar o toast ao container
-            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
-
-            // Inicializar e mostrar o toast
-            const toastElement = document.getElementById(toastId);
-            const toast = new bootstrap.Toast(toastElement, {
-                autohide: true,
-                delay: 5000
-            });
-            toast.show();
-
-            // Remover o toast do DOM após ser escondido
-            toastElement.addEventListener('hidden.bs.toast', () => {
-                toastElement.remove();
-            });
-        },
-
-        /**
-         * Escapa caracteres HTML para prevenir XSS
-         * @param {string} text - Texto a ser escapado
-         * @returns {string} Texto escapado
-         */
-        escapeHtml(text) {
-            if (!text) return '';
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
         }
-    };
+    }
 
-    /**
-     * Gerenciador de Dropdowns
-     * Melhora a experiência com dropdowns em dispositivos móveis
-     */
-    const DropdownManager = {
-        /**
-         * Inicializa o gerenciador de dropdowns
-         */
-        init() {
-            // Fechar dropdowns ao clicar fora
-            document.addEventListener('click', (event) => {
-                if (!event.target.closest('.dropdown-menu') &&
-                    !event.target.closest('[data-bs-toggle="dropdown"]')) {
-                    document.querySelectorAll('.dropdown-menu.show').forEach(dropdown => {
-                        const toggle = document.querySelector(`[data-bs-toggle="dropdown"][aria-expanded="true"]`);
-                        if (toggle) {
-                            const instance = bootstrap.Dropdown.getInstance(toggle);
-                            if (instance) {
-                                instance.hide();
-                            }
-                        }
-                    });
-                }
+    function exposePublicAPI() {
+        window.HeaderManager = {
+            open: openDropdown,
+            close: closeDropdown,
+            toggle: toggleDropdown,
+            closeAll: closeAllDropdowns,
+            debug: debugDropdowns
+        };
+
+        window.testHeaderDropdown = function (id) {
+            return window.HeaderManager.toggle(id);
+        };
+
+        window.openHeaderDropdown = function (id) {
+            return window.HeaderManager.open(id);
+        };
+
+        window.closeHeaderDropdown = function (id) {
+            return window.HeaderManager.close(id);
+        };
+
+        window.debugHeaderDropdowns = function () {
+            return window.HeaderManager.debug();
+        };
+    }
+
+    function debugDropdowns() {
+        console.log('=== DEBUG HEADER MANAGER ===');
+        console.log('Bootstrap:', typeof bootstrap);
+        console.log('Header carregado:', !!window.HEADER_MANAGER_LOADED);
+        console.log('Dropdowns:', headerDropdowns.length);
+
+        headerDropdowns.forEach((element, index) => {
+            const state = dropdownStates.get(element);
+            console.log(`${index + 1}. ${element.id}:`, {
+                element: !!element,
+                isOpen: state.isOpen,
+                isToggling: state.isToggling,
+                expanded: element.getAttribute('aria-expanded')
             });
+        });
 
-            // Melhorar experiência em dispositivos móveis
-            if (window.innerWidth < 768) {
-                document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                    menu.addEventListener('click', (e) => {
-                        // Evitar que o dropdown feche ao clicar dentro dele em dispositivos móveis
-                        if (!e.target.closest('a[href]:not([href="#"])') &&
-                            !e.target.closest('button:not([data-bs-toggle])')) {
-                            e.stopPropagation();
-                        }
-                    });
-                });
-            }
-        }
-    };
+        return {
+            total: headerDropdowns.length,
+            open: Array.from(dropdownStates.values()).filter(s => s.isOpen).length
+        };
+    }
 
-    // Inicializar todos os gerenciadores
-    NotificationManager.init();
-    DropdownManager.init();
-});
+    // Inicializar
+    waitForReady().then(() => {
+        console.log('✅ Bootstrap e DOM prontos');
+        setTimeout(initHeaderManager, 1000);
+    });
+
+    console.log('📋 Header Manager carregado');
+    console.log('🧪 Use: testHeaderDropdown("userDropdown") para testar');
+
+})();

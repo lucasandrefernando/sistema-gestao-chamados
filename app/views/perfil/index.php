@@ -2,13 +2,21 @@
 $pageTitle = 'Meu Perfil';
 require_once ROOT_DIR . '/app/views/templates/header.php';
 
-// Gerar iniciais para avatar
-$nomes = explode(' ', trim($usuario['nome']));
+// Verificar se $usuario existe e tem dados necessários
+if (!isset($usuario) || empty($usuario)) {
+    header('Location: ' . base_url('login'));
+    exit;
+}
+
+// Gerar iniciais para avatar (com validação)
+$nomes = explode(' ', trim($usuario['nome'] ?? ''));
 $iniciais = '';
 if (count($nomes) >= 2) {
     $iniciais = strtoupper($nomes[0][0] . $nomes[count($nomes) - 1][0]);
-} else if (count($nomes) === 1) {
+} else if (count($nomes) === 1 && !empty($nomes[0])) {
     $iniciais = strtoupper($nomes[0][0] . (isset($nomes[0][1]) ? $nomes[0][1] : ''));
+} else {
+    $iniciais = 'US'; // Fallback
 }
 ?>
 
@@ -363,9 +371,9 @@ if (count($nomes) >= 2) {
                         <!-- Indicador de Força -->
                         <div class="password-strength-container">
                             <div class="strength-bar">
-                                <div class="strength-fill" id="strengthFill"></div>
+                                <div class="strength-fill"></div>
                             </div>
-                            <div class="strength-text" id="strengthText">
+                            <div class="strength-text">
                                 Digite sua senha para ver a força
                             </div>
                         </div>

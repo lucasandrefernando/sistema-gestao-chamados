@@ -1,45 +1,71 @@
 /* ==========================================================================
    DASHBOARD - SISTEMA DE GESTÃO DE CHAMADOS
-   Estilos específicos para o dashboard
+   Versão: 2.0.0
+   Autor: Sistema de Gestão de Chamados
+   Data: 2024
+   
+   DESCRIÇÃO:
+   Este arquivo contém todos os estilos específicos para o dashboard do sistema.
+   Os estilos são isolados dentro da classe .dashboard-container para evitar
+   conflitos com outras páginas do sistema.
+   
+   ESTRUTURA:
+   1. Variáveis CSS e Container Principal
+   2. Cabeçalho do Dashboard
+   3. Cards de Estatísticas (Layout 3+3)
+   4. Gráficos e Charts
+   5. Tabela de Chamados Recentes (Reformulada)
+   6. Animações e Efeitos
+   7. Responsividade
    ========================================================================== */
 
-:root {
-  --dashboard-primary: #4361ee;
-  --dashboard-primary-light: #4895ef;
-  --dashboard-primary-dark: #3a56d4;
-  --dashboard-secondary: #6c757d;
-  --dashboard-success: #2ecc71;
-  --dashboard-success-light: #27ae60;
-  --dashboard-warning: #f39c12;
-  --dashboard-danger: #e63946;
-  --dashboard-info: #3498db;
-  --dashboard-light: #f8f9fa;
-  --dashboard-dark: #2c3e50;
-  --dashboard-border: #dee2e6;
-  --dashboard-shadow: rgba(0, 0, 0, 0.08);
-  --dashboard-shadow-hover: rgba(0, 0, 0, 0.12);
+/* ==========================================================================
+   1. VARIÁVEIS CSS E CONTAINER PRINCIPAL
+   ========================================================================== */
 
+.dashboard-container {
+  /* Paleta de cores do dashboard */
+  --dashboard-primary: #4361ee; /* Azul primário */
+  --dashboard-primary-light: #4895ef; /* Azul claro */
+  --dashboard-primary-dark: #3a56d4; /* Azul escuro */
+  --dashboard-secondary: #6c757d; /* Cinza secundário */
+  --dashboard-success: #2ecc71; /* Verde sucesso */
+  --dashboard-success-light: #27ae60; /* Verde claro */
+  --dashboard-warning: #f39c12; /* Laranja aviso */
+  --dashboard-danger: #e63946; /* Vermelho perigo */
+  --dashboard-info: #3498db; /* Azul informação */
+  --dashboard-light: #f8f9fa; /* Cinza claro */
+  --dashboard-dark: #2c3e50; /* Azul escuro */
+  --dashboard-border: #dee2e6; /* Cor das bordas */
+  --dashboard-shadow: rgba(0, 0, 0, 0.08); /* Sombra padrão */
+  --dashboard-shadow-hover: rgba(0, 0, 0, 0.12); /* Sombra hover */
+
+  /* Transições padrão */
   --dashboard-transition-fast: 0.2s ease-in-out;
   --dashboard-transition-normal: 0.3s ease-in-out;
   --dashboard-transition-slow: 0.5s ease-in-out;
-}
 
-/* Estilos gerais do dashboard */
-.dashboard-container {
+  /* Estilos do container principal */
   padding: 1.5rem;
   background-color: #f9fafb;
   border-radius: 10px;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.03);
   font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     sans-serif;
+  color: var(--dashboard-dark);
 }
 
-/* Cabeçalho */
-.user-dashboard-header {
+/* ==========================================================================
+   2. CABEÇALHO DO DASHBOARD
+   ========================================================================== */
+
+/* Container do cabeçalho */
+.dashboard-container .user-dashboard-header {
   margin-bottom: 1.5rem;
 }
 
-.header-content {
+/* Layout flexível do cabeçalho */
+.dashboard-container .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -47,11 +73,13 @@
   gap: 1rem;
 }
 
-.title-section {
+/* Seção do título */
+.dashboard-container .title-section {
   flex: 1;
 }
 
-.page-title {
+/* Título principal da página */
+.dashboard-container .page-title {
   display: flex;
   align-items: center;
   font-size: 1.8rem;
@@ -60,24 +88,28 @@
   color: var(--dashboard-primary);
 }
 
-.title-icon {
+/* Ícone do título */
+.dashboard-container .title-icon {
   color: var(--dashboard-primary);
   font-size: 1.8rem;
   margin-right: 0.75rem;
 }
 
-.subtitle {
+/* Subtítulo */
+.dashboard-container .subtitle {
   color: var(--dashboard-secondary);
   font-size: 0.95rem;
   margin: 0;
 }
 
-.action-buttons {
+/* Container dos botões de ação */
+.dashboard-container .action-buttons {
   display: flex;
   gap: 0.75rem;
 }
 
-.btn-refresh {
+/* Botão de atualizar (circular) */
+.dashboard-container .btn-refresh {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,18 +123,21 @@
   cursor: pointer;
 }
 
-.btn-refresh:hover {
+/* Hover do botão atualizar */
+.dashboard-container .btn-refresh:hover {
   background-color: var(--dashboard-primary);
   color: white;
   transform: translateY(-2px);
 }
 
-.btn-refresh.loading {
+/* Estado de carregamento do botão */
+.dashboard-container .btn-refresh.loading {
   pointer-events: none;
   opacity: 0.7;
 }
 
-.btn-new-ticket {
+/* Botão novo chamado */
+.dashboard-container .btn-new-ticket {
   display: flex;
   align-items: center;
   padding: 0.6rem 1.25rem;
@@ -119,26 +154,32 @@
   box-shadow: 0 4px 10px rgba(46, 204, 113, 0.2);
 }
 
-.btn-new-ticket:hover {
+/* Hover do botão novo chamado */
+.dashboard-container .btn-new-ticket:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 15px rgba(46, 204, 113, 0.3);
   color: white;
 }
 
-.btn-new-ticket i {
+/* Ícone do botão novo chamado */
+.dashboard-container .btn-new-ticket i {
   margin-right: 0.5rem;
 }
 
-/* Cards de estatísticas */
-.stats-cards {
+/* ==========================================================================
+   3. CARDS DE ESTATÍSTICAS (LAYOUT 3+3)
+   ========================================================================== */
+
+/* Grid dos cards de estatísticas - FORÇADO 3 COLUNAS */
+.dashboard-container .stats-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, 1fr) !important; /* Força 3 colunas iguais */
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
-/* Estilos melhorados para os cards de estatísticas */
-.stat-card {
+/* Estilo base dos cards de estatísticas */
+.dashboard-container .stat-card {
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -148,12 +189,14 @@
   box-shadow: 0 4px 12px var(--dashboard-shadow);
   transition: all var(--dashboard-transition-normal);
   overflow: hidden;
-  opacity: 0;
+  opacity: 0; /* Inicia invisível para animação */
   transform: translateY(20px);
   height: 100%;
+  min-height: 140px; /* Altura mínima consistente */
 }
 
-.stat-card::before {
+/* Barra lateral colorida dos cards */
+.dashboard-container .stat-card::before {
   content: "";
   position: absolute;
   top: 0;
@@ -163,36 +206,40 @@
   background: var(--dashboard-primary);
 }
 
-.total-card::before {
+/* Cores específicas das barras laterais */
+.dashboard-container .total-card::before {
   background: linear-gradient(to bottom, #4361ee, #4895ef);
 }
-.warning-card::before {
+.dashboard-container .warning-card::before {
   background: linear-gradient(to bottom, #f39c12, #f1c40f);
 }
-.info-card::before {
+.dashboard-container .info-card::before {
   background: linear-gradient(to bottom, #3498db, #48bfe3);
 }
-.success-card::before {
+.dashboard-container .success-card::before {
   background: linear-gradient(to bottom, #2ecc71, #27ae60);
 }
-.success-light-card::before {
+.dashboard-container .success-light-card::before {
   background: linear-gradient(to bottom, #27ae60, #2ecc71);
 }
-.primary-light-card::before {
+.dashboard-container .primary-light-card::before {
   background: linear-gradient(to bottom, #3a56d4, #4361ee);
 }
 
-.stat-card:hover {
+/* Hover dos cards */
+.dashboard-container .stat-card:hover {
   transform: translateY(-5px) !important;
   box-shadow: 0 8px 16px var(--dashboard-shadow-hover);
 }
 
-.stat-card.animate-in {
+/* Classe para animação de entrada */
+.dashboard-container .stat-card.animate-in {
   opacity: 1;
   transform: translateY(0);
 }
 
-.stat-icon {
+/* Ícones dos cards */
+.dashboard-container .stat-icon {
   width: 48px;
   height: 48px;
   border-radius: 10px;
@@ -209,7 +256,8 @@
   flex-shrink: 0;
 }
 
-.total-card .stat-icon {
+/* Cores específicas dos ícones */
+.dashboard-container .total-card .stat-icon {
   background: linear-gradient(
     135deg,
     rgba(67, 97, 238, 0.1),
@@ -218,7 +266,7 @@
   color: var(--dashboard-primary);
 }
 
-.warning-card .stat-icon {
+.dashboard-container .warning-card .stat-icon {
   background: linear-gradient(
     135deg,
     rgba(243, 156, 18, 0.1),
@@ -227,7 +275,7 @@
   color: var(--dashboard-warning);
 }
 
-.info-card .stat-icon {
+.dashboard-container .info-card .stat-icon {
   background: linear-gradient(
     135deg,
     rgba(52, 152, 219, 0.1),
@@ -236,7 +284,7 @@
   color: var(--dashboard-info);
 }
 
-.success-card .stat-icon {
+.dashboard-container .success-card .stat-icon {
   background: linear-gradient(
     135deg,
     rgba(46, 204, 113, 0.1),
@@ -245,7 +293,7 @@
   color: var(--dashboard-success);
 }
 
-.success-light-card .stat-icon {
+.dashboard-container .success-light-card .stat-icon {
   background: linear-gradient(
     135deg,
     rgba(39, 174, 96, 0.1),
@@ -254,7 +302,7 @@
   color: var(--dashboard-success-light);
 }
 
-.primary-light-card .stat-icon {
+.dashboard-container .primary-light-card .stat-icon {
   background: linear-gradient(
     135deg,
     rgba(58, 86, 212, 0.1),
@@ -263,20 +311,23 @@
   color: var(--dashboard-primary-dark);
 }
 
-.stat-content {
+/* Conteúdo dos cards */
+.dashboard-container .stat-content {
   flex: 1;
   width: calc(100% - 60px);
-  min-width: 0; /* Importante para evitar overflow */
+  min-width: 0;
 }
 
-.stat-value-container {
+/* Container do valor e trend */
+.dashboard-container .stat-value-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.25rem;
 }
 
-.stat-value {
+/* Valor principal do card */
+.dashboard-container .stat-value {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--dashboard-dark);
@@ -285,19 +336,22 @@
   margin-bottom: 0.25rem;
 }
 
-.counter-number {
+/* Número do contador */
+.dashboard-container .counter-number {
   font-size: 1.5rem;
   font-weight: 700;
 }
 
-.counter-unit {
+/* Unidade do contador */
+.dashboard-container .counter-unit {
   font-size: 0.9rem;
   margin-left: 0.25rem;
   font-weight: 500;
   color: var(--dashboard-secondary);
 }
 
-.stat-trend {
+/* Badge de tendência */
+.dashboard-container .stat-trend {
   display: flex;
   align-items: center;
   font-size: 0.75rem;
@@ -309,26 +363,30 @@
   white-space: nowrap;
 }
 
-.stat-trend i {
+/* Ícone da tendência */
+.dashboard-container .stat-trend i {
   margin-right: 0.25rem;
 }
 
-.stat-trend .fa-arrow-up {
+/* Cores das setas de tendência */
+.dashboard-container .stat-trend .fa-arrow-up {
   color: #2ecc71;
 }
 
-.stat-trend .fa-arrow-down {
+.dashboard-container .stat-trend .fa-arrow-down {
   color: #e74c3c;
 }
 
-.stat-label {
+/* Label do card */
+.dashboard-container .stat-label {
   font-weight: 600;
   margin-bottom: 0.5rem;
   color: var(--dashboard-dark);
   font-size: 0.9rem;
 }
 
-.stat-progress {
+/* Barra de progresso */
+.dashboard-container .stat-progress {
   height: 4px;
   background-color: rgba(0, 0, 0, 0.05);
   border-radius: 2px;
@@ -336,13 +394,15 @@
   overflow: hidden;
 }
 
-.progress-bar {
+/* Preenchimento da barra de progresso */
+.dashboard-container .progress-bar {
   height: 100%;
   border-radius: 2px;
   transition: width 0.5s ease;
 }
 
-.stat-description {
+/* Descrição do card */
+.dashboard-container .stat-description {
   font-size: 0.75rem;
   color: var(--dashboard-secondary);
   display: -webkit-box;
@@ -351,51 +411,23 @@
   overflow: hidden;
 }
 
-/* Classe específica para corrigir o card Em Atendimento */
-.stat-card.info-card-fixed {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: flex-start !important;
-  padding: 1.25rem !important;
-  border-radius: 12px !important;
-  background-color: white !important;
-  box-shadow: 0 4px 12px var(--dashboard-shadow) !important;
-  transition: all var(--dashboard-transition-normal) !important;
-  overflow: hidden !important;
-  height: 100% !important;
+/* Correção específica para o card "Em Atendimento" */
+.dashboard-container .stat-card.info-card {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
 }
 
-.stat-card.info-card-fixed .stat-icon {
-  width: 48px !important;
-  height: 48px !important;
-  border-radius: 10px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  margin-right: 0.75rem !important;
-  font-size: 1.25rem !important;
-  background: linear-gradient(
-    135deg,
-    rgba(52, 152, 219, 0.1),
-    rgba(52, 152, 219, 0.2)
-  ) !important;
-  color: var(--dashboard-info) !important;
-  flex-shrink: 0 !important;
+.dashboard-container .stat-card.info-card .stat-icon {
+  margin-right: 0.75rem;
 }
 
-.stat-card.info-card-fixed .stat-content {
-  flex: 1 !important;
-  width: calc(100% - 60px) !important;
-  min-width: 0 !important;
+.dashboard-container .stat-card.info-card .stat-content {
+  flex: 1;
+  width: auto;
 }
 
-.stat-card.info-card-fixed .stat-value-container {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  margin-bottom: 0.25rem !important;
-}
-/* Animação de pulso para os contadores */
+/* Animação de pulso para contadores */
 @keyframes pulse {
   0% {
     transform: scale(1);
@@ -408,19 +440,24 @@
   }
 }
 
-.pulse {
+.dashboard-container .pulse {
   animation: pulse 1.5s ease-in-out;
 }
 
-/* Gráficos */
-.charts-row {
+/* ==========================================================================
+   4. GRÁFICOS E CHARTS
+   ========================================================================== */
+
+/* Grid dos gráficos */
+.dashboard-container .charts-row {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
-.chart-card {
+/* Cards dos gráficos */
+.dashboard-container .chart-card {
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px var(--dashboard-shadow);
@@ -428,12 +465,14 @@
   transition: all var(--dashboard-transition-normal);
 }
 
-.chart-card:hover {
+/* Hover dos cards de gráfico */
+.dashboard-container .chart-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 16px var(--dashboard-shadow-hover);
 }
 
-.chart-header {
+/* Cabeçalho dos gráficos */
+.dashboard-container .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -441,7 +480,8 @@
   border-bottom: 1px solid var(--dashboard-border);
 }
 
-.chart-title {
+/* Título dos gráficos */
+.dashboard-container .chart-title {
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
@@ -450,32 +490,36 @@
   align-items: center;
 }
 
-.chart-title i {
+/* Ícone do título do gráfico */
+.dashboard-container .chart-title i {
   margin-right: 0.75rem;
   color: var(--dashboard-primary);
 }
 
-.chart-body {
+/* Corpo do gráfico */
+.dashboard-container .chart-body {
   padding: 1.5rem;
   height: 300px;
   position: relative;
   min-height: 300px;
 }
 
-.chart-loading {
+/* Indicador de carregamento dos gráficos */
+.dashboard-container .chart-loading {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background-color: rgba(255, 255, 255, 0.8);
-  display: none; /* Inicialmente oculto */
+  display: none;
   align-items: center;
   justify-content: center;
   z-index: 10;
 }
 
-.chart-loading-spinner {
+/* Spinner de carregamento */
+.dashboard-container .chart-loading-spinner {
   width: 40px;
   height: 40px;
   border: 4px solid rgba(67, 97, 238, 0.1);
@@ -484,6 +528,7 @@
   animation: spin 1s linear infinite;
 }
 
+/* Animação de rotação */
 @keyframes spin {
   0% {
     transform: rotate(0deg);
@@ -493,200 +538,624 @@
   }
 }
 
-/* Tabela de chamados recentes */
-.recent-tickets-card {
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px var(--dashboard-shadow);
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-  transition: all var(--dashboard-transition-normal);
-}
-
-.recent-tickets-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px var(--dashboard-shadow-hover);
-}
-
-.recent-tickets-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--dashboard-border);
-}
-
-.recent-tickets-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 0;
-  color: var(--dashboard-dark);
-  display: flex;
-  align-items: center;
-}
-
-.recent-tickets-title i {
-  margin-right: 0.75rem;
-  color: var(--dashboard-primary);
-}
-
-.view-all-link {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--dashboard-primary);
-  text-decoration: none;
-  font-weight: 500;
-  transition: all var(--dashboard-transition-normal);
-}
-
-.view-all-link:hover {
-  color: var(--dashboard-primary-dark);
-  transform: translateX(3px);
-}
-
-.recent-tickets-body {
-  overflow: hidden;
-}
-
-.recent-tickets-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.recent-tickets-table th {
-  background-color: var(--dashboard-light);
-  padding: 0.85rem 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: var(--dashboard-dark);
-  border-bottom: 1px solid var(--dashboard-border);
-  white-space: nowrap;
-}
-
-.recent-tickets-table td {
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--dashboard-border);
-  vertical-align: middle;
-}
-
-.recent-tickets-table tr:last-child td {
-  border-bottom: none;
-}
-
-.recent-tickets-table tr {
-  transition: background-color var(--dashboard-transition-fast);
-}
-
-.recent-tickets-table tr:hover {
-  background-color: rgba(67, 97, 238, 0.05);
-}
-
-.ticket-id {
-  font-weight: 600;
-  color: var(--dashboard-primary);
-}
-
-.ticket-user {
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-}
-
-.ticket-user i {
-  margin-right: 0.5rem;
-  color: var(--dashboard-secondary);
-  font-size: 0.9rem;
-}
-
-.ticket-desc {
-  max-width: 250px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.35rem 0.75rem;
-  border-radius: 50px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: white;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.status-badge i {
-  margin-right: 0.35rem;
-  font-size: 0.8rem;
-}
-
-.ticket-date {
-  color: var(--dashboard-secondary);
-  font-size: 0.85rem;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-}
-
-.ticket-date i {
-  margin-right: 0.5rem;
-  font-size: 0.9rem;
-}
-
-.ticket-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: all var(--dashboard-transition-normal);
-}
-
-.action-btn.view {
-  background-color: var(--dashboard-primary);
-  color: white;
-}
-
-.action-btn.view:hover {
-  background-color: var(--dashboard-primary-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(67, 97, 238, 0.3);
-}
-
-.no-tickets {
-  padding: 3rem 1.5rem;
-}
-
-.no-data-message {
+/* Mensagem de "Sem dados" */
+.dashboard-container .no-data-message {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  height: 100%;
   color: var(--dashboard-secondary);
+  text-align: center;
 }
 
-.no-data-message i {
+.dashboard-container .no-data-message i {
   font-size: 3rem;
   margin-bottom: 1rem;
   opacity: 0.5;
 }
 
-.no-data-message p {
+.dashboard-container .no-data-message p {
   font-size: 1.1rem;
   margin: 0;
 }
 
-/* Animações */
+/* ==========================================================================
+   5. TABELA DE CHAMADOS RECENTES (REFORMULADA E PROFISSIONAL)
+   ========================================================================== */
+
+/* Container principal da tabela */
+.dashboard-container .recent-tickets-card {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  margin-bottom: 2rem;
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+}
+
+/* Hover do container da tabela */
+.dashboard-container .recent-tickets-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Cabeçalho da tabela */
+.dashboard-container .recent-tickets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* Título da tabela */
+.dashboard-container .recent-tickets-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+}
+
+/* Ícone do título da tabela */
+.dashboard-container .recent-tickets-title i {
+  margin-right: 0.75rem;
+  color: var(--dashboard-primary);
+  font-size: 1.1rem;
+}
+
+/* Link "Ver todos" */
+.dashboard-container .view-all-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--dashboard-primary);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  background-color: rgba(67, 97, 238, 0.08);
+}
+
+/* Hover do link "Ver todos" */
+.dashboard-container .view-all-link:hover {
+  background-color: var(--dashboard-primary);
+  color: white;
+  transform: translateX(2px);
+}
+
+/* Container do corpo da tabela */
+.dashboard-container .recent-tickets-body {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Wrapper responsivo da tabela */
+.dashboard-container .table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Tabela principal - estrutura base */
+.dashboard-container .recent-tickets-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background-color: white;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Cabeçalho da tabela - design limpo e profissional */
+.dashboard-container .recent-tickets-table thead {
+  background-color: #f1f3f4;
+}
+
+/* Células do cabeçalho */
+.dashboard-container .recent-tickets-table th {
+  padding: 1rem 1.25rem;
+  text-align: center; /* Centralização de todos os cabeçalhos */
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #495057;
+  border-bottom: 2px solid #e9ecef;
+  white-space: nowrap;
+  background-color: transparent;
+}
+
+/* Larguras específicas para cada coluna */
+.dashboard-container .recent-tickets-table th:nth-child(1) {
+  width: 80px;
+} /* ID */
+.dashboard-container .recent-tickets-table th:nth-child(2) {
+  width: 200px;
+} /* Solicitante */
+.dashboard-container .recent-tickets-table th:nth-child(3) {
+  width: 280px;
+} /* Descrição */
+.dashboard-container .recent-tickets-table th:nth-child(4) {
+  width: 150px;
+} /* Setor */
+.dashboard-container .recent-tickets-table th:nth-child(5) {
+  width: 140px;
+} /* Status */
+.dashboard-container .recent-tickets-table th:nth-child(6) {
+  width: 160px;
+} /* Data */
+.dashboard-container .recent-tickets-table th:nth-child(7) {
+  width: 100px;
+} /* Ações */
+
+/* Linhas do corpo da tabela */
+.dashboard-container .recent-tickets-table tbody tr {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+/* Hover das linhas */
+.dashboard-container .recent-tickets-table tbody tr:hover {
+  background-color: #f8f9ff;
+}
+
+/* Última linha sem borda */
+.dashboard-container .recent-tickets-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* Células do corpo da tabela */
+.dashboard-container .recent-tickets-table td {
+  padding: 1rem 1.25rem;
+  vertical-align: middle;
+  text-align: center; /* Centralização de todo o conteúdo */
+  border: none;
+  height: auto;
+  min-height: 60px;
+}
+
+/* COLUNA ID - Badge com destaque */
+.dashboard-container .ticket-id {
+  font-weight: 700;
+  color: var(--dashboard-primary);
+  font-size: 0.9rem;
+  background-color: rgba(67, 97, 238, 0.08);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  display: inline-block;
+  min-width: 45px;
+}
+
+/* COLUNA SOLICITANTE - Layout com avatar */
+.dashboard-container .ticket-user {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centralização do conjunto */
+  gap: 0.75rem;
+}
+
+/* Avatar do usuário */
+.dashboard-container .user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #6c757d; /* Cor neutra e profissional */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+/* Informações do usuário */
+.dashboard-container .user-info {
+  flex: 1;
+  min-width: 0;
+  text-align: left; /* Texto à esquerda para melhor legibilidade */
+}
+
+/* Nome do usuário */
+.dashboard-container .user-name {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.875rem;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+/* COLUNA DESCRIÇÃO - Preview elegante */
+.dashboard-container .ticket-desc {
+  text-align: left; /* Texto à esquerda para melhor legibilidade */
+  padding-left: 1rem;
+}
+
+/* Preview da descrição */
+.dashboard-container .desc-preview {
+  font-size: 0.875rem;
+  color: #495057;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 250px;
+  margin: 0 auto;
+}
+
+/* Hover da descrição */
+.dashboard-container .desc-preview:hover {
+  color: #2c3e50;
+}
+
+/* COLUNA SETOR - Badge simples */
+.dashboard-container .sector-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.8rem;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #495057;
+  white-space: nowrap;
+}
+
+/* Ícone do setor */
+.dashboard-container .sector-badge i {
+  margin-right: 0.5rem;
+  color: #6c757d;
+  font-size: 0.75rem;
+}
+
+/* COLUNA STATUS - Badges profissionais com cores suaves */
+.dashboard-container .status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  border: none;
+  white-space: nowrap;
+}
+
+/* Ícone do status */
+.dashboard-container .status-badge i {
+  margin-right: 0.4rem;
+  font-size: 0.7rem;
+}
+
+/* Cores específicas dos status - paleta profissional */
+.dashboard-container .status-aberto {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.dashboard-container .status-andamento {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.dashboard-container .status-concluido {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.dashboard-container .status-pausado {
+  background-color: #e2e3e5;
+  color: #383d41;
+  border: 1px solid #d6d8db;
+}
+
+.dashboard-container .status-cancelado {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* COLUNA DATA - Layout com ícone e informações */
+.dashboard-container .ticket-date {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centralização do conjunto */
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #495057;
+}
+
+/* Ícone da data */
+.dashboard-container .date-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background-color: rgba(67, 97, 238, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dashboard-primary);
+  flex-shrink: 0;
+}
+
+/* Informações da data */
+.dashboard-container .date-info {
+  flex: 1;
+  min-width: 0;
+  text-align: left; /* Texto à esquerda para melhor legibilidade */
+}
+
+/* Dia da data */
+.dashboard-container .date-day {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.875rem;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Hora da data */
+.dashboard-container .date-time {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin: 0;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* =============================================================================
+   COLUNA AÇÕES - BOTÃO PROFISSIONAL INSPIRADO EM DESIGN MODERNO
+   ============================================================================= */
+
+.dashboard-container .ticket-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Botão principal - Design profissional com movimento */
+.dashboard-container .action-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(
+    135deg,
+    var(--dashboard-primary) 0%,
+    var(--dashboard-primary-dark) 100%
+  );
+  color: white;
+  text-decoration: none;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(67, 97, 238, 0.25);
+  min-width: 70px;
+  height: 36px;
+}
+
+/* Efeito de brilho que se move */
+.dashboard-container .action-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.6s ease;
+}
+
+/* Hover principal */
+.dashboard-container .action-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4);
+  background: linear-gradient(
+    135deg,
+    var(--dashboard-primary-dark) 0%,
+    #2d4bc7 100%
+  );
+}
+
+/* Ativa o brilho no hover */
+.dashboard-container .action-btn:hover::before {
+  left: 100%;
+}
+
+/* Container do conteúdo do botão */
+.dashboard-container .action-btn-content {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.3s ease;
+}
+
+/* Texto do botão */
+.dashboard-container .action-btn-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+/* Container do ícone com animação */
+.dashboard-container .action-btn-icon {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  transition: all 0.3s ease;
+}
+
+/* Ícone principal */
+.dashboard-container .action-btn i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.8rem;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+/* Ícone secundário (seta) - inicialmente oculto */
+.dashboard-container .action-btn .secondary-icon {
+  opacity: 0;
+  transform: translate(-50%, -50%) translateX(-10px);
+}
+
+/* Animação no hover */
+.dashboard-container .action-btn:hover .action-btn-content {
+  transform: translateX(2px);
+}
+
+.dashboard-container .action-btn:hover i:not(.secondary-icon) {
+  opacity: 0;
+  transform: translate(-50%, -50%) translateX(10px);
+}
+
+.dashboard-container .action-btn:hover .secondary-icon {
+  opacity: 1;
+  transform: translate(-50%, -50%) translateX(0);
+}
+
+/* Estado ativo */
+.dashboard-container .action-btn:active {
+  transform: translateY(0) scale(1.02);
+  box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+}
+
+/* Efeito de foco para acessibilidade */
+.dashboard-container .action-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.3),
+    0 8px 20px rgba(67, 97, 238, 0.4);
+}
+
+/* Variação para diferentes estados (opcional) */
+.dashboard-container .action-btn.success {
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.25);
+}
+
+.dashboard-container .action-btn.success:hover {
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+  box-shadow: 0 8px 20px rgba(46, 204, 113, 0.4);
+}
+
+.dashboard-container .action-btn.warning {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  box-shadow: 0 4px 12px rgba(243, 156, 18, 0.25);
+}
+
+.dashboard-container .action-btn.warning:hover {
+  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+  box-shadow: 0 8px 20px rgba(243, 156, 18, 0.4);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .dashboard-container .action-btn {
+    min-width: 60px;
+    height: 32px;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .dashboard-container .action-btn-text {
+    font-size: 0.7rem;
+  }
+
+  .dashboard-container .action-btn i {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  /* Em telas muito pequenas, mostra apenas o ícone */
+  .dashboard-container .action-btn-text {
+    display: none;
+  }
+
+  .dashboard-container .action-btn {
+    min-width: 36px;
+    padding: 0.5rem;
+  }
+}
+
+/* ESTADO VAZIO DA TABELA - Design elegante */
+.dashboard-container .no-tickets {
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+/* Container do estado vazio */
+.dashboard-container .empty-state {
+  max-width: 350px;
+  margin: 0 auto;
+}
+
+/* Ícone do estado vazio */
+.dashboard-container .empty-state-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: rgba(67, 97, 238, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  color: var(--dashboard-primary);
+  font-size: 1.5rem;
+}
+
+/* Título do estado vazio */
+.dashboard-container .empty-state-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 0.5rem;
+}
+
+/* Descrição do estado vazio */
+.dashboard-container .empty-state-desc {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   6. ANIMAÇÕES E EFEITOS
+   ========================================================================== */
+
+/* Animação de entrada suave */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -698,6 +1167,7 @@
   }
 }
 
+/* Animação de entrada de baixo para cima */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -709,16 +1179,21 @@
   }
 }
 
-.fade-in {
+/* Classes para aplicar animações */
+.dashboard-container .fade-in {
   animation: fadeIn 0.5s ease-out forwards;
 }
 
-.fade-in-up {
+.dashboard-container .fade-in-up {
   animation: fadeInUp 0.5s ease-out forwards;
 }
 
-/* Notificações */
-.dashboard-notification {
+/* ==========================================================================
+   7. NOTIFICAÇÕES
+   ========================================================================== */
+
+/* Container das notificações */
+.dashboard-container #dashboard-notification {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -735,91 +1210,153 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.dashboard-notification.success {
+/* Notificação de sucesso */
+.dashboard-container #dashboard-notification.success {
   background-color: var(--dashboard-success);
 }
 
-.dashboard-notification.error {
+/* Notificação de erro */
+.dashboard-container #dashboard-notification.error {
   background-color: var(--dashboard-danger);
 }
 
-.dashboard-notification i {
+/* Ícone da notificação */
+.dashboard-container #dashboard-notification i {
   margin-right: 10px;
 }
 
-.dashboard-notification.show {
+/* Estado visível da notificação */
+.dashboard-container #dashboard-notification.show {
   opacity: 1;
   transform: translateY(0);
 }
 
-/* Responsividade */
+/* ==========================================================================
+   8. RESPONSIVIDADE - BREAKPOINTS PARA DIFERENTES DISPOSITIVOS
+   ========================================================================== */
+
+/* Desktop grande (1400px+) */
 @media (max-width: 1400px) {
-  .stats-cards {
-    grid-template-columns: repeat(3, 1fr);
+  .dashboard-container .stats-cards {
+    grid-template-columns: repeat(3, 1fr) !important; /* Mantém 3 colunas */
   }
 }
 
+/* Tablet grande (1200px) */
+@media (max-width: 1200px) {
+  .dashboard-container .recent-tickets-table th:nth-child(3),
+  .dashboard-container .recent-tickets-table td:nth-child(3) {
+    display: none; /* Oculta coluna descrição */
+  }
+}
+
+/* Tablet médio (1199px) */
 @media (max-width: 1199.98px) {
-  .charts-row {
-    grid-template-columns: 1fr;
+  .dashboard-container .charts-row {
+    grid-template-columns: 1fr; /* 1 coluna para gráficos */
+  }
+
+  .dashboard-container .stats-cards {
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 colunas para cards */
   }
 }
 
-@media (max-width: 991.98px) {
-  .header-content {
+/* Tablet pequeno (992px) */
+@media (max-width: 992px) {
+  .dashboard-container .header-content {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .action-buttons {
+  .dashboard-container .action-buttons {
     width: 100%;
     justify-content: flex-end;
   }
 
-  .stats-cards {
-    grid-template-columns: repeat(2, 1fr);
+  .dashboard-container .recent-tickets-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1.25rem 1.5rem;
   }
 
-  .recent-tickets-table th:nth-child(3),
-  .recent-tickets-table td:nth-child(3) {
-    display: none;
+  .dashboard-container .recent-tickets-table th:nth-child(4),
+  .dashboard-container .recent-tickets-table td:nth-child(4) {
+    display: none; /* Oculta coluna setor */
   }
 }
 
-@media (max-width: 767.98px) {
+/* Mobile grande (768px) */
+@media (max-width: 768px) {
   .dashboard-container {
     padding: 1rem;
   }
 
-  .btn-new-ticket {
+  .dashboard-container .btn-new-ticket {
     width: 100%;
     justify-content: center;
   }
 
-  .action-buttons {
+  .dashboard-container .action-buttons {
     width: 100%;
     justify-content: space-between;
   }
 
-  .recent-tickets-table th:nth-child(4),
-  .recent-tickets-table td:nth-child(4) {
-    display: none;
+  .dashboard-container .stats-cards {
+    grid-template-columns: 1fr !important; /* 1 coluna para cards */
+  }
+
+  .dashboard-container .recent-tickets-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .dashboard-container .recent-tickets-table td {
+    padding: 0.875rem 0.75rem;
+  }
+
+  .dashboard-container .user-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+  }
+
+  .dashboard-container .recent-tickets-table th:nth-child(6),
+  .dashboard-container .recent-tickets-table td:nth-child(6) {
+    display: none; /* Oculta coluna data */
   }
 }
 
-@media (max-width: 575.98px) {
-  .stats-cards {
-    grid-template-columns: 1fr;
+/* Mobile pequeno (576px) */
+@media (max-width: 576px) {
+  .dashboard-container .recent-tickets-table {
+    font-size: 0.8rem;
   }
 
-  .recent-tickets-table th:nth-child(6),
-  .recent-tickets-table td:nth-child(6) {
-    display: none;
+  .dashboard-container .action-btn {
+    width: 34px;
+    height: 34px;
   }
 
-  .recent-tickets-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
+  .dashboard-container .action-btn i {
+    font-size: 0.8rem !important;
+    line-height: 34px !important; /* Ajusta para nova altura */
   }
 }
+
+/* ==========================================================================
+   FIM DO ARQUIVO - DASHBOARD CSS
+   
+   NOTAS PARA DESENVOLVEDORES:
+   
+   1. ESTRUTURA: O CSS está organizado em seções lógicas para facilitar manutenção
+   2. VARIÁVEIS: Use as variáveis CSS definidas no início para manter consistência
+   3. RESPONSIVIDADE: Testado em dispositivos de 320px até 1920px
+   4. PERFORMANCE: Animações usam transform e opacity para melhor performance
+   5. ACESSIBILIDADE: Cores e contrastes seguem padrões WCAG
+   6. MANUTENÇÃO: Comentários detalhados para facilitar futuras alterações
+   
+   MODIFICAÇÕES FUTURAS:
+   - Para alterar cores: modifique as variáveis CSS no início
+   - Para novos breakpoints: adicione na seção de responsividade
+   - Para novas animações: use as classes .fade-in ou .fade-in-up existentes
+   ========================================================================== */

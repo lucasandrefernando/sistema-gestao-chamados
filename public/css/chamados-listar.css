@@ -1,36 +1,42 @@
 /* chamados-listar.css - Estilos específicos para a página de listagem de chamados */
 
-/* Importação de fontes */
+/* ===== IMPORTAÇÃO DE FONTES ===== */
+/* Importa as fontes Inter e Poppins do Google Fonts para melhor tipografia */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@500;600;700&display=swap");
 
-/* Variáveis de cores e estilos */
+/* ===== VARIÁVEIS CSS CUSTOMIZADAS ===== */
+/* 
+   Define todas as cores, tamanhos e valores reutilizáveis do sistema
+   Facilita manutenção e permite mudanças globais de tema
+*/
 :root {
+  /* Cores primárias do sistema */
   --chamados-listar-primary: #4361ee;
   --chamados-listar-primary-dark: #3a56d4;
   --chamados-listar-primary-light: #eef1ff;
 
+  /* Cores de status e feedback */
   --chamados-listar-success: #2ecc71;
   --chamados-listar-success-light: #e6f9ef;
-
   --chamados-listar-warning: #f39c12;
   --chamados-listar-warning-light: #fef5e7;
-
   --chamados-listar-danger: #e74c3c;
   --chamados-listar-danger-light: #fdedeb;
-
   --chamados-listar-info: #3498db;
   --chamados-listar-info-light: #ebf5fb;
 
+  /* Cores neutras */
   --chamados-listar-gray: #95a5a6;
   --chamados-listar-light-gray: #ecf0f1;
   --chamados-listar-dark: #2c3e50;
   --chamados-listar-white: #ffffff;
 
+  /* Valores de design system */
   --chamados-listar-border-radius: 10px;
   --chamados-listar-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   --chamados-listar-transition: all 0.3s ease;
 
-  /* Cores para os gráficos */
+  /* Cores específicas para gráficos */
   --chamados-listar-chart-blue: #4361ee;
   --chamados-listar-chart-green: #2ecc71;
   --chamados-listar-chart-yellow: #f39c12;
@@ -40,25 +46,36 @@
   --chamados-listar-chart-orange: #e67e22;
   --chamados-listar-chart-pink: #e84393;
 
-  /* Cores para status específicos */
-  --chamados-listar-status-1-bg: rgba(255, 206, 86, 0.2);
-  /* Aberto - Amarelo */
+  /* Cores específicas para status de chamados */
+  --chamados-listar-status-1-bg: rgba(255, 206, 86, 0.2); /* Aberto - Amarelo */
   --chamados-listar-status-1-color: #f39c12;
-  --chamados-listar-status-2-bg: rgba(54, 162, 235, 0.2);
-  /* Em Andamento - Azul */
+  --chamados-listar-status-2-bg: rgba(
+    54,
+    162,
+    235,
+    0.2
+  ); /* Em Andamento - Azul */
   --chamados-listar-status-2-color: #3498db;
-  --chamados-listar-status-3-bg: rgba(153, 102, 255, 0.2);
-  /* Pendente - Roxo */
+  --chamados-listar-status-3-bg: rgba(153, 102, 255, 0.2); /* Pendente - Roxo */
   --chamados-listar-status-3-color: #9b59b6;
-  --chamados-listar-status-4-bg: rgba(75, 192, 192, 0.2);
-  /* Concluído - Verde */
+  --chamados-listar-status-4-bg: rgba(
+    75,
+    192,
+    192,
+    0.2
+  ); /* Concluído - Verde */
   --chamados-listar-status-4-color: #2ecc71;
-  --chamados-listar-status-5-bg: rgba(201, 203, 207, 0.2);
-  /* Cancelado - Cinza */
+  --chamados-listar-status-5-bg: rgba(
+    201,
+    203,
+    207,
+    0.2
+  ); /* Cancelado - Cinza */
   --chamados-listar-status-5-color: #95a5a6;
 }
 
-/* Status na tabela */
+/* ===== CLASSES DE STATUS PARA TABELA ===== */
+/* Aplica as cores de status definidas nas variáveis aos elementos da tabela */
 .chamados-listar-status-1 {
   background-color: var(--chamados-listar-status-1-bg);
   color: var(--chamados-listar-status-1-color);
@@ -84,7 +101,8 @@
   color: var(--chamados-listar-status-5-color);
 }
 
-/* Estilos gerais */
+/* ===== ESTILOS GERAIS DA PÁGINA ===== */
+/* Container principal da página de listagem de chamados */
 .chamados-listar {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
@@ -94,7 +112,7 @@
   margin: 0 auto;
 }
 
-/* Cabeçalho */
+/* ===== CABEÇALHO DA PÁGINA ===== */
 .chamados-listar-header {
   margin-bottom: 1.5rem;
 }
@@ -110,6 +128,7 @@
   margin-bottom: 0.5rem;
 }
 
+/* Título principal com gradiente */
 .chamados-listar-titulo {
   display: flex;
   align-items: center;
@@ -138,6 +157,7 @@
   margin: 0;
 }
 
+/* Botões de ação do cabeçalho */
 .chamados-listar-acoes {
   display: flex;
   align-items: center;
@@ -180,7 +200,16 @@
   box-shadow: 0 6px 15px rgba(52, 152, 219, 0.3);
 }
 
-/* Cards de estatísticas */
+/* ===== CARDS DE ESTATÍSTICAS REDESENHADOS ===== */
+/* 
+   Layout profissional e moderno para os cards de estatísticas
+   - Organização clara: ícone + informações lado a lado no topo
+   - Descrição e barra de progresso na parte inferior
+   - Efeitos visuais modernos e interativos
+   - Totalmente responsivo
+*/
+
+/* Container principal dos cards de estatísticas */
 .chamados-listar-estatisticas {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -188,144 +217,412 @@
   margin-bottom: 1.5rem;
 }
 
+/* ===== ESTILO BASE DOS CARDS DE ESTATÍSTICAS ===== */
 .chamados-listar-card-estatistica {
+  /* Layout e estrutura */
+  position: relative;
   display: flex;
   flex-direction: column;
-  background-color: var(--chamados-listar-white);
-  border-radius: var(--chamados-listar-border-radius);
-  box-shadow: var(--chamados-listar-box-shadow);
-  padding: 1.5rem;
-  transition: var(--chamados-listar-transition);
+  min-height: 140px;
+
+  /* Aparência visual */
+  background: linear-gradient(
+    135deg,
+    var(--chamados-listar-white) 0%,
+    #f8f9fa 100%
+  );
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   overflow: hidden;
-  position: relative;
+
+  /* Interatividade */
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* Efeitos visuais */
+  backdrop-filter: blur(10px);
+
+  /* Animação de entrada */
   opacity: 0;
   transform: translateY(20px);
 }
 
-.chamados-listar-card-estatistica.animate-in {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.chamados-listar-card-estatistica:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-}
-
+/* Borda superior colorida para identificação visual de cada tipo de card */
 .chamados-listar-card-estatistica::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 5px;
-  height: 100%;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--chamados-listar-primary),
+    var(--chamados-listar-primary-dark)
+  );
+  transition: all 0.3s ease;
+  z-index: 1;
 }
 
-.chamados-listar-total::before {
+/* ===== EFEITOS DE HOVER E INTERAÇÃO ===== */
+.chamados-listar-card-estatistica:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.chamados-listar-card-estatistica:hover::before {
+  height: 6px;
+}
+
+/* Overlay que aparece no hover com informação de ação */
+.chamados-listar-card-estatistica:hover::after {
+  content: "Clique para filtrar";
+  position: absolute;
+  bottom: 0;
+  right: 0;
   background-color: var(--chamados-listar-primary);
+  color: var(--chamados-listar-white);
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  border-top-left-radius: var(--chamados-listar-border-radius);
+  opacity: 0.9;
+  z-index: 10;
 }
 
+/* Texto específico para o card "Total" */
+.chamados-listar-card-estatistica.chamados-listar-total:hover::after {
+  content: "Limpar filtros";
+}
+
+/* ===== CORES ESPECÍFICAS PARA CADA TIPO DE CARD ===== */
+/* Card Total - Azul primário */
+.chamados-listar-total::before {
+  background: linear-gradient(90deg, var(--chamados-listar-primary), #667eea);
+}
+
+/* Card Abertos - Laranja/Amarelo (urgência) */
 .chamados-listar-abertos::before {
-  background-color: var(--chamados-listar-status-1-color);
+  background: linear-gradient(
+    90deg,
+    var(--chamados-listar-status-1-color),
+    #ffa726
+  );
 }
 
+/* Card Em Andamento - Azul claro (progresso) */
 .chamados-listar-andamento::before {
-  background-color: var(--chamados-listar-status-2-color);
+  background: linear-gradient(
+    90deg,
+    var(--chamados-listar-status-2-color),
+    #29b6f6
+  );
 }
 
+/* Card Concluídos - Verde (sucesso) */
 .chamados-listar-concluidos::before {
-  background-color: var(--chamados-listar-status-4-color);
+  background: linear-gradient(
+    90deg,
+    var(--chamados-listar-status-4-color),
+    #43a047
+  );
 }
 
+/* ===== ESTRUTURA INTERNA DOS CARDS ===== */
+/* Container do ícone com background colorido */
 .chamados-listar-icone-estatistica {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 60px;
   height: 60px;
-  border-radius: 50%;
-  margin-right: 1rem;
+  border-radius: 16px;
   flex-shrink: 0;
-  float: left;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
+/* Cores de fundo específicas para cada ícone */
 .chamados-listar-total .chamados-listar-icone-estatistica {
-  background-color: var(--chamados-listar-primary-light);
+  background: linear-gradient(
+    135deg,
+    var(--chamados-listar-primary-light),
+    rgba(67, 97, 238, 0.1)
+  );
   color: var(--chamados-listar-primary);
 }
 
 .chamados-listar-abertos .chamados-listar-icone-estatistica {
-  background-color: var(--chamados-listar-status-1-bg);
+  background: linear-gradient(
+    135deg,
+    var(--chamados-listar-status-1-bg),
+    rgba(243, 156, 18, 0.1)
+  );
   color: var(--chamados-listar-status-1-color);
 }
 
 .chamados-listar-andamento .chamados-listar-icone-estatistica {
-  background-color: var(--chamados-listar-status-2-bg);
+  background: linear-gradient(
+    135deg,
+    var(--chamados-listar-status-2-bg),
+    rgba(52, 152, 219, 0.1)
+  );
   color: var(--chamados-listar-status-2-color);
 }
 
 .chamados-listar-concluidos .chamados-listar-icone-estatistica {
-  background-color: var(--chamados-listar-status-4-bg);
+  background: linear-gradient(
+    135deg,
+    var(--chamados-listar-status-4-bg),
+    rgba(46, 204, 113, 0.1)
+  );
   color: var(--chamados-listar-status-4-color);
 }
 
+/* Ícone dentro do container */
 .chamados-listar-icone-estatistica i {
   font-size: 1.5rem;
+  z-index: 1;
+  position: relative;
 }
 
+/* ===== LAYOUT REORGANIZADO DOS CARDS ===== */
+/* 
+   NOVA ESTRUTURA:
+   - Cabeçalho: Ícone + Informações lado a lado
+   - Corpo: Descrição + Barra de progresso embaixo
+*/
+
+/* Container principal do conteúdo do card */
 .chamados-listar-conteudo-estatistica {
-  flex-grow: 1;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+/* Seção superior: Ícone + Informações numéricas lado a lado */
+.chamados-listar-card-header-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
   margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
+/* Container das informações numéricas e label */
+.chamados-listar-info-numerica {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Valor numérico principal (grande e destacado) */
 .chamados-listar-valor-estatistica {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 0.25rem;
+  line-height: 1;
+  margin: 0 0 0.25rem 0;
   color: var(--chamados-listar-dark);
+  font-family: "Poppins", sans-serif;
 }
 
+/* Label/título do card */
 .chamados-listar-label-estatistica {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  margin-bottom: 0.25rem;
+  margin: 0;
   color: var(--chamados-listar-dark);
+  line-height: 1.2;
 }
 
+/* ===== SEÇÃO INFERIOR DOS CARDS ===== */
+/* Container da descrição e barra de progresso */
+.chamados-listar-card-body-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+/* Descrição explicativa */
 .chamados-listar-descricao-estatistica {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--chamados-listar-gray);
+  margin: 0 0 0.75rem 0;
+  line-height: 1.3;
 }
 
+/* ===== BARRA DE PROGRESSO REDESENHADA ===== */
+/* Container da barra de progresso */
 .chamados-listar-estatistica-progresso {
   height: 6px;
-  background-color: var(--chamados-listar-light-gray);
+  background-color: rgba(0, 0, 0, 0.05);
   border-radius: 3px;
   overflow: hidden;
-  margin-top: auto;
+  position: relative;
 }
 
+/* Barra de progresso animada com gradiente */
 .chamados-listar-estatistica-barra {
   height: 100%;
   border-radius: 3px;
-  transition: width 1s ease-in-out;
+  transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
+/* Cores das barras de progresso para cada tipo */
 .chamados-listar-total .chamados-listar-estatistica-barra {
-  background-color: var(--chamados-listar-primary);
+  background: linear-gradient(90deg, var(--chamados-listar-primary), #667eea);
 }
 
 .chamados-listar-abertos .chamados-listar-estatistica-barra {
-  background-color: var(--chamados-listar-status-1-color);
+  background: linear-gradient(
+    90deg,
+    var(--chamados-listar-status-1-color),
+    #ffa726
+  );
 }
 
 .chamados-listar-andamento .chamados-listar-estatistica-barra {
-  background-color: var(--chamados-listar-status-2-color);
+  background: linear-gradient(
+    90deg,
+    var(--chamados-listar-status-2-color),
+    #29b6f6
+  );
 }
 
 .chamados-listar-concluidos .chamados-listar-estatistica-barra {
-  background-color: var(--chamados-listar-status-4-color);
+  background: linear-gradient(
+    90deg,
+    var(--chamados-listar-status-4-color),
+    #43a047
+  );
 }
+
+/* Efeito de brilho animado na barra de progresso */
+.chamados-listar-estatistica-barra::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* ===== ESTADOS ESPECIAIS DOS CARDS ===== */
+/* Card ativo (quando um filtro está aplicado) */
+.chamados-listar-card-estatistica.active {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(67, 97, 238, 0.2);
+  border-color: var(--chamados-listar-primary);
+}
+
+.chamados-listar-card-estatistica.active::before {
+  height: 6px;
+  box-shadow: 0 2px 8px rgba(67, 97, 238, 0.3);
+}
+
+/* Animação de pulsação para cards ativos */
+.chamados-listar-card-estatistica.active {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(67, 97, 238, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(67, 97, 238, 0);
+  }
+}
+
+/* ===== ANIMAÇÕES DE ENTRADA ===== */
+/* Animação de entrada dos cards */
+.chamados-listar-card-estatistica.animate-in {
+  opacity: 1;
+  transform: translateY(0);
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+/* Delay escalonado para cada card */
+.chamados-listar-card-estatistica:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.chamados-listar-card-estatistica:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.chamados-listar-card-estatistica:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.chamados-listar-card-estatistica:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== COMPATIBILIDADE COM LAYOUT ANTIGO ===== */
+/* 
+   Mantém compatibilidade com o código existente
+   Reorganiza o layout sem quebrar a funcionalidade
+*/
+
+/* Reorganiza o layout existente para o novo design */
+.chamados-listar-card-estatistica .chamados-listar-icone-estatistica {
+  float: none;
+  margin-right: 0;
+}
+
+.chamados-listar-card-estatistica .chamados-listar-conteudo-estatistica {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin-bottom: 0;
+}
+
+/* Cria o novo layout usando os elementos existentes */
+.chamados-listar-card-estatistica
+  .chamados-listar-conteudo-estatistica::before {
+  content: "";
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ===== RESTO DOS ESTILOS ORIGINAIS MANTIDOS ===== */
+/* Mantém todos os outros estilos da página inalterados */
 
 /* Ações Rápidas */
 .chamados-listar-acoes-rapidas {
@@ -591,12 +888,6 @@
   padding: 0.35rem 0.75rem;
   font-size: 0.85rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.chamados-listar-filtro-ativo-label {
-  font-weight: 600;
-  margin-right: 0.25rem;
-  color: var(--chamados-listar-dark);
 }
 
 .chamados-listar-filtro-ativo-label {
@@ -1185,6 +1476,7 @@
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--chamados-listar-light-gray);
   background-color: var(--chamados-listar-primary-light);
+  position: relative;
 }
 
 .chamados-listar-resumo-card-titulo {
@@ -1260,7 +1552,6 @@
   from {
     opacity: 0;
   }
-
   to {
     opacity: 1;
   }
@@ -1280,7 +1571,6 @@
     transform: translateY(50px);
     opacity: 0;
   }
-
   to {
     transform: translateY(0);
     opacity: 1;
@@ -1425,206 +1715,6 @@
   box-shadow: 0 4px 8px rgba(67, 97, 238, 0.3);
 }
 
-/* Animações */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.chamados-listar-card-estatistica.animate-in {
-  animation: fadeInUp 0.5s ease forwards;
-}
-
-/* Responsividade */
-@media (max-width: 1199.98px) {
-  .chamados-listar-estatisticas,
-  .chamados-listar-resumo-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .chamados-listar-filtros-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .chamados-listar-tabela th:nth-child(6),
-  .chamados-listar-tabela td:nth-child(6) {
-    display: none;
-  }
-}
-
-@media (max-width: 991.98px) {
-  .chamados-listar-header-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .chamados-listar-acoes {
-    margin-top: 1rem;
-    width: 100%;
-  }
-
-  .chamados-listar-btn-novo,
-  .chamados-listar-btn-relatorio {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .chamados-listar-tabela th:nth-child(4),
-  .chamados-listar-tabela td:nth-child(4),
-  .chamados-listar-tabela th:nth-child(7),
-  .chamados-listar-tabela td:nth-child(7) {
-    display: none;
-  }
-
-  .chamados-listar-acoes-rapidas-botoes {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 767.98px) {
-  .chamados-listar-estatisticas,
-  .chamados-listar-resumo-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .chamados-listar-filtros-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .chamados-listar-filtros-acoes {
-    flex-direction: column;
-  }
-
-  .chamados-listar-filtros-btn {
-    width: 100%;
-  }
-
-  .chamados-listar-tabela th:nth-child(2),
-  .chamados-listar-tabela td:nth-child(2) {
-    display: none;
-  }
-
-  .chamados-listar-tabela-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .chamados-listar-tabela-contador {
-    align-self: flex-start;
-  }
-
-  .chamados-listar-tabela-acoes {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .chamados-listar-modal-opcoes {
-    grid-template-columns: 1fr;
-  }
-
-  .chamados-listar-resumo-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .chamados-listar-cards-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 575.98px) {
-  .chamados-listar {
-    padding: 1rem 0;
-  }
-
-  .chamados-listar-tabela th:nth-child(3),
-  .chamados-listar-tabela td:nth-child(3) {
-    display: none;
-  }
-
-  .chamados-listar-acoes-chamado {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .chamados-listar-filtros-ativos-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .chamados-listar-filtros-ativos-limpar {
-    align-self: flex-start;
-  }
-
-  .chamados-listar-modal-footer {
-    flex-direction: column;
-  }
-
-  .chamados-listar-modal-btn {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* Cards de estatísticas clicáveis */
-.chamados-listar-card-estatistica {
-  cursor: pointer;
-  transition: var(--chamados-listar-transition);
-  position: relative;
-  overflow: hidden;
-}
-
-.chamados-listar-card-estatistica:hover {
-  transform: translateY(-8px) !important;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
-}
-
-.chamados-listar-card-estatistica:hover::after {
-  content: "Clique para filtrar";
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  background-color: var(--chamados-listar-primary);
-  color: var(--chamados-listar-white);
-  font-size: 0.7rem;
-  padding: 0.25rem 0.5rem;
-  border-top-left-radius: var(--chamados-listar-border-radius);
-  opacity: 0.9;
-}
-
-.chamados-listar-card-estatistica.chamados-listar-total:hover::after {
-  content: "Limpar filtros";
-}
-
-/* Efeito de pulsação para destacar cards ativos */
-.chamados-listar-card-estatistica.active {
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4);
-  }
-
-  70% {
-    box-shadow: 0 0 0 10px rgba(67, 97, 238, 0);
-  }
-
-  100% {
-    box-shadow: 0 0 0 0 rgba(67, 97, 238, 0);
-  }
-}
-
 /* Melhorias nos gráficos */
 .chamados-listar-resumo-card {
   transition: var(--chamados-listar-transition);
@@ -1633,10 +1723,6 @@
 .chamados-listar-resumo-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-}
-
-.chamados-listar-resumo-card-header {
-  position: relative;
 }
 
 .chamados-listar-resumo-card-header::after {
@@ -1747,8 +1833,99 @@
   outline: none;
 }
 
-/* Responsividade da paginação */
+/* ===== RESPONSIVIDADE COMPLETA ===== */
+/* 
+   Media queries para garantir que o layout funcione perfeitamente
+   em todos os dispositivos e tamanhos de tela
+*/
+
+/* Tablets grandes (até 1199px) */
+@media (max-width: 1199.98px) {
+  .chamados-listar-estatisticas,
+  .chamados-listar-resumo-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chamados-listar-filtros-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chamados-listar-tabela th:nth-child(6),
+  .chamados-listar-tabela td:nth-child(6) {
+    display: none;
+  }
+
+  /* Ajustes nos cards de estatísticas para tablets */
+  .chamados-listar-valor-estatistica {
+    font-size: 1.8rem;
+  }
+
+  .chamados-listar-icone-estatistica {
+    width: 56px;
+    height: 56px;
+  }
+
+  .chamados-listar-icone-estatistica i {
+    font-size: 1.4rem;
+  }
+}
+
+/* Tablets (até 991px) */
 @media (max-width: 991.98px) {
+  .chamados-listar-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chamados-listar-acoes {
+    margin-top: 1rem;
+    width: 100%;
+  }
+
+  .chamados-listar-btn-novo,
+  .chamados-listar-btn-relatorio {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .chamados-listar-tabela th:nth-child(4),
+  .chamados-listar-tabela td:nth-child(4),
+  .chamados-listar-tabela th:nth-child(7),
+  .chamados-listar-tabela td:nth-child(7) {
+    display: none;
+  }
+
+  .chamados-listar-acoes-rapidas-botoes {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Ajustes nos cards para tablets */
+  .chamados-listar-conteudo-estatistica {
+    padding: 1.25rem;
+  }
+
+  .chamados-listar-card-header-info {
+    gap: 0.75rem;
+  }
+
+  .chamados-listar-icone-estatistica {
+    width: 48px;
+    height: 48px;
+  }
+
+  .chamados-listar-icone-estatistica i {
+    font-size: 1.3rem;
+  }
+
+  .chamados-listar-valor-estatistica {
+    font-size: 1.6rem;
+  }
+
+  .chamados-listar-label-estatistica {
+    font-size: 0.85rem;
+  }
+
+  /* Responsividade da paginação */
   .pagination-container {
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
@@ -1770,7 +1947,136 @@
   }
 }
 
+/* Smartphones (até 767px) */
+@media (max-width: 767.98px) {
+  .chamados-listar-estatisticas,
+  .chamados-listar-resumo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chamados-listar-filtros-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chamados-listar-filtros-acoes {
+    flex-direction: column;
+  }
+
+  .chamados-listar-filtros-btn {
+    width: 100%;
+  }
+
+  .chamados-listar-tabela th:nth-child(2),
+  .chamados-listar-tabela td:nth-child(2) {
+    display: none;
+  }
+
+  .chamados-listar-tabela-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .chamados-listar-tabela-contador {
+    align-self: flex-start;
+  }
+
+  .chamados-listar-tabela-acoes {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .chamados-listar-modal-opcoes {
+    grid-template-columns: 1fr;
+  }
+
+  .chamados-listar-resumo-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .chamados-listar-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Ajustes específicos para smartphones */
+  .chamados-listar-card-estatistica {
+    min-height: 120px;
+  }
+
+  .chamados-listar-conteudo-estatistica {
+    padding: 1.25rem;
+  }
+
+  .chamados-listar-card-header-info {
+    margin-bottom: 0.75rem;
+  }
+
+  .chamados-listar-descricao-estatistica {
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Smartphones pequenos (até 575px) */
 @media (max-width: 575.98px) {
+  .chamados-listar {
+    padding: 1rem 0;
+  }
+
+  .chamados-listar-tabela th:nth-child(3),
+  .chamados-listar-tabela td:nth-child(3) {
+    display: none;
+  }
+
+  .chamados-listar-acoes-chamado {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .chamados-listar-filtros-ativos-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .chamados-listar-filtros-ativos-limpar {
+    align-self: flex-start;
+  }
+
+  .chamados-listar-modal-footer {
+    flex-direction: column;
+  }
+
+  .chamados-listar-modal-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Ajustes finais para telas muito pequenas */
+  .chamados-listar-conteudo-estatistica {
+    padding: 1rem;
+  }
+
+  .chamados-listar-icone-estatistica {
+    width: 40px;
+    height: 40px;
+  }
+
+  .chamados-listar-icone-estatistica i {
+    font-size: 1.1rem;
+  }
+
+  .chamados-listar-valor-estatistica {
+    font-size: 1.4rem;
+  }
+
+  .chamados-listar-label-estatistica {
+    font-size: 0.8rem;
+  }
+
+  /* Responsividade da paginação para smartphones */
   .pagination-container {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -1793,5 +2099,127 @@
     height: 2.2rem;
     padding: 0 0.5rem;
     font-size: 0.9rem;
+  }
+}
+
+/* ===== ACESSIBILIDADE E PREFERÊNCIAS DO USUÁRIO ===== */
+/* 
+   Estilos para melhorar a acessibilidade e respeitar
+   as preferências do usuário
+*/
+
+/* Foco para navegação por teclado */
+.chamados-listar-card-estatistica:focus {
+  outline: 2px solid var(--chamados-listar-primary);
+  outline-offset: 2px;
+}
+
+/* Redução de movimento para usuários sensíveis */
+@media (prefers-reduced-motion: reduce) {
+  .chamados-listar-card-estatistica,
+  .chamados-listar-estatistica-barra,
+  .chamados-listar-card-overlay {
+    transition: none;
+    animation: none;
+  }
+
+  .chamados-listar-estatistica-barra::after {
+    animation: none;
+  }
+
+  .chamados-listar-card-estatistica.animate-in {
+    animation: none;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== MODO ESCURO (OPCIONAL) ===== */
+/* 
+   Suporte básico para modo escuro caso seja implementado no futuro
+*/
+@media (prefers-color-scheme: dark) {
+  .chamados-listar-card-estatistica {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .chamados-listar-valor-estatistica,
+  .chamados-listar-label-estatistica {
+    color: #ecf0f1;
+  }
+
+  .chamados-listar-descricao-estatistica {
+    color: #bdc3c7;
+  }
+
+  .chamados-listar-estatistica-progresso {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* ===== UTILITÁRIOS E CLASSES AUXILIARES ===== */
+/* 
+   Classes utilitárias que podem ser úteis para manutenção futura
+*/
+
+/* Classe para forçar animação de entrada */
+.chamados-listar-force-animate {
+  animation: fadeInUp 0.6s ease forwards !important;
+}
+
+/* Classe para desabilitar interações temporariamente */
+.chamados-listar-disabled {
+  pointer-events: none;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Classe para destacar cards temporariamente */
+.chamados-listar-highlight {
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.3) !important;
+  transform: scale(1.02) !important;
+}
+
+/* ===== ESTILOS PARA O CAMPO SOLICITANTE CORRIGIDO ===== */
+
+/* Campo de input do solicitante */
+.chamados-listar-filtro-input[name="solicitante"] {
+  position: relative;
+}
+
+/* Ícone dentro do campo (opcional) */
+.chamados-listar-filtro-grupo:has(input[name="solicitante"])
+  .chamados-listar-filtro-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Efeito de foco melhorado para o campo solicitante */
+.chamados-listar-filtro-input[name="solicitante"]:focus {
+  outline: none;
+  border-color: var(--chamados-listar-primary);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+  background-color: var(--chamados-listar-white);
+}
+
+/* Placeholder estilizado */
+.chamados-listar-filtro-input[name="solicitante"]::placeholder {
+  color: var(--chamados-listar-gray);
+  opacity: 0.7;
+  font-style: italic;
+}
+
+/* Estilo quando o campo tem valor */
+.chamados-listar-filtro-input[name="solicitante"]:not(:placeholder-shown) {
+  background-color: var(--chamados-listar-primary-light);
+  border-color: var(--chamados-listar-primary);
+}
+
+/* Responsividade para o campo solicitante */
+@media (max-width: 767.98px) {
+  .chamados-listar-filtro-input[name="solicitante"] {
+    font-size: 16px; /* Evita zoom no iOS */
   }
 }

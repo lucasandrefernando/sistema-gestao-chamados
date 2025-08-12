@@ -1,3 +1,44 @@
+<!-- Proteção global contra múltiplas execuções -->
+<script>
+    // Sistema de proteção global
+    window.ScriptManager = {
+        loaded: new Set(),
+
+        register: function(scriptName) {
+            if (this.loaded.has(scriptName)) {
+                console.warn(`⚠️ Script ${scriptName} já foi carregado`);
+                return false;
+            }
+            this.loaded.add(scriptName);
+            console.log(`✅ Script ${scriptName} registrado`);
+            return true;
+        },
+
+        unregister: function(scriptName) {
+            this.loaded.delete(scriptName);
+            console.log(`🗑️ Script ${scriptName} removido`);
+        },
+
+        isLoaded: function(scriptName) {
+            return this.loaded.has(scriptName);
+        }
+    };
+
+    // Destruir charts ao navegar
+    window.addEventListener('beforeunload', () => {
+        // Destruir charts do Chart.js
+        if (typeof Chart !== 'undefined') {
+            Chart.helpers.each(Chart.instances, (instance) => {
+                instance.destroy();
+            });
+        }
+
+        // Limpar scripts carregados
+        window.ScriptManager.loaded.clear();
+    });
+</script>
+
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -12,8 +53,8 @@
     <link rel="icon" href="<?= base_url('public/img/favicon.ico') ?>" type="image/x-icon">
 
     <!-- Fontes e Frameworks -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- CSS -->
@@ -22,6 +63,7 @@
     <!-- Definição de variáveis JavaScript -->
     <script>
         var BASE_URL = '<?= base_url() ?>';
+        console.log('🌐 BASE_URL definido:', BASE_URL);
     </script>
 </head>
 
@@ -31,23 +73,22 @@
         <nav class="navbar navbar-expand-lg fixed-top app-navbar">
             <div class="container-fluid">
                 <div class="navbar-wrapper">
-                    <!-- Seção Esquerda - Nome do Hospital -->
+                    <!-- Seção Esquerda -->
                     <div class="navbar-left">
                         <a href="<?= base_url('dashboard') ?>" class="navbar-brand">
                             <span class="brand-text">Hospital Madre Teresa</span>
                         </a>
                     </div>
 
-                    <!-- Seção Central - Título do Sistema -->
+                    <!-- Seção Central -->
                     <div class="navbar-center">
                         <h1 class="system-title">Gestão de Chamados</h1>
                     </div>
 
-                    <!-- Seção Direita - Ações e Perfil -->
+                    <!-- Seção Direita -->
                     <div class="navbar-right">
                         <!-- Notificações -->
                         <?php
-                        // Buscar notificações não lidas
                         $notificacoes = [];
                         $total_notificacoes = 0;
 
@@ -57,19 +98,25 @@
                             $total_notificacoes = $notificacaoModel->contarNotificacoesNaoLidas(get_user_id());
                         }
                         ?>
-                        <div class="nav-item dropdown">
-                            <button class="btn-icon notification-toggle" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="nav-item dropdown" id="notificationDropdownContainer">
+                            <button class="btn-icon"
+                                id="notificationDropdown"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                data-bs-auto-close="outside"
+                                aria-expanded="false">
                                 <i class="fas fa-bell"></i>
                                 <?php if ($total_notificacoes > 0): ?>
                                     <span class="badge-counter"><?= $total_notificacoes > 99 ? '99+' : $total_notificacoes ?></span>
                                 <?php endif; ?>
                             </button>
 
-                            <div class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationDropdown">
+                            <div class="dropdown-menu dropdown-menu-end notification-dropdown"
+                                aria-labelledby="notificationDropdown">
                                 <div class="dropdown-header">
                                     <h6>Notificações</h6>
                                     <?php if ($total_notificacoes > 0): ?>
-                                        <button class="btn-text mark-all-read">Marcar todas como lidas</button>
+                                        <button class="btn-text mark-all-read" type="button">Marcar todas como lidas</button>
                                     <?php endif; ?>
                                 </div>
 
@@ -84,7 +131,8 @@
                                     <?php else: ?>
                                         <div class="notification-list">
                                             <?php foreach ($notificacoes as $notificacao): ?>
-                                                <div class="notification-item <?= isset($notificacao['lida']) && $notificacao['lida'] ? 'read' : 'unread' ?>" data-id="<?= $notificacao['id'] ?>">
+                                                <div class="notification-item <?= isset($notificacao['lida']) && $notificacao['lida'] ? 'read' : 'unread' ?>"
+                                                    data-id="<?= $notificacao['id'] ?>">
                                                     <div class="notification-icon bg-<?= $notificacao['cor'] ?>">
                                                         <i class="<?= $notificacao['icone'] ?>"></i>
                                                     </div>
@@ -96,10 +144,14 @@
                                                         </div>
                                                         <div class="notification-actions">
                                                             <?php if ($notificacao['referencia_tipo'] == 'chamado' && $notificacao['referencia_id']): ?>
-                                                                <a href="<?= base_url('chamados/visualizar/' . $notificacao['referencia_id']) ?>" class="btn-action btn-primary">Ver</a>
+                                                                <a href="<?= base_url('chamados/visualizar/' . $notificacao['referencia_id']) ?>"
+                                                                    class="btn-action btn-primary">Ver</a>
                                                             <?php endif; ?>
                                                             <?php if (!isset($notificacao['lida']) || !$notificacao['lida']): ?>
-                                                                <button class="btn-action" data-action="dismiss" data-id="<?= $notificacao['id'] ?>">Ignorar</button>
+                                                                <button class="btn-action"
+                                                                    type="button"
+                                                                    data-action="dismiss"
+                                                                    data-id="<?= $notificacao['id'] ?>">Ignorar</button>
                                                             <?php endif; ?>
                                                         </div>
                                                     </div>
@@ -116,12 +168,18 @@
                         </div>
 
                         <!-- Ações Rápidas -->
-                        <div class="nav-item dropdown">
-                            <button class="btn-icon" id="quickActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="nav-item dropdown" id="quickActionsDropdownContainer">
+                            <button class="btn-icon"
+                                id="quickActionsDropdown"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                data-bs-auto-close="true"
+                                aria-expanded="false">
                                 <i class="fas fa-plus"></i>
                             </button>
 
-                            <div class="dropdown-menu dropdown-menu-end quick-actions-dropdown" aria-labelledby="quickActionsDropdown">
+                            <div class="dropdown-menu dropdown-menu-end quick-actions-dropdown"
+                                aria-labelledby="quickActionsDropdown">
                                 <div class="dropdown-header">
                                     <h6>Ações Rápidas</h6>
                                 </div>
@@ -161,15 +219,13 @@
                         </div>
 
                         <!-- Perfil do Usuário -->
-                        <div class="nav-item dropdown">
+                        <div class="nav-item dropdown" id="userDropdownContainer">
                             <?php
-                            // Obter informações do usuário
                             $user_id = $_SESSION['user_id'] ?? 0;
                             $user_name = $_SESSION['user_name'] ?? 'Usuário';
                             $user_role = $_SESSION['user_role'] ?? 'Usuário';
                             $user_email = $_SESSION['user_email'] ?? '';
 
-                            // Buscar email se não estiver na sessão
                             if (empty($user_email) && $user_id > 0 && class_exists('Usuario')) {
                                 $usuarioModel = new Usuario();
                                 $usuario = $usuarioModel->findById($user_id);
@@ -179,7 +235,6 @@
                                 }
                             }
 
-                            // Gerar iniciais para avatar
                             $initials = strtoupper(substr($user_name, 0, 1));
                             if (strpos($user_name, ' ') !== false) {
                                 $name_parts = explode(' ', $user_name);
@@ -187,7 +242,6 @@
                                 $initials .= strtoupper(substr($last_name, 0, 1));
                             }
 
-                            // Estatísticas de chamados
                             $chamados_stats = [
                                 'abertos' => 0,
                                 'em_andamento' => 0,
@@ -203,7 +257,11 @@
                             }
                             ?>
 
-                            <button class="user-profile-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="user-profile-toggle"
+                                id="userDropdown"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
                                 <div class="user-avatar"><?= $initials ?></div>
                                 <div class="user-info d-none d-md-block">
                                     <div class="user-name"><?= htmlspecialchars($user_name) ?></div>
@@ -211,7 +269,8 @@
                                 </div>
                             </button>
 
-                            <div class="dropdown-menu dropdown-menu-end user-dropdown" aria-labelledby="userDropdown">
+                            <div class="dropdown-menu dropdown-menu-end user-dropdown"
+                                aria-labelledby="userDropdown">
                                 <div class="user-header">
                                     <div class="user-avatar-large"><?= $initials ?></div>
                                     <div class="user-details">
@@ -344,3 +403,111 @@
                             </div>
                         <?php endif; ?>
                     <?php endif; ?>
+
+
+
+                    <!-- ANTES do </body> - CARREGAMENTO UNIVERSAL -->
+
+                    <!-- Bootstrap JS - SEMPRE -->
+                    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+                    <!-- Header JS - SEMPRE E EM TODAS AS PÁGINAS -->
+                    <script src="<?= base_url('public/js/header.js') ?>?v=<?= time() ?>"></script>
+
+                    <!-- Scripts específicos por página -->
+                    <?php
+                    $currentPath = $_SERVER['REQUEST_URI'] ?? '';
+                    $pageTitle = $pageTitle ?? '';
+                    ?>
+
+                    <?php if (strpos($currentPath, '/perfil') !== false || $pageTitle === 'Meu Perfil'): ?>
+                        <!-- PERFIL -->
+                        <script src="<?= base_url('public/js/perfil.js') ?>?v=<?= time() ?>"></script>
+
+                    <?php elseif (strpos($currentPath, '/dashboard') !== false || $pageTitle === 'Dashboard'): ?>
+                        <!-- DASHBOARD -->
+                        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+                        <script>
+                            // Aguardar Chart.js carregar
+                            function waitForChart() {
+                                if (typeof Chart !== 'undefined') {
+                                    console.log('✅ Chart.js carregado - versão:', Chart.version);
+                                    return true;
+                                }
+                                return false;
+                            }
+
+                            let chartAttempts = 0;
+                            const checkChart = setInterval(() => {
+                                chartAttempts++;
+                                if (waitForChart()) {
+                                    clearInterval(checkChart);
+                                } else if (chartAttempts > 50) {
+                                    console.error('❌ Chart.js não carregou após 5 segundos');
+                                    clearInterval(checkChart);
+                                }
+                            }, 100);
+                        </script>
+                        <script src="<?= base_url('public/js/dashboard.js') ?>?v=<?= time() ?>"></script>
+
+                    <?php elseif (strpos($currentPath, '/chamados/visualizar') !== false): ?>
+                        <!-- VISUALIZAR CHAMADO -->
+                        <script src="<?= base_url('public/js/chamado-visualizar.js') ?>?v=<?= time() ?>"></script>
+
+                    <?php elseif (strpos($currentPath, '/chamados/criar') !== false || strpos($currentPath, '/chamados/editar') !== false): ?>
+                        <!-- CRIAR/EDITAR CHAMADO -->
+                        <script src="<?= base_url('public/js/chamados-form.js') ?>?v=<?= time() ?>"></script>
+
+                    <?php elseif (strpos($currentPath, '/usuarios') !== false && (strpos($currentPath, '/criar') !== false || strpos($currentPath, '/editar') !== false)): ?>
+                        <!-- CRIAR/EDITAR USUÁRIO -->
+                        <script src="<?= base_url('public/js/usuario-form.js') ?>?v=<?= time() ?>"></script>
+
+                    <?php elseif (strpos($currentPath, '/setores') !== false): ?>
+                        <!-- SETORES -->
+                        <script src="<?= base_url('public/js/setores-visualizacao.js') ?>?v=<?= time() ?>"></script>
+
+                    <?php elseif (strpos($currentPath, '/licencas') !== false): ?>
+                        <!-- LICENÇAS -->
+                        <script src="<?= base_url('public/js/licencas.js') ?>?v=<?= time() ?>"></script>
+
+                    <?php elseif (strpos($currentPath, '/notificacoes') !== false): ?>
+                        <!-- NOTIFICAÇÕES -->
+                        <script src="<?= base_url('public/js/notificacoes.js') ?>?v=<?= time() ?>"></script>
+
+                    <?php endif; ?>
+
+                    <!-- Verificação final UNIVERSAL -->
+                    <script>
+                        setTimeout(() => {
+                            console.log('\n🔍 Verificação UNIVERSAL da página: <?= $pageTitle ?>');
+                            console.log('URL:', window.location.pathname);
+                            console.log('Bootstrap:', typeof bootstrap !== 'undefined' ? '✅' : '❌');
+                            console.log('Header inicializado:', !!window.HEADER_INITIALIZED ? '✅' : '❌');
+
+                            // Testar dropdowns automaticamente
+                            const allDropdowns = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+                            console.log(`Total de dropdowns na página: ${allDropdowns.length}`);
+
+                            allDropdowns.forEach((dropdown, index) => {
+                                const instance = bootstrap.Dropdown.getInstance(dropdown);
+                                const id = dropdown.id || `dropdown-${index}`;
+                                console.log(`${index + 1}. ${id}:`, instance ? '✅' : '❌');
+                            });
+
+                            <?php if (strpos($currentPath, '/dashboard') !== false): ?>
+                                console.log('Chart.js:', typeof Chart !== 'undefined' ? '✅' : '❌');
+                                console.log('Dashboard Manager:', !!window.DashboardModule ? '✅' : '❌');
+                            <?php endif; ?>
+
+                            // Debug automático
+                            if (window.HeaderManager) {
+                                const debug = window.HeaderManager.debug();
+                                console.log(`🎯 RESULTADO: ${debug.working}/${debug.total} dropdowns funcionais`);
+                            }
+
+                        }, 1500);
+                    </script>
+
+</body>
+
+</html>

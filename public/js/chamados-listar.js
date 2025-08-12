@@ -1,17 +1,27 @@
 /**
  * chamados-listar.js - Script específico para a página de listagem de chamados
- * Versão: 1.0.1 - Isolado e Corrigido
+ * Versão: 2.0.0 - Redesign dos Cards de Estatísticas
+ * 
+ * FUNCIONALIDADES PRINCIPAIS:
+ * - Cards de estatísticas interativos e modernos
+ * - Animações suaves e profissionais
+ * - Layout reorganizado (ícone + info lado a lado)
+ * - Responsividade completa
+ * - Acessibilidade melhorada
  */
 
 // ✅ ISOLAMENTO: Só executa se NÃO estivermos na página de usuários
 if (!document.querySelector('.usuarios-container')) {
 
     document.addEventListener('DOMContentLoaded', function () {
+        // ===== INICIALIZAÇÃO PRINCIPAL =====
+        console.log('🚀 Inicializando sistema de chamados...');
+
         // Inicializa tooltips do Bootstrap
         initTooltips();
 
-        // Anima os cards de estatísticas
-        animateStatCards();
+        // ⭐ NOVA FUNÇÃO: Inicializa os cards redesenhados
+        initModernStatCards();
 
         // Configura o comportamento do filtro avançado
         setupAdvancedFilter();
@@ -25,9 +35,6 @@ if (!document.querySelector('.usuarios-container')) {
         // Configura a alternância de visualização (tabela/cards)
         setupViewToggle();
 
-        // Configura os cards de estatísticas clicáveis
-        setupClickableStatCards();
-
         // Configura o modal de exportação
         setupExportModal();
 
@@ -36,7 +43,461 @@ if (!document.querySelector('.usuarios-container')) {
 
         // Configura a responsividade
         setupResponsiveBehavior();
+
+
+        // ✅ NOVA LINHA: Configura autocomplete do solicitante
+        setupSolicitanteAutocomplete();
+
+        console.log('✅ Sistema inicializado com sucesso!');
     });
+
+    /**
+     * ===== NOVA FUNÇÃO PRINCIPAL DOS CARDS =====
+     * Inicializa os cards de estatísticas com o novo design
+     * - Layout reorganizado
+     * - Animações melhoradas
+     * - Interatividade aprimorada
+     */
+    function initModernStatCards() {
+        console.log('🎨 Inicializando cards modernos...');
+
+        const statCards = document.querySelectorAll('.chamados-listar-card-estatistica');
+
+        if (statCards.length === 0) {
+            console.warn('⚠️ Nenhum card de estatística encontrado');
+            return;
+        }
+
+        // ===== REORGANIZA O LAYOUT DOS CARDS =====
+        statCards.forEach((card, index) => {
+            reorganizeCardLayout(card);
+            setupCardInteractivity(card);
+            animateCardEntrance(card, index);
+            checkActiveCard(card);
+        });
+
+        console.log(`✅ ${statCards.length} cards inicializados`);
+    }
+
+    /**
+     * Reorganiza o layout interno do card para o novo design
+     * ANTES: Ícone flutuando à esquerda + conteúdo embaixo
+     * DEPOIS: Ícone + informações lado a lado no topo + descrição + barra embaixo
+     * 
+     * @param {HTMLElement} card - Elemento do card
+     */
+    function reorganizeCardLayout(card) {
+        // Obtém os elementos existentes
+        const icone = card.querySelector('.chamados-listar-icone-estatistica');
+        const conteudo = card.querySelector('.chamados-listar-conteudo-estatistica');
+        const valor = card.querySelector('.chamados-listar-valor-estatistica');
+        const label = card.querySelector('.chamados-listar-label-estatistica');
+        const descricao = card.querySelector('.chamados-listar-descricao-estatistica');
+        const progresso = card.querySelector('.chamados-listar-estatistica-progresso');
+
+        if (!icone || !conteudo || !valor || !label) {
+            console.warn('⚠️ Elementos do card não encontrados:', card);
+            return;
+        }
+
+        // Remove o float do ícone (compatibilidade com CSS antigo)
+        icone.style.float = 'none';
+        icone.style.marginRight = '0';
+
+        // Cria a nova estrutura
+        const novoConteudo = document.createElement('div');
+        novoConteudo.className = 'chamados-listar-conteudo-estatistica';
+
+        // Seção superior: Ícone + Informações lado a lado
+        const headerInfo = document.createElement('div');
+        headerInfo.className = 'chamados-listar-card-header-info';
+
+        const infoNumerica = document.createElement('div');
+        infoNumerica.className = 'chamados-listar-info-numerica';
+
+        // Move os elementos para a nova estrutura
+        infoNumerica.appendChild(valor);
+        infoNumerica.appendChild(label);
+
+        headerInfo.appendChild(icone);
+        headerInfo.appendChild(infoNumerica);
+
+        // Seção inferior: Descrição + Barra de progresso
+        const bodyInfo = document.createElement('div');
+        bodyInfo.className = 'chamados-listar-card-body-info';
+
+        if (descricao) {
+            bodyInfo.appendChild(descricao);
+        }
+        if (progresso) {
+            bodyInfo.appendChild(progresso);
+        }
+
+        // Monta a estrutura final
+        novoConteudo.appendChild(headerInfo);
+        novoConteudo.appendChild(bodyInfo);
+
+        // Substitui o conteúdo antigo
+        card.innerHTML = '';
+        card.appendChild(novoConteudo);
+
+        console.log('🔄 Layout do card reorganizado:', card);
+    }
+
+    /**
+     * Configura a interatividade do card
+     * - Cliques para filtrar
+     * - Efeitos de hover
+     * - Navegação por teclado
+     * - Tooltips informativos
+     * 
+     * @param {HTMLElement} card - Elemento do card
+     */
+    function setupCardInteractivity(card) {
+        // ===== CONFIGURAÇÃO DE CLIQUE =====
+        card.addEventListener('click', function () {
+            handleCardClick(this);
+        });
+
+        // ===== NAVEGAÇÃO POR TECLADO =====
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
+
+        card.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleCardClick(this);
+            }
+        });
+
+        // ===== TOOLTIPS INFORMATIVOS =====
+        const label = card.querySelector('.chamados-listar-label-estatistica');
+        if (label) {
+            const filterType = card.getAttribute('data-filter');
+            let tooltipText = '';
+
+            if (filterType === 'todos') {
+                tooltipText = `${label.textContent} - Clique para remover filtros`;
+            } else {
+                tooltipText = `${label.textContent} - Clique para filtrar`;
+            }
+
+            card.setAttribute('title', tooltipText);
+            card.setAttribute('data-bs-toggle', 'tooltip');
+            card.setAttribute('data-bs-placement', 'top');
+            card.setAttribute('aria-label', tooltipText);
+        }
+
+        // ===== EFEITOS VISUAIS AVANÇADOS =====
+        setupAdvancedCardEffects(card);
+
+        console.log('🎯 Interatividade configurada para card:', card);
+    }
+
+    /**
+     * Configura efeitos visuais avançados para o card
+     * - Efeito de ripple no clique
+     * - Animação de hover suave
+     * - Feedback tátil
+     * 
+     * @param {HTMLElement} card - Elemento do card
+     */
+    function setupAdvancedCardEffects(card) {
+        // ===== EFEITO DE RIPPLE NO CLIQUE =====
+        card.addEventListener('mousedown', function (e) {
+            createRippleEffect(this, e);
+        });
+
+        // ===== EFEITO DE HOVER SUAVE =====
+        let hoverTimeout;
+
+        card.addEventListener('mouseenter', function () {
+            clearTimeout(hoverTimeout);
+            this.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        });
+
+        card.addEventListener('mouseleave', function () {
+            hoverTimeout = setTimeout(() => {
+                this.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            }, 100);
+        });
+
+        // ===== FEEDBACK TÁTIL NO CLIQUE =====
+        card.addEventListener('click', function () {
+            // Efeito de "pressionar"
+            this.style.transform = 'translateY(-6px) scale(0.98)';
+
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+        });
+    }
+
+    /**
+     * Cria efeito de ripple (ondulação) no clique
+     * 
+     * @param {HTMLElement} element - Elemento onde criar o ripple
+     * @param {MouseEvent} event - Evento do mouse
+     */
+    function createRippleEffect(element, event) {
+        const ripple = document.createElement('div');
+        const rect = element.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = event.clientX - rect.left - size / 2;
+        const y = event.clientY - rect.top - size / 2;
+
+        ripple.style.cssText = `
+            position: absolute;
+            width: ${size}px;
+            height: ${size}px;
+            left: ${x}px;
+            top: ${y}px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s ease-out;
+            pointer-events: none;
+            z-index: 1;
+        `;
+
+        // Adiciona a animação CSS se não existir
+        if (!document.querySelector('#ripple-animation')) {
+            const style = document.createElement('style');
+            style.id = 'ripple-animation';
+            style.textContent = `
+                @keyframes ripple {
+                    to {
+                        transform: scale(2);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        element.style.position = 'relative';
+        element.style.overflow = 'hidden';
+        element.appendChild(ripple);
+
+        // Remove o ripple após a animação
+        setTimeout(() => {
+            if (ripple.parentNode) {
+                ripple.parentNode.removeChild(ripple);
+            }
+        }, 600);
+    }
+
+    /**
+     * Anima a entrada do card com delay escalonado
+     * 
+     * @param {HTMLElement} card - Elemento do card
+     * @param {number} index - Índice do card para delay
+     */
+    function animateCardEntrance(card, index) {
+        // Define o delay baseado no índice
+        const delay = index * 100; // 100ms entre cada card
+
+        // Inicia invisível
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+
+        setTimeout(() => {
+            card.classList.add('animate-in');
+            card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+
+            // Anima o contador após a entrada
+            setTimeout(() => {
+                animateCardCounter(card);
+            }, 200);
+
+        }, delay);
+
+        console.log(`🎬 Card ${index + 1} animado com delay de ${delay}ms`);
+    }
+
+    /**
+     * Anima o contador numérico do card
+     * 
+     * @param {HTMLElement} card - Elemento do card
+     */
+    function animateCardCounter(card) {
+        const valueElement = card.querySelector('.chamados-listar-valor-estatistica');
+        if (!valueElement) return;
+
+        const targetValue = parseInt(valueElement.textContent) || 0;
+
+        // Só anima se o valor for maior que 0
+        if (targetValue === 0) return;
+
+        let currentValue = 0;
+        const duration = 1200; // 1.2 segundos
+        const steps = 60; // 60 FPS
+        const increment = targetValue / steps;
+        const stepTime = duration / steps;
+
+        valueElement.textContent = '0';
+
+        const timer = setInterval(() => {
+            currentValue += increment;
+
+            if (currentValue >= targetValue) {
+                currentValue = targetValue;
+                clearInterval(timer);
+            }
+
+            valueElement.textContent = Math.floor(currentValue);
+        }, stepTime);
+
+        console.log(`🔢 Contador animado para valor: ${targetValue}`);
+    }
+
+    /**
+     * Manipula o clique nos cards
+     * 
+     * @param {HTMLElement} card - Card clicado
+     */
+    function handleCardClick(card) {
+        console.log('🖱️ Card clicado:', card);
+
+        const filterType = card.getAttribute('data-filter');
+
+        // Adiciona classe de loading temporária
+        card.classList.add('chamados-listar-loading');
+
+        setTimeout(() => {
+            if (filterType === 'todos') {
+                // Remove todos os filtros
+                window.location.href = window.location.pathname;
+            } else if (filterType === 'status') {
+                // Aplica filtro de status
+                const statusId = card.getAttribute('data-status');
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('status', statusId);
+                urlParams.delete('pagina'); // Volta para a primeira página
+
+                window.location.href = `${window.location.pathname}?${urlParams.toString()}`;
+            }
+        }, 200);
+    }
+
+    /**
+     * Verifica e marca o card ativo baseado nos filtros da URL
+     * 
+     * @param {HTMLElement} card - Elemento do card
+     */
+    function checkActiveCard(card) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const statusFilter = urlParams.get('status');
+        const filterType = card.getAttribute('data-filter');
+        const statusId = card.getAttribute('data-status');
+
+        // Remove classe ativa de todos os cards
+        card.classList.remove('active');
+
+        // Verifica se este card deve estar ativo
+        if (filterType === 'status' && statusFilter === statusId) {
+            card.classList.add('active');
+            console.log('✅ Card ativo identificado:', card);
+        } else if (filterType === 'todos' && !statusFilter) {
+            card.classList.add('active');
+            console.log('✅ Card ativo identificado (todos):', card);
+        }
+    }
+
+    /**
+     * ===== FUNÇÃO PARA ATUALIZAR CARDS DINAMICAMENTE =====
+     * Atualiza os valores dos cards com animação suave
+     * Útil para atualizações via AJAX sem recarregar a página
+     * 
+     * @param {Object} newStats - Novas estatísticas
+     * @param {number} newStats.total - Total de chamados
+     * @param {number} newStats.abertos - Chamados abertos
+     * @param {number} newStats.em_andamento - Chamados em andamento
+     * @param {number} newStats.concluidos - Chamados concluídos
+     */
+    function updateModernStatCards(newStats) {
+        if (!newStats) {
+            console.warn('⚠️ Estatísticas não fornecidas para atualização');
+            return;
+        }
+
+        console.log('🔄 Atualizando cards com novas estatísticas:', newStats);
+
+        const cards = {
+            total: document.querySelector('.chamados-listar-total'),
+            abertos: document.querySelector('.chamados-listar-abertos'),
+            andamento: document.querySelector('.chamados-listar-andamento'),
+            concluidos: document.querySelector('.chamados-listar-concluidos')
+        };
+
+        // Atualiza cada card
+        Object.keys(cards).forEach(key => {
+            const card = cards[key];
+            if (!card || newStats[key] === undefined) return;
+
+            const valueElement = card.querySelector('.chamados-listar-valor-estatistica');
+            const progressBar = card.querySelector('.chamados-listar-estatistica-barra');
+
+            if (valueElement) {
+                // Anima a mudança de valor
+                animateValueChange(valueElement, newStats[key]);
+            }
+
+            // Atualiza a barra de progresso
+            if (progressBar && key !== 'total' && newStats.total > 0) {
+                const percentage = (newStats[key] / newStats.total) * 100;
+
+                // Anima a barra de progresso
+                setTimeout(() => {
+                    progressBar.style.width = percentage + '%';
+                }, 300);
+            }
+
+            // Adiciona efeito visual de atualização
+            card.classList.add('chamados-listar-highlight');
+            setTimeout(() => {
+                card.classList.remove('chamados-listar-highlight');
+            }, 1000);
+        });
+
+        console.log('✅ Cards atualizados com sucesso');
+    }
+
+    /**
+     * Anima a mudança de valor em um elemento
+     * 
+     * @param {HTMLElement} element - Elemento do valor
+     * @param {number} newValue - Novo valor
+     */
+    function animateValueChange(element, newValue) {
+        const currentValue = parseInt(element.textContent) || 0;
+        const difference = newValue - currentValue;
+
+        if (difference === 0) return;
+
+        const steps = 30;
+        const stepValue = difference / steps;
+        const stepTime = 40; // 40ms por step = 1.2s total
+
+        let step = 0;
+        const timer = setInterval(() => {
+            step++;
+            const value = Math.round(currentValue + (stepValue * step));
+            element.textContent = value;
+
+            if (step >= steps) {
+                element.textContent = newValue;
+                clearInterval(timer);
+            }
+        }, stepTime);
+    }
+
+    /**
+     * ===== FUNÇÕES ORIGINAIS MANTIDAS =====
+     * Mantém compatibilidade com o código existente
+     */
 
     /**
      * Inicializa os tooltips do Bootstrap
@@ -49,70 +510,26 @@ if (!document.querySelector('.usuarios-container')) {
                 placement: 'top'
             });
         });
+        console.log('💡 Tooltips inicializados');
     }
 
     /**
-     * Anima os cards de estatísticas com efeito de entrada
+     * ⚠️ FUNÇÃO DEPRECIADA - Mantida para compatibilidade
+     * Use initModernStatCards() em vez desta
      */
     function animateStatCards() {
-        const statCards = document.querySelectorAll('.chamados-listar-card-estatistica');
-        statCards.forEach(function (card, index) {
-            // Define um atraso crescente para cada card
-            setTimeout(function () {
-                card.classList.add('animate-in');
-                card.style.animationDelay = (index * 0.1) + 's';
-            }, 100);
-        });
+        console.warn('⚠️ animateStatCards() está depreciada. Use initModernStatCards()');
+        // Chama a nova função para compatibilidade
+        initModernStatCards();
     }
 
     /**
-     * Configura os cards de estatísticas para serem clicáveis e aplicarem filtros
+     * ⚠️ FUNÇÃO DEPRECIADA - Mantida para compatibilidade
+     * Use initModernStatCards() em vez desta
      */
     function setupClickableStatCards() {
-        const statCards = document.querySelectorAll('.chamados-listar-card-estatistica');
-
-        statCards.forEach(card => {
-            card.addEventListener('click', function () {
-                // Obtém o tipo de filtro do atributo data-filter do card
-                const filterType = this.getAttribute('data-filter');
-
-                if (filterType === 'todos') {
-                    // Limpa todos os filtros
-                    window.location.href = window.location.pathname;
-                    return;
-                }
-
-                if (filterType === 'status') {
-                    // Obtém o ID do status do atributo data-status do card
-                    const statusId = this.getAttribute('data-status');
-                    // Redireciona para a página com o filtro de status aplicado
-                    window.location.href = `${window.location.pathname}?status=${statusId}`;
-                }
-            });
-
-            // Adiciona cursor de ponteiro e efeito de hover
-            card.style.cursor = 'pointer';
-
-            // Adiciona tooltip
-            const label = card.querySelector('.chamados-listar-label-estatistica').textContent;
-            card.setAttribute('title', `Filtrar por ${label}`);
-            card.setAttribute('data-bs-toggle', 'tooltip');
-            card.setAttribute('data-bs-placement', 'top');
-
-            // Verifica se o card está ativo (corresponde ao filtro atual)
-            const urlParams = new URLSearchParams(window.location.search);
-            const statusFilter = urlParams.get('status');
-
-            // Obtém o tipo de filtro e o status do card
-            const filterType = card.getAttribute('data-filter');
-            const statusId = card.getAttribute('data-status');
-
-            if (filterType === 'status' && statusFilter === statusId) {
-                card.classList.add('active');
-            } else if (filterType === 'todos' && !statusFilter) {
-                card.classList.add('active');
-            }
-        });
+        console.warn('⚠️ setupClickableStatCards() está depreciada. Use initModernStatCards()');
+        // A funcionalidade agora está integrada em initModernStatCards()
     }
 
     /**
@@ -124,6 +541,8 @@ if (!document.querySelector('.usuarios-container')) {
         const filterCollapse = document.getElementById('filtrosCollapse');
 
         if (filterHeader && filterToggle && filterCollapse) {
+            // ===== CORREÇÃO: Lógica do botão de expandir/recolher =====
+
             // Verifica se há filtros ativos
             const urlParams = new URLSearchParams(window.location.search);
             const hasActiveFilters = urlParams.toString() !== '' &&
@@ -135,89 +554,103 @@ if (!document.querySelector('.usuarios-container')) {
                     urlParams.has('solicitante') ||
                     urlParams.has('tipo_servico'));
 
-            // Expande o filtro apenas se houver filtros ativos
-            if (hasActiveFilters) {
-                const bsCollapse = new bootstrap.Collapse(filterCollapse, {
-                    toggle: true
-                });
+            // Inicializa o Bootstrap Collapse
+            let bsCollapse = new bootstrap.Collapse(filterCollapse, {
+                toggle: false // Não alterna automaticamente
+            });
 
-                // Altera o ícone do botão
+            // ✅ CORREÇÃO: Função para atualizar o ícone baseado no estado
+            function updateToggleIcon() {
                 const icon = filterToggle.querySelector('i');
-                if (icon) {
-                    icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                if (!icon) return;
+
+                if (filterCollapse.classList.contains('show')) {
+                    // Filtro está expandido - mostrar ícone para recolher
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                } else {
+                    // Filtro está recolhido - mostrar ícone para expandir
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
                 }
-            } else {
-                // Garante que o filtro esteja recolhido por padrão
-                const bsCollapse = new bootstrap.Collapse(filterCollapse, {
-                    toggle: false
-                });
             }
 
-            // Adiciona evento de clique no cabeçalho
-            filterHeader.addEventListener('click', function () {
-                const bsCollapse = bootstrap.Collapse.getInstance(filterCollapse);
-                if (!bsCollapse) {
-                    new bootstrap.Collapse(filterCollapse);
-                } else {
-                    bsCollapse.toggle();
-                }
+            // ✅ CORREÇÃO: Expande o filtro apenas se houver filtros ativos
+            if (hasActiveFilters) {
+                bsCollapse.show();
+            }
 
-                // Alterna o ícone do botão
-                const icon = filterToggle.querySelector('i');
-                if (icon) {
-                    if (icon.classList.contains('fa-chevron-down')) {
-                        icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
-                    } else {
-                        icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
-                    }
+            // Atualiza o ícone inicial
+            updateToggleIcon();
+
+            // ✅ CORREÇÃO: Evento de clique no cabeçalho - agora funciona corretamente
+            filterHeader.addEventListener('click', function (e) {
+                e.preventDefault();
+
+                // Alterna o estado do collapse
+                if (filterCollapse.classList.contains('show')) {
+                    bsCollapse.hide();
+                } else {
+                    bsCollapse.show();
                 }
             });
 
-            // Adiciona evento para quando o collapse é mostrado/escondido
+            // ✅ CORREÇÃO: Eventos do Bootstrap Collapse para atualizar o ícone
             filterCollapse.addEventListener('shown.bs.collapse', function () {
-                const icon = filterToggle.querySelector('i');
-                if (icon) {
-                    icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
-                }
+                updateToggleIcon();
+                console.log('🔽 Filtro expandido');
             });
 
             filterCollapse.addEventListener('hidden.bs.collapse', function () {
-                const icon = filterToggle.querySelector('i');
-                if (icon) {
-                    icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
-                }
+                updateToggleIcon();
+                console.log('🔼 Filtro recolhido');
             });
-        }
 
-        // Configura o formulário de filtro
-        const filterForm = document.querySelector('.chamados-listar-filtros-form');
-        if (filterForm) {
-            // Adiciona validação visual aos campos
-            const filterSelects = filterForm.querySelectorAll('.chamados-listar-filtro-select');
-            filterSelects.forEach(select => {
-                select.addEventListener('change', function () {
-                    if (this.value) {
-                        this.style.borderColor = 'var(--chamados-listar-primary)';
-                    } else {
-                        this.style.borderColor = 'var(--chamados-listar-light-gray)';
+            // ===== RESTO DA FUNÇÃO MANTIDA =====
+
+            // Configura o formulário de filtro
+            const filterForm = document.querySelector('.chamados-listar-filtros-form');
+            if (filterForm) {
+                // Adiciona validação visual aos campos
+                const filterInputs = filterForm.querySelectorAll('.chamados-listar-filtro-select, .chamados-listar-filtro-input');
+                filterInputs.forEach(input => {
+                    input.addEventListener('change', function () {
+                        if (this.value) {
+                            this.style.borderColor = 'var(--chamados-listar-primary)';
+                        } else {
+                            this.style.borderColor = 'var(--chamados-listar-light-gray)';
+                        }
+                    });
+
+                    // ✅ NOVO: Evento para inputs de texto (solicitante)
+                    if (input.type === 'text') {
+                        input.addEventListener('input', function () {
+                            if (this.value.trim()) {
+                                this.style.borderColor = 'var(--chamados-listar-primary)';
+                            } else {
+                                this.style.borderColor = 'var(--chamados-listar-light-gray)';
+                            }
+                        });
+                    }
+
+                    // Aplica estilo inicial se já tiver valor
+                    if (input.value) {
+                        input.style.borderColor = 'var(--chamados-listar-primary)';
                     }
                 });
 
-                // Aplica estilo inicial se já tiver valor
-                if (select.value) {
-                    select.style.borderColor = 'var(--chamados-listar-primary)';
-                }
-            });
+                // Adiciona efeito de loading ao botão de aplicar filtros
+                filterForm.addEventListener('submit', function () {
+                    const submitBtn = this.querySelector('.chamados-listar-filtros-btn-aplicar');
+                    if (submitBtn) {
+                        const originalText = submitBtn.innerHTML;
+                        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aplicando...';
+                        submitBtn.disabled = true;
+                    }
+                });
+            }
 
-            // Adiciona efeito de loading ao botão de aplicar filtros
-            filterForm.addEventListener('submit', function () {
-                const submitBtn = this.querySelector('.chamados-listar-filtros-btn-aplicar');
-                if (submitBtn) {
-                    const originalText = submitBtn.innerHTML;
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aplicando...';
-                    submitBtn.disabled = true;
-                }
-            });
+            console.log('🔍 Filtros avançados configurados (corrigidos)');
         }
     }
 
@@ -278,6 +711,8 @@ if (!document.querySelector('.usuarios-container')) {
                 dataFim.style.borderColor = 'var(--chamados-listar-primary)';
             }
         }
+
+        console.log('📅 Seletores de data configurados');
     }
 
     /**
@@ -349,6 +784,8 @@ if (!document.querySelector('.usuarios-container')) {
                 sortTable(table, index, direction);
             });
         });
+
+        console.log('📊 Tabela aprimorada');
     }
 
     /**
@@ -465,6 +902,8 @@ if (!document.querySelector('.usuarios-container')) {
                 btnCards.click();
             }
         }
+
+        console.log('🔄 Alternância de visualização configurada');
     }
 
     /**
@@ -556,6 +995,8 @@ if (!document.querySelector('.usuarios-container')) {
                 });
             }
         }
+
+        console.log('📤 Modal de exportação configurado');
     }
 
     /**
@@ -685,6 +1126,8 @@ if (!document.querySelector('.usuarios-container')) {
 
         // Adiciona listener para redimensionamento da janela
         window.addEventListener('resize', adjustTableForSmallScreens);
+
+        console.log('📱 Comportamento responsivo configurado');
     }
 
     /**
@@ -705,62 +1148,12 @@ if (!document.querySelector('.usuarios-container')) {
     }
 
     /**
-     * Função para atualizar os contadores de estatísticas com animação
-     * Pode ser chamada após carregar novos dados via AJAX
+     * ⚠️ FUNÇÃO DEPRECIADA - Mantida para compatibilidade
+     * Use updateModernStatCards() em vez desta
      */
     function updateStatCounters(stats) {
-        if (!stats) return;
-
-        const elements = {
-            total: document.querySelector('.chamados-listar-total .chamados-listar-valor-estatistica'),
-            abertos: document.querySelector('.chamados-listar-abertos .chamados-listar-valor-estatistica'),
-            andamento: document.querySelector('.chamados-listar-andamento .chamados-listar-valor-estatistica'),
-            concluidos: document.querySelector('.chamados-listar-concluidos .chamados-listar-valor-estatistica')
-        };
-
-        // Função para animar a contagem
-        function animateCounter(element, targetValue) {
-            if (!element) return;
-
-            const startValue = parseInt(element.textContent) || 0;
-            const duration = 1000; // ms
-            const startTime = performance.now();
-
-            function updateCounter(currentTime) {
-                const elapsedTime = currentTime - startTime;
-
-                if (elapsedTime < duration) {
-                    const progress = elapsedTime / duration;
-                    const currentValue = Math.floor(startValue + progress * (targetValue - startValue));
-                    element.textContent = currentValue;
-                    requestAnimationFrame(updateCounter);
-                } else {
-                    element.textContent = targetValue;
-                }
-            }
-
-            requestAnimationFrame(updateCounter);
-        }
-
-        // Atualiza cada contador com animação
-        if (stats.total !== undefined && elements.total) {
-            animateCounter(elements.total, stats.total);
-        }
-
-        if (stats.abertos !== undefined && elements.abertos) {
-            animateCounter(elements.abertos, stats.abertos);
-        }
-
-        if (stats.em_andamento !== undefined && elements.andamento) {
-            animateCounter(elements.andamento, stats.em_andamento);
-        }
-
-        if (stats.concluidos !== undefined && elements.concluidos) {
-            animateCounter(elements.concluidos, stats.concluidos);
-        }
-
-        // Atualiza as barras de progresso
-        updateProgressBars(stats);
+        console.warn('⚠️ updateStatCounters() está depreciada. Use updateModernStatCards()');
+        updateModernStatCards(stats);
     }
 
     /**
@@ -809,8 +1202,95 @@ if (!document.querySelector('.usuarios-container')) {
         }
     }
 
+
+
     /**
-     * ✅ CORRIGIDO: Configura a paginação da tabela de chamados
+ * ✅ NOVA FUNÇÃO: Configura autocomplete inteligente para o campo solicitante
+ */
+    function setupSolicitanteAutocomplete() {
+        const solicitanteInput = document.getElementById('chamados-listar-solicitante');
+        const datalist = document.getElementById('solicitantes-datalist');
+
+        if (!solicitanteInput) return;
+
+        // ===== AUTOCOMPLETE INTELIGENTE =====
+        let timeoutId;
+
+        solicitanteInput.addEventListener('input', function () {
+            const value = this.value.trim();
+
+            // Limpa timeout anterior
+            clearTimeout(timeoutId);
+
+            // Adiciona delay para evitar muitas requisições
+            timeoutId = setTimeout(() => {
+                // Filtra as opções do datalist baseado no que foi digitado
+                if (datalist && value.length >= 2) {
+                    const options = datalist.querySelectorAll('option');
+                    let hasMatch = false;
+
+                    options.forEach(option => {
+                        const optionValue = option.value.toLowerCase();
+                        const inputValue = value.toLowerCase();
+
+                        if (optionValue.includes(inputValue)) {
+                            option.style.display = '';
+                            hasMatch = true;
+                        } else {
+                            option.style.display = 'none';
+                        }
+                    });
+
+                    // Feedback visual se não houver correspondências
+                    if (!hasMatch && value.length >= 3) {
+                        solicitanteInput.style.borderColor = 'var(--chamados-listar-warning)';
+                        solicitanteInput.title = 'Nenhum solicitante encontrado com este nome';
+                    } else {
+                        solicitanteInput.style.borderColor = value ? 'var(--chamados-listar-primary)' : 'var(--chamados-listar-light-gray)';
+                        solicitanteInput.title = '';
+                    }
+                }
+            }, 300); // 300ms de delay
+        });
+
+        // ===== LIMPEZA DO CAMPO =====
+        solicitanteInput.addEventListener('keydown', function (e) {
+            // Limpa o campo com Escape
+            if (e.key === 'Escape') {
+                this.value = '';
+                this.style.borderColor = 'var(--chamados-listar-light-gray)';
+                this.blur();
+            }
+        });
+
+        // ===== VALIDAÇÃO AO SAIR DO CAMPO =====
+        solicitanteInput.addEventListener('blur', function () {
+            const value = this.value.trim();
+
+            if (value) {
+                // Verifica se o valor digitado existe nas opções
+                if (datalist) {
+                    const options = Array.from(datalist.querySelectorAll('option'));
+                    const exactMatch = options.some(option =>
+                        option.value.toLowerCase() === value.toLowerCase()
+                    );
+
+                    if (exactMatch) {
+                        this.style.borderColor = 'var(--chamados-listar-success)';
+                    } else {
+                        this.style.borderColor = 'var(--chamados-listar-primary)';
+                    }
+                }
+            } else {
+                this.style.borderColor = 'var(--chamados-listar-light-gray)';
+            }
+        });
+
+        console.log('👤 Autocomplete do solicitante configurado');
+    }
+
+    /**
+     * Configura a paginação da tabela de chamados
      */
     function setupPagination() {
         const paginationContainer = document.querySelector('.pagination-container');
@@ -818,12 +1298,12 @@ if (!document.querySelector('.usuarios-container')) {
 
         const paginationLinks = paginationContainer.querySelectorAll('.pagination-link');
 
-        // ✅ CORREÇÃO: Declara as variáveis necessárias
+        // Declara as variáveis necessárias
         let previousLink = null;
         let nextLink = null;
         let currentPage = 1;
 
-        // ✅ IDENTIFICA os links de navegação
+        // Identifica os links de navegação
         paginationLinks.forEach(link => {
             const linkText = link.textContent.trim();
             const linkHref = link.getAttribute('href');
@@ -908,22 +1388,6 @@ if (!document.querySelector('.usuarios-container')) {
             adjustPaginationForSmallScreens();
         });
 
-        // ✅ CORRIGIDO: Configura o link "Anterior"
-        if (previousLink && !previousLink.classList.contains('chamados-listar-paginacao-link-desabilitado')) {
-            previousLink.addEventListener('click', function (e) {
-                e.preventDefault();
-                navigateToPage(currentPage - 1);
-            });
-        }
-
-        // ✅ CORRIGIDO: Configura o link "Próximo"
-        if (nextLink && !nextLink.classList.contains('chamados-listar-paginacao-link-desabilitado')) {
-            nextLink.addEventListener('click', function (e) {
-                e.preventDefault();
-                navigateToPage(currentPage + 1);
-            });
-        }
-
         /**
         * Navega para a página especificada mantendo os filtros atuais
         * @param {number} page - Número da página
@@ -939,82 +1403,15 @@ if (!document.querySelector('.usuarios-container')) {
             window.location.href = `${window.location.pathname}?${params.toString()}`;
         }
 
-        // Adiciona efeito de hover aos links de paginação
-        paginationLinks.forEach(link => {
-            if (!link.classList.contains('chamados-listar-paginacao-link-desabilitado')) {
-                link.addEventListener('mouseenter', function () {
-                    this.style.backgroundColor = 'var(--chamados-listar-primary)';
-                    this.style.color = 'var(--chamados-listar-white)';
-                    this.style.transform = 'translateY(-2px)';
-                });
-
-                link.addEventListener('mouseleave', function () {
-                    if (!this.classList.contains('chamados-listar-paginacao-link-ativo')) {
-                        this.style.backgroundColor = '';
-                        this.style.color = '';
-                    }
-                    this.style.transform = 'translateY(0)';
-                });
-            }
-        });
-
-        // Adiciona contador de resultados
-        const totalItems = paginationContainer.dataset.totalItems;
-        const itemsPerPage = paginationContainer.dataset.itemsPerPage;
-
-        if (totalItems && itemsPerPage) {
-            const startItem = (currentPage - 1) * parseInt(itemsPerPage) + 1;
-            const endItem = Math.min(startItem + parseInt(itemsPerPage) - 1, parseInt(totalItems));
-
-            const paginationInfo = document.createElement('div');
-            paginationInfo.className = 'chamados-listar-paginacao-info';
-            paginationInfo.textContent = `Mostrando ${startItem}-${endItem} de ${totalItems} chamados`;
-
-            // Insere o contador antes da paginação
-            paginationContainer.parentNode.insertBefore(paginationInfo, paginationContainer);
-        }
-
-        // Adiciona comportamento responsivo
-        function adjustPaginationForSmallScreens() {
-            if (window.innerWidth < 576) {
-                // Em telas pequenas, mostra menos links de página
-                const pageItems = paginationContainer.querySelectorAll('.chamados-listar-paginacao-item');
-
-                pageItems.forEach(item => {
-                    const link = item.querySelector('.chamados-listar-paginacao-link');
-                    if (link) {
-                        const pageNumber = parseInt(link.textContent);
-
-                        // Esconde páginas que não são a atual, a primeira, a última ou adjacentes à atual
-                        if (!isNaN(pageNumber) &&
-                            pageNumber !== 1 &&
-                            pageNumber !== parseInt(paginationContainer.dataset.totalPages) &&
-                            pageNumber !== currentPage &&
-                            pageNumber !== currentPage - 1 &&
-                            pageNumber !== currentPage + 1) {
-
-                            item.style.display = 'none';
-                        }
-                    }
-                });
-            } else {
-                // Em telas maiores, restaura a visibilidade
-                const pageItems = paginationContainer.querySelectorAll('.chamados-listar-paginacao-item');
-                pageItems.forEach(item => {
-                    item.style.display = '';
-                });
-            }
-        }
-
-        // Executa o ajuste inicial
-        adjustPaginationForSmallScreens();
-
-        // Adiciona listener para redimensionamento da janela
-        window.addEventListener('resize', adjustPaginationForSmallScreens);
+        console.log('📄 Paginação configurada');
     }
 
-    // ✅ EXPÕE FUNÇÕES GLOBALMENTE (se necessário)
+    // ===== EXPÕE FUNÇÕES GLOBALMENTE =====
+    // Mantém compatibilidade com código externo
     window.mudarRegistrosPorPagina = mudarRegistrosPorPagina;
-    window.updateStatCounters = updateStatCounters;
+    window.updateStatCounters = updateStatCounters; // Depreciada
+    window.updateModernStatCards = updateModernStatCards; // Nova função principal
+
+    console.log('🎉 Sistema de chamados carregado com sucesso!');
 
 } // ✅ FIM da verificação de isolamento

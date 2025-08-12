@@ -133,17 +133,29 @@
                             </select>
                         </div>
                         <div class="chamados-listar-filtro-grupo">
-                            <label for="chamados-listar-solicitante" class="chamados-listar-filtro-label">Solicitante</label>
-                            <select class="chamados-listar-filtro-select" id="chamados-listar-solicitante" name="solicitante">
-                                <option value="">Todos</option>
+                            <label for="chamados-listar-solicitante" class="chamados-listar-filtro-label">
+                                <i class="fas fa-user"></i> Solicitante
+                            </label>
+
+                            <!-- ✅ CORRIGIDO: Mudou de select para input -->
+                            <input
+                                type="text"
+                                class="chamados-listar-filtro-input"
+                                id="chamados-listar-solicitante"
+                                name="solicitante"
+                                value="<?= isset($filtros['solicitante']) && $filtros['solicitante'] !== null ? htmlspecialchars($filtros['solicitante']) : '' ?>"
+                                placeholder="Digite o nome do solicitante..."
+                                autocomplete="off"
+                                list="solicitantes-datalist">
+
+                            <!-- Mostra sugestões conforme o usuário digita -->
+                            <datalist id="solicitantes-datalist">
                                 <?php if (isset($solicitantes) && is_array($solicitantes)): ?>
                                     <?php foreach ($solicitantes as $solicitante): ?>
-                                        <option value="<?= $solicitante ?>" <?= (isset($filtros['solicitante']) && $filtros['solicitante'] == $solicitante) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($solicitante) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
+                                        <option value="<?= htmlspecialchars($solicitante) ?>">
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                            </datalist>
                         </div>
                         <div class="chamados-listar-filtro-grupo">
                             <label for="chamados-listar-data-inicio" class="chamados-listar-filtro-label">Data Inicial</label>

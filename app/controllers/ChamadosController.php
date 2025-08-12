@@ -464,9 +464,13 @@ class ChamadosController extends Controller
         // Obtém os status disponíveis para transição
         $statusDisponiveis = $this->statusModel->findAll(null, null, 'nome ASC');
 
-        // Obtém os setores disponíveis para transferência (apenas os que o usuário tem permissão)
-        $setoresPermitidos = $this->verificarPermissaoSetor($usuarioId);
-        $setoresDisponiveis = is_array($setoresPermitidos) ? $setoresPermitidos : $this->setorModel->findAll('empresa_id = :empresa_id AND ativo = 1', ['empresa_id' => $empresaId], 'nome ASC');
+        // ✅ CORREÇÃO: Obtém TODOS os setores ativos da empresa para transferência
+        // Não limita apenas aos setores que o usuário tem permissão
+        $setoresDisponiveis = $this->setorModel->findAll(
+            'empresa_id = :empresa_id AND ativo = 1',
+            ['empresa_id' => $empresaId],
+            'nome ASC'
+        );
 
         $this->render('chamados/visualizar', [
             'chamado' => $chamado,
@@ -762,7 +766,7 @@ class ChamadosController extends Controller
 
                 $historicoStmt->execute();
             }
- 
+
             set_flash_message('success', 'Chamado atualizado com sucesso.');
             redirect('chamados/visualizar/' . $id);
         } catch (Exception $e) {
@@ -943,12 +947,15 @@ class ChamadosController extends Controller
             return;
         }
 
-        // Verifica se o usuário tem permissão para o novo setor
-        if (!$this->verificarPermissaoSetor($usuarioId, $setor_id)) {
-            set_flash_message('error', 'Você não tem permissão para transferir o chamado para este setor.');
-            redirect('chamados/visualizar/' . $id);
-            return;
-        }
+        // ✅ REMOÇÃO: Comentamos a verificação que impedia transferência para setores sem permissão
+        // Agora o usuário pode transferir para qualquer setor ativo da empresa
+        /*
+    if (!$this->verificarPermissaoSetor($usuarioId, $setor_id)) {
+        set_flash_message('error', 'Você não tem permissão para transferir o chamado para este setor.');
+        redirect('chamados/visualizar/' . $id);
+        return;
+    }
+    */
 
         // Prepara os dados para atualização
         $data = [

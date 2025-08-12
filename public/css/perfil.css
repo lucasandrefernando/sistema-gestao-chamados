@@ -1,30 +1,33 @@
-/* ==========================================================================
-   PERFIL DO USUÁRIO - LAYOUT MODERNO
-   Estilos para o dashboard de perfil do usuário
-   ========================================================================== */
+/**
+ * PERFIL CSS - Versão Profissional
+ * Estilos limpos e funcionais para o perfil do usuário
+ */
 
 :root {
-  /* Cores */
-  --profile-primary: #4f46e5; /* Indigo */
+  /* Cores principais */
+  --profile-primary: #4361ee;
   --profile-primary-light: #6366f1;
   --profile-primary-dark: #4338ca;
-  --profile-secondary: #6b7280; /* Gray */
-  --profile-success: #10b981; /* Emerald */
-  --profile-warning: #f59e0b; /* Amber */
-  --profile-danger: #ef4444; /* Red */
-  --profile-info: #3b82f6; /* Blue */
+  --profile-secondary: #6b7280;
+  --profile-success: #10b981;
+  --profile-danger: #ef4444;
+  --profile-warning: #f59e0b;
+  --profile-info: #3b82f6;
 
-  --profile-bg: #f9fafb; /* Light Gray Background */
-  --profile-card-bg: #ffffff; /* White Card Background */
-  --profile-text-dark: #1f2937; /* Dark Gray Text */
-  --profile-text-medium: #4b5563; /* Medium Gray Text */
-  --profile-text-light: #9ca3af; /* Light Gray Text */
-  --profile-border: #e5e7eb; /* Light Gray Border */
-  --profile-shadow-sm: rgba(0, 0, 0, 0.05);
-  --profile-shadow-md: rgba(0, 0, 0, 0.1);
-  --profile-shadow-lg: rgba(0, 0, 0, 0.15);
+  /* Cores de fundo */
+  --profile-bg: #f9fafb;
+  --profile-card-bg: #ffffff;
+  --profile-text-dark: #1f2937;
+  --profile-text-medium: #4b5563;
+  --profile-text-light: #9ca3af;
+  --profile-border: #e5e7eb;
 
-  /* Espaçamento */
+  /* Sombras */
+  --profile-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --profile-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --profile-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  /* Espaçamentos */
   --profile-spacing-xs: 0.5rem;
   --profile-spacing-sm: 0.75rem;
   --profile-spacing-md: 1rem;
@@ -32,35 +35,42 @@
   --profile-spacing-xl: 2rem;
 
   /* Transições */
-  --profile-transition-fast: 0.2s ease-in-out;
-  --profile-transition-normal: 0.3s ease-in-out;
-  --profile-transition-slow: 0.5s ease-in-out;
+  --profile-transition: all 0.3s ease;
+  --profile-transition-fast: all 0.15s ease;
 
-  /* Borda */
-  --profile-border-radius: 0.75rem; /* 12px */
+  /* Bordas */
+  --profile-radius: 0.75rem;
+  --profile-radius-lg: 1rem;
+  --profile-radius-full: 9999px;
 }
 
-/* Estilos Gerais do Dashboard de Perfil */
+/* ============================================================================
+   LAYOUT PRINCIPAL
+   ============================================================================ */
+
 .profile-dashboard {
   display: grid;
-  grid-template-columns: 1fr; /* Padrão para mobile */
+  grid-template-columns: 1fr;
   gap: var(--profile-spacing-lg);
   padding: var(--profile-spacing-lg);
   background-color: var(--profile-bg);
-  min-height: calc(100vh - 60px); /* Ajuste conforme seu header/footer */
-  font-family: "Poppins", sans-serif;
+  min-height: calc(100vh - 60px);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
   color: var(--profile-text-dark);
 }
 
 @media (min-width: 992px) {
-  /* Desktop */
   .profile-dashboard {
-    grid-template-columns: 300px 1fr; /* Sidebar de 300px, conteúdo flexível */
+    grid-template-columns: 300px 1fr;
     padding: var(--profile-spacing-xl);
   }
 }
 
-/* Sidebar do Perfil */
+/* ============================================================================
+   SIDEBAR DO PERFIL
+   ============================================================================ */
+
 .profile-sidebar {
   display: flex;
   flex-direction: column;
@@ -69,40 +79,39 @@
 
 .profile-card {
   background-color: var(--profile-card-bg);
-  border-radius: var(--profile-border-radius);
-  box-shadow: 0 4px 12px var(--profile-shadow-sm);
-  padding: var(--profile-spacing-lg);
+  border-radius: var(--profile-radius-lg);
+  box-shadow: var(--profile-shadow-md);
+  padding: var(--profile-spacing-xl);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  transition: transform var(--profile-transition-normal),
-    box-shadow var(--profile-transition-normal);
+  transition: var(--profile-transition);
 }
 
 .profile-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px var(--profile-shadow-md);
+  transform: translateY(-2px);
+  box-shadow: var(--profile-shadow-lg);
 }
 
 .profile-avatar-container {
   position: relative;
-  margin-bottom: var(--profile-spacing-md);
+  margin-bottom: var(--profile-spacing-lg);
 }
 
 .profile-avatar-main {
   width: 96px;
   height: 96px;
-  border-radius: 50%;
-  background-color: var(--profile-primary-light);
+  border-radius: var(--profile-radius-full);
+  background-color: var(--profile-primary);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2.5rem;
   font-weight: 600;
-  border: 4px solid var(--profile-primary);
-  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2);
+  border: 4px solid var(--profile-primary-light);
+  box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.2);
 }
 
 .profile-status-indicator {
@@ -111,7 +120,7 @@
   right: 6px;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
+  border-radius: var(--profile-radius-full);
   border: 3px solid var(--profile-card-bg);
 }
 
@@ -124,7 +133,7 @@
 }
 
 .profile-basic-info {
-  margin-bottom: var(--profile-spacing-md);
+  margin-bottom: var(--profile-spacing-lg);
 }
 
 .profile-username {
@@ -137,7 +146,7 @@
 .profile-email {
   font-size: 0.95rem;
   color: var(--profile-text-medium);
-  margin-bottom: var(--profile-spacing-md);
+  margin-bottom: var(--profile-spacing-lg);
 }
 
 .profile-badges {
@@ -151,7 +160,7 @@
   display: inline-flex;
   align-items: center;
   padding: 0.4rem 0.8rem;
-  border-radius: 9999px; /* Pill shape */
+  border-radius: var(--profile-radius-full);
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -176,7 +185,7 @@
 .profile-quick-stats {
   width: 100%;
   border-top: 1px solid var(--profile-border);
-  padding-top: var(--profile-spacing-md);
+  padding-top: var(--profile-spacing-lg);
   display: flex;
   flex-direction: column;
   gap: var(--profile-spacing-md);
@@ -191,8 +200,8 @@
 .stat-icon {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  background-color: rgba(79, 70, 229, 0.1);
+  border-radius: var(--profile-radius-full);
+  background-color: rgba(67, 97, 238, 0.1);
   color: var(--profile-primary);
   display: flex;
   align-items: center;
@@ -217,20 +226,23 @@
   color: var(--profile-text-dark);
 }
 
-/* Menu de Ações */
+/* ============================================================================
+   MENU DE AÇÕES
+   ============================================================================ */
+
 .profile-actions-menu {
   background-color: var(--profile-card-bg);
-  border-radius: var(--profile-border-radius);
-  box-shadow: 0 4px 12px var(--profile-shadow-sm);
-  padding: var(--profile-spacing-lg);
+  border-radius: var(--profile-radius-lg);
+  box-shadow: var(--profile-shadow-md);
+  padding: var(--profile-spacing-xl);
 }
 
 .profile-actions-menu h3 {
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--profile-text-dark);
-  margin-bottom: var(--profile-spacing-md);
-  padding-bottom: var(--profile-spacing-xs);
+  margin-bottom: var(--profile-spacing-lg);
+  padding-bottom: var(--profile-spacing-sm);
   border-bottom: 1px solid var(--profile-border);
 }
 
@@ -256,18 +268,18 @@
   padding: 0.8rem var(--profile-spacing-md);
   background-color: transparent;
   border: none;
-  border-radius: var(--profile-border-radius);
+  border-radius: var(--profile-radius);
   color: var(--profile-text-medium);
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--profile-transition-fast);
+  transition: var(--profile-transition-fast);
 }
 
 .action-btn:hover {
   background-color: var(--profile-bg);
   color: var(--profile-primary);
-  transform: translateX(5px);
+  transform: translateX(4px);
 }
 
 .action-btn i:first-child {
@@ -288,7 +300,10 @@
   background-color: rgba(239, 68, 68, 0.1);
 }
 
-/* Conteúdo Principal */
+/* ============================================================================
+   CONTEÚDO PRINCIPAL
+   ============================================================================ */
+
 .profile-content {
   display: flex;
   flex-direction: column;
@@ -300,11 +315,12 @@
   display: flex;
   align-items: center;
   padding: var(--profile-spacing-md);
-  border-radius: var(--profile-border-radius);
+  border-radius: var(--profile-radius);
   font-size: 0.95rem;
   font-weight: 500;
   position: relative;
-  box-shadow: 0 2px 8px var(--profile-shadow-sm);
+  box-shadow: var(--profile-shadow-sm);
+  transition: var(--profile-transition);
 }
 
 .notification i {
@@ -313,14 +329,14 @@
 }
 
 .notification.success {
-  background-color: #d1fae5; /* Light Green */
-  color: #065f46; /* Dark Green */
+  background-color: #d1fae5;
+  color: #065f46;
   border: 1px solid #a7f3d0;
 }
 
 .notification.error {
-  background-color: #fee2e2; /* Light Red */
-  color: #991b1b; /* Dark Red */
+  background-color: #fee2e2;
+  color: #991b1b;
   border: 1px solid #fca5a5;
 }
 
@@ -335,22 +351,22 @@
   top: 50%;
   transform: translateY(-50%);
   opacity: 0.7;
-  transition: opacity var(--profile-transition-fast);
+  transition: var(--profile-transition-fast);
 }
 
 .close-notification:hover {
   opacity: 1;
 }
 
-/* Header da Página de Conteúdo */
+/* Header da página */
 .content-header {
   display: flex;
   flex-direction: column;
   gap: var(--profile-spacing-md);
   background-color: var(--profile-card-bg);
-  border-radius: var(--profile-border-radius);
-  box-shadow: 0 4px 12px var(--profile-shadow-sm);
-  padding: var(--profile-spacing-lg);
+  border-radius: var(--profile-radius-lg);
+  box-shadow: var(--profile-shadow-md);
+  padding: var(--profile-spacing-xl);
 }
 
 @media (min-width: 768px) {
@@ -379,7 +395,10 @@
   gap: var(--profile-spacing-md);
 }
 
-/* Botões Modernos */
+/* ============================================================================
+   BOTÕES MODERNOS
+   ============================================================================ */
+
 .btn-primary-new,
 .btn-secondary-new,
 .btn-warning-new,
@@ -389,39 +408,36 @@
   align-items: center;
   justify-content: center;
   padding: 0.75rem 1.25rem;
-  border-radius: var(--profile-border-radius);
+  border-radius: var(--profile-radius);
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--profile-transition-normal);
+  transition: var(--profile-transition);
   text-decoration: none;
   white-space: nowrap;
+  border: none;
 }
 
 .btn-primary-new {
   background-color: var(--profile-primary);
   color: white;
-  border: 1px solid var(--profile-primary);
-  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 4px 10px rgba(67, 97, 238, 0.2);
 }
 
 .btn-primary-new:hover {
   background-color: var(--profile-primary-dark);
-  border-color: var(--profile-primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 6px 15px rgba(67, 97, 238, 0.3);
   color: white;
 }
 
 .btn-secondary-new {
   background-color: var(--profile-text-light);
   color: white;
-  border: 1px solid var(--profile-text-light);
 }
 
 .btn-secondary-new:hover {
   background-color: var(--profile-secondary);
-  border-color: var(--profile-secondary);
   transform: translateY(-2px);
   color: white;
 }
@@ -429,13 +445,11 @@
 .btn-warning-new {
   background-color: var(--profile-warning);
   color: white;
-  border: 1px solid var(--profile-warning);
   box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);
 }
 
 .btn-warning-new:hover {
-  background-color: #d97706; /* Darker Amber */
-  border-color: #d97706;
+  background-color: #d97706;
   transform: translateY(-2px);
   box-shadow: 0 6px 15px rgba(245, 158, 11, 0.3);
   color: white;
@@ -444,13 +458,11 @@
 .btn-danger-new {
   background-color: var(--profile-danger);
   color: white;
-  border: 1px solid var(--profile-danger);
   box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
 }
 
 .btn-danger-new:hover {
-  background-color: #dc2626; /* Darker Red */
-  border-color: #dc2626;
+  background-color: #dc2626;
   transform: translateY(-2px);
   box-shadow: 0 6px 15px rgba(239, 68, 68, 0.3);
   color: white;
@@ -476,7 +488,10 @@
   margin-right: var(--profile-spacing-xs);
 }
 
-/* Seções de Informações */
+/* ============================================================================
+   SEÇÕES DE INFORMAÇÕES
+   ============================================================================ */
+
 .info-sections {
   display: flex;
   flex-direction: column;
@@ -485,16 +500,15 @@
 
 .info-section {
   background-color: var(--profile-card-bg);
-  border-radius: var(--profile-border-radius);
-  box-shadow: 0 4px 12px var(--profile-shadow-sm);
-  padding: var(--profile-spacing-lg);
-  transition: transform var(--profile-transition-normal),
-    box-shadow var(--profile-transition-normal);
+  border-radius: var(--profile-radius-lg);
+  box-shadow: var(--profile-shadow-md);
+  padding: var(--profile-spacing-xl);
+  transition: var(--profile-transition);
 }
 
 .info-section:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px var(--profile-shadow-md);
+  transform: translateY(-2px);
+  box-shadow: var(--profile-shadow-lg);
 }
 
 .section-header {
@@ -502,7 +516,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--profile-spacing-lg);
-  padding-bottom: var(--profile-spacing-xs);
+  padding-bottom: var(--profile-spacing-sm);
   border-bottom: 1px solid var(--profile-border);
 }
 
@@ -524,7 +538,7 @@
   background-color: var(--profile-primary);
   color: white;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--profile-radius-full);
   width: 36px;
   height: 36px;
   display: flex;
@@ -532,14 +546,14 @@
   justify-content: center;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all var(--profile-transition-fast);
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
+  transition: var(--profile-transition-fast);
+  box-shadow: 0 2px 6px rgba(67, 97, 238, 0.2);
 }
 
 .edit-section-btn:hover {
   background-color: var(--profile-primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 4px 8px rgba(67, 97, 238, 0.3);
 }
 
 .info-grid {
@@ -582,7 +596,10 @@
   font-size: 0.9rem;
 }
 
-/* Segurança da Conta */
+/* ============================================================================
+   SEGURANÇA DA CONTA
+   ============================================================================ */
+
 .security-items {
   display: flex;
   flex-direction: column;
@@ -595,15 +612,15 @@
   gap: var(--profile-spacing-md);
   padding: var(--profile-spacing-md);
   border: 1px solid var(--profile-border);
-  border-radius: var(--profile-border-radius);
+  border-radius: var(--profile-radius);
   background-color: var(--profile-bg);
 }
 
 .security-item .security-icon {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
-  background-color: rgba(79, 70, 229, 0.1);
+  border-radius: var(--profile-radius-full);
+  background-color: rgba(67, 97, 238, 0.1);
   color: var(--profile-primary);
   display: flex;
   align-items: center;
@@ -631,7 +648,7 @@
 
 .security-item .status-badge {
   padding: 0.4rem 0.8rem;
-  border-radius: 9999px;
+  border-radius: var(--profile-radius-full);
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -647,10 +664,13 @@
   color: white;
 }
 
-/* Zona de Perigo */
+/* ============================================================================
+   ZONA DE PERIGO
+   ============================================================================ */
+
 .danger-zone {
   border: 1px solid var(--profile-danger);
-  background-color: #fef2f2; /* Light Red Background */
+  background-color: #fef2f2;
 }
 
 .danger-zone .section-header h3 i {
@@ -685,18 +705,21 @@
   margin: 0;
 }
 
-/* Modais Modernos */
+/* ============================================================================
+   MODAIS MODERNOS
+   ============================================================================ */
+
 .modern-modal {
-  border-radius: var(--profile-border-radius);
+  border-radius: var(--profile-radius-lg);
   overflow: hidden;
-  box-shadow: 0 10px 25px var(--profile-shadow-lg);
+  box-shadow: var(--profile-shadow-lg);
   border: none;
 }
 
 .modal-header-modern {
   display: flex;
   align-items: center;
-  padding: var(--profile-spacing-lg);
+  padding: var(--profile-spacing-xl);
   background-color: var(--profile-primary);
   color: white;
   position: relative;
@@ -713,7 +736,7 @@
 .modal-icon {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
+  border-radius: var(--profile-radius-full);
   background-color: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
@@ -749,7 +772,7 @@
   right: var(--profile-spacing-md);
   cursor: pointer;
   opacity: 0.8;
-  transition: opacity var(--profile-transition-fast);
+  transition: var(--profile-transition-fast);
 }
 
 .btn-close-modern:hover {
@@ -757,7 +780,7 @@
 }
 
 .modal-body-modern {
-  padding: var(--profile-spacing-lg);
+  padding: var(--profile-spacing-xl);
 }
 
 .form-row {
@@ -795,16 +818,26 @@
   width: 100%;
   padding: 0.75rem var(--profile-spacing-md);
   border: 1px solid var(--profile-border);
-  border-radius: var(--profile-border-radius);
+  border-radius: var(--profile-radius);
   font-size: 1rem;
   color: var(--profile-text-dark);
-  transition: all var(--profile-transition-fast);
+  transition: var(--profile-transition-fast);
 }
 
 .form-control-modern:focus {
   outline: none;
   border-color: var(--profile-primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+}
+
+.form-control-modern.is-valid {
+  border-color: var(--profile-success);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.form-control-modern.is-invalid {
+  border-color: var(--profile-danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
 }
 
 .password-input-group {
@@ -812,7 +845,7 @@
 }
 
 .password-input-group .form-control-modern {
-  padding-right: 3rem; /* Espaço para o botão de toggle */
+  padding-right: 3rem;
 }
 
 .password-toggle {
@@ -825,7 +858,7 @@
   color: var(--profile-secondary);
   cursor: pointer;
   font-size: 1rem;
-  transition: color var(--profile-transition-fast);
+  transition: var(--profile-transition-fast);
 }
 
 .password-toggle:hover {
@@ -839,7 +872,7 @@
 .strength-bar {
   height: 6px;
   background-color: var(--profile-border);
-  border-radius: 9999px;
+  border-radius: var(--profile-radius-full);
   overflow: hidden;
   margin-bottom: var(--profile-spacing-xs);
 }
@@ -847,9 +880,8 @@
 .strength-fill {
   height: 100%;
   width: 0%;
-  border-radius: 9999px;
-  transition: width var(--profile-transition-normal),
-    background-color var(--profile-transition-normal);
+  border-radius: var(--profile-radius-full);
+  transition: width 0.3s ease, background-color 0.3s ease;
 }
 
 .strength-fill.strength-weak {
@@ -880,26 +912,25 @@
   gap: var(--profile-spacing-xs);
 }
 
-.strength-text i {
-  font-size: 0.7rem;
-}
-
 .modal-footer-modern {
   display: flex;
   justify-content: flex-end;
   gap: var(--profile-spacing-md);
-  padding: var(--profile-spacing-lg);
+  padding: var(--profile-spacing-xl);
   border-top: 1px solid var(--profile-border);
   background-color: var(--profile-bg);
 }
 
-/* Alertas Modernos */
+/* ============================================================================
+   ALERTAS MODERNOS
+   ============================================================================ */
+
 .alert-modern {
   display: flex;
   align-items: flex-start;
   gap: var(--profile-spacing-md);
   padding: var(--profile-spacing-md);
-  border-radius: var(--profile-border-radius);
+  border-radius: var(--profile-radius);
   font-size: 0.9rem;
   font-weight: 500;
   margin-bottom: var(--profile-spacing-lg);
@@ -911,58 +942,21 @@
 }
 
 .alert-modern.info {
-  background-color: #dbeafe; /* Light Blue */
-  color: #1e40af; /* Dark Blue */
+  background-color: #dbeafe;
+  color: #1e40af;
   border: 1px solid #bfdbfe;
 }
 
 .alert-modern.danger {
-  background-color: #fee2e2; /* Light Red */
-  color: #991b1b; /* Dark Red */
+  background-color: #fee2e2;
+  color: #991b1b;
   border: 1px solid #fca5a5;
 }
 
-/* Animações */
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* ============================================================================
+   ESTADOS DE LOADING
+   ============================================================================ */
 
-.profile-card,
-.profile-actions-menu,
-.info-section,
-.content-header {
-  animation: slideInUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  opacity: 0; /* Garante que não apareça antes da animação */
-}
-
-.profile-actions-menu {
-  animation-delay: 0.1s;
-}
-
-.content-header {
-  animation-delay: 0.2s;
-}
-
-.info-section:nth-of-type(1) {
-  animation-delay: 0.3s;
-}
-
-.info-section:nth-of-type(2) {
-  animation-delay: 0.4s;
-}
-
-.info-section:nth-of-type(3) {
-  animation-delay: 0.5s;
-}
-
-/* Loading State para Botões */
 .btn-loading {
   position: relative;
   pointer-events: none;
@@ -972,27 +966,33 @@
 .btn-loading::after {
   content: "";
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 20px;
-  margin: -10px 0 0 -10px;
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+  border-radius: inherit;
 }
 
-@keyframes spin {
+@keyframes shimmer {
   0% {
-    transform: rotate(0deg);
+    left: -100%;
   }
   100% {
-    transform: rotate(360deg);
+    left: 100%;
   }
 }
 
-/* Responsividade */
+/* ============================================================================
+   RESPONSIVIDADE
+   ============================================================================ */
+
 @media (max-width: 767.98px) {
   .profile-dashboard {
     padding: var(--profile-spacing-md);
@@ -1010,20 +1010,6 @@
     font-size: 0.85rem;
   }
 
-  .profile-quick-stats {
-    padding-top: var(--profile-spacing-md);
-  }
-
-  .stat-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--profile-spacing-xs);
-  }
-
-  .stat-icon {
-    margin-bottom: var(--profile-spacing-xs);
-  }
-
   .profile-actions-menu {
     padding: var(--profile-spacing-md);
   }
@@ -1039,10 +1025,6 @@
 
   .header-title h1 {
     font-size: 1.5rem;
-  }
-
-  .header-title p {
-    font-size: 0.85rem;
   }
 
   .header-actions {
@@ -1070,37 +1052,64 @@
     gap: var(--profile-spacing-sm);
   }
 
-  .section-header h3 {
-    font-size: 1.1rem;
-  }
-
-  .edit-section-btn {
-    align-self: flex-end;
-  }
-
-  .info-field .field-value {
-    font-size: 0.9rem;
-  }
-
   .security-item {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .security-item .security-icon {
-    margin-bottom: var(--profile-spacing-xs);
-  }
-
-  .security-item .security-info h4 {
-    font-size: 1rem;
-  }
-
-  .security-item .security-info p {
-    font-size: 0.8rem;
-  }
-
   .danger-item {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+/* ============================================================================
+   ANIMAÇÕES
+   ============================================================================ */
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.profile-card,
+.profile-actions-menu,
+.info-section,
+.content-header {
+  animation: slideInUp 0.6s ease forwards;
+}
+.profile-actions-menu {
+  animation-delay: 0.1s;
+}
+
+.content-header {
+  animation-delay: 0.2s;
+}
+
+.info-section:nth-of-type(1) {
+  animation-delay: 0.3s;
+}
+
+.info-section:nth-of-type(2) {
+  animation-delay: 0.4s;
+}
+
+.info-section:nth-of-type(3) {
+  animation-delay: 0.5s;
+}
+
+/* Redução de movimento para acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+  .profile-card,
+  .profile-actions-menu,
+  .info-section,
+  .content-header {
+    animation: none;
   }
 }

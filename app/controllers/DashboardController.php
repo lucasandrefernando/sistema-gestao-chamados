@@ -189,7 +189,7 @@ class DashboardController extends Controller
         // Obtém chamados recentes
         $chamadosRecentes = $this->obterChamadosRecentes($empresaId, $setoresIds, $isAdmin);
 
-        // Renderiza a view com todos os dados
+        // Renderiza a view com todos os dados 
         $this->render('dashboard/index', [
             'estatisticas' => $estatisticasGerais,
             'setores' => $setores,

@@ -170,6 +170,26 @@ CREATE TABLE
         FOREIGN KEY (chamado_id) REFERENCES chamados (id) ON DELETE CASCADE
     );
 
+
+   --Tabela Notificação. 
+        CREATE TABLE `notificacoes` (
+        `id` int NOT NULL AUTO_INCREMENT,
+        `usuario_id` int NOT NULL,
+        `tipo` varchar(50) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
+        `titulo` varchar(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
+        `descricao` text CHARACTER SET latin1 COLLATE latin1_general_ci,
+        `referencia_id` int DEFAULT NULL,
+        `referencia_tipo` varchar(50) CHARACTER SET latin1 COLLATE latin1_general_ci DEFAULT NULL,
+        `lida` tinyint(1) DEFAULT '0',
+        `data_criacao` datetime DEFAULT CURRENT_TIMESTAMP,
+        `data_leitura` datetime DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        KEY `idx_notificacoes_usuario` (`usuario_id`),
+        KEY `idx_notificacoes_lida` (`lida`),
+        KEY `idx_notificacoes_data` (`data_criacao`),
+        CONSTRAINT `notificacoes_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB AUTO_INCREMENT=324 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+
 -- Inserção dos status padrão
 INSERT INTO
     status_chamados (nome, cor)
