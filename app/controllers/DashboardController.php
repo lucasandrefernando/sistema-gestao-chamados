@@ -1264,4 +1264,4 @@ class DashboardController extends Controller
 
         exit;
     }
-}
+} 

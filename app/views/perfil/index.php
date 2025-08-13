@@ -2,10 +2,37 @@
 $pageTitle = 'Meu Perfil';
 require_once ROOT_DIR . '/app/views/templates/header.php';
 
+// ✅ CORREÇÃO: Debug na view para verificar dados recebidos
+error_log('=== VIEW DEBUG ===');
+error_log('Usuario recebido na view: ' . (isset($usuario) ? 'SIM' : 'NÃO'));
+if (isset($usuario)) {
+    error_log('Empresa nome na view: "' . ($usuario['empresa_nome'] ?? 'NÃO DEFINIDO') . '"');
+    error_log('Total setores na view: ' . ($usuario['total_setores'] ?? 'NÃO DEFINIDO'));
+    error_log('Setores resumo na view: "' . ($usuario['setores_resumo'] ?? 'NÃO DEFINIDO') . '"');
+}
+error_log('==================');
+
 // Verificar se $usuario existe e tem dados necessários
 if (!isset($usuario) || empty($usuario)) {
+    error_log('ERRO: Usuario não definido na view, redirecionando...');
     header('Location: ' . base_url('login'));
     exit;
+}
+
+// ✅ CORREÇÃO: Garantir que as variáveis existam na view
+if (!isset($usuario['empresa_nome'])) {
+    error_log('AVISO: empresa_nome não definido na view');
+    $usuario['empresa_nome'] = 'Empresa não encontrada';
+}
+
+if (!isset($usuario['total_setores'])) {
+    error_log('AVISO: total_setores não definido na view');
+    $usuario['total_setores'] = 0;
+}
+
+if (!isset($usuario['setores_resumo'])) {
+    error_log('AVISO: setores_resumo não definido na view');
+    $usuario['setores_resumo'] = 'Nenhum setor definido';
 }
 
 // Gerar iniciais para avatar (com validação)
@@ -17,6 +44,13 @@ if (count($nomes) >= 2) {
     $iniciais = strtoupper($nomes[0][0] . (isset($nomes[0][1]) ? $nomes[0][1] : ''));
 } else {
     $iniciais = 'US'; // Fallback
+}
+
+// Separar nome e sobrenome
+$primeiroNome = $nomes[0] ?? '';
+$sobrenome = '';
+if (count($nomes) > 1) {
+    $sobrenome = implode(' ', array_slice($nomes, 1));
 }
 ?>
 
@@ -69,7 +103,18 @@ if (count($nomes) >= 2) {
                     </div>
                     <div class="stat-info">
                         <span class="stat-label">Empresa</span>
-                        <span class="stat-value"><?= htmlspecialchars($usuario['empresa_nome'] ?? 'N/A') ?></span>
+                        <span class="stat-value">
+                            <?php
+                            // ✅ CORREÇÃO: Verificação múltipla
+                            if (isset($usuario['empresa_nome']) && !empty($usuario['empresa_nome'])) {
+                                echo htmlspecialchars($usuario['empresa_nome']);
+                            } else {
+                                echo 'Empresa não definida';
+                                // Debug na view
+                                error_log('VIEW DEBUG: empresa_nome não definido. Dados: ' . print_r($usuario, true));
+                            }
+                            ?>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -180,10 +225,34 @@ if (count($nomes) >= 2) {
                         </div>
 
                         <div class="info-field">
-                            <label>Setor</label>
+                            <label>Setores</label>
                             <div class="field-value">
                                 <i class="fas fa-sitemap"></i>
-                                <span><?= htmlspecialchars($usuario['setor_nome'] ?? 'Não definido') ?></span>
+                                <span>
+                                    <?php
+                                    // ✅ CORREÇÃO: Verificação múltipla para setores
+                                    if (isset($usuario['total_setores']) && $usuario['total_setores'] > 0): ?>
+                                        <span class="setores-resumo"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalSetores"
+                                            style="cursor: pointer; color: var(--profile-primary); text-decoration: underline;">
+                                            <?= htmlspecialchars($usuario['setores_resumo'] ?? 'Setores disponíveis') ?>
+                                            <?php if ($usuario['total_setores'] > 1): ?>
+                                                <i class="fas fa-external-link-alt" style="font-size: 0.8rem; margin-left: 0.3rem;"></i>
+                                            <?php endif; ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span style="color: var(--profile-text-light);">
+                                            <?php
+                                            // Debug na view para setores
+                                            if (!isset($usuario['total_setores'])) {
+                                                error_log('VIEW DEBUG: total_setores não definido');
+                                            }
+                                            echo 'Nenhum setor definido';
+                                            ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -284,21 +353,30 @@ if (count($nomes) >= 2) {
                         <div class="form-group-modern">
                             <label class="form-label-modern">
                                 <i class="fas fa-user"></i>
-                                Nome Completo
+                                Nome
                             </label>
-                            <input type="text" class="form-control-modern" name="nome"
-                                value="<?= htmlspecialchars($usuario['nome']) ?>" required>
+                            <input type="text" class="form-control-modern" name="nome" id="nome"
+                                value="<?= htmlspecialchars($primeiroNome) ?>" required>
                         </div>
 
                         <div class="form-group-modern">
                             <label class="form-label-modern">
-                                <i class="fas fa-briefcase"></i>
-                                Cargo
+                                <i class="fas fa-user"></i>
+                                Sobrenome
                             </label>
-                            <input type="text" class="form-control-modern" name="cargo"
-                                value="<?= htmlspecialchars($usuario['cargo'] ?? '') ?>"
-                                placeholder="Ex: Analista de Sistemas">
+                            <input type="text" class="form-control-modern" name="sobrenome" id="sobrenome"
+                                value="<?= htmlspecialchars($sobrenome) ?>" required>
                         </div>
+                    </div>
+
+                    <div class="form-group-modern">
+                        <label class="form-label-modern">
+                            <i class="fas fa-briefcase"></i>
+                            Cargo
+                        </label>
+                        <input type="text" class="form-control-modern" name="cargo"
+                            value="<?= htmlspecialchars($usuario['cargo'] ?? '') ?>"
+                            placeholder="Ex: Analista de Sistemas">
                     </div>
                 </div>
 
@@ -348,11 +426,12 @@ if (count($nomes) >= 2) {
                             Senha Atual
                         </label>
                         <div class="password-input-group">
-                            <input type="password" class="form-control-modern" name="senha_atual" required>
+                            <input type="password" class="form-control-modern" name="senha_atual" id="senha_atual" required>
                             <button type="button" class="password-toggle">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
+                        <div class="field-feedback" id="senha-atual-feedback"></div>
                     </div>
 
                     <div class="form-group-modern">
@@ -391,6 +470,7 @@ if (count($nomes) >= 2) {
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
+                        <div class="field-feedback" id="confirmar-senha-feedback"></div>
                     </div>
                 </div>
 
@@ -398,7 +478,7 @@ if (count($nomes) >= 2) {
                     <button type="button" class="btn-secondary-new" data-bs-dismiss="modal">
                         Cancelar
                     </button>
-                    <button type="submit" class="btn-warning-new">
+                    <button type="submit" class="btn-warning-new" id="btn-alterar-senha" disabled>
                         <i class="fas fa-key"></i>
                         Alterar Senha
                     </button>
@@ -468,6 +548,78 @@ if (count($nomes) >= 2) {
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
+<!-- Modal: Setores do Usuário -->
+<?php if (isset($usuario['total_setores']) && $usuario['total_setores'] > 0): ?>
+    <div class="modal fade" id="modalSetores" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content modern-modal">
+                <div class="modal-header-modern">
+                    <div class="modal-icon">
+                        <i class="fas fa-sitemap"></i>
+                    </div>
+                    <div class="modal-title-content">
+                        <h5>Meus Setores</h5>
+                        <p>Setores onde você está cadastrado no sistema</p>
+                    </div>
+                    <button type="button" class="btn-close-modern" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="modal-body-modern">
+                    <?php if (!empty($usuario['setores_detalhados'])): ?>
+                        <div class="setores-grid">
+                            <?php foreach ($usuario['setores_detalhados'] as $index => $setor): ?>
+                                <div class="setor-card <?= $setor['principal'] ? 'setor-principal' : '' ?>">
+                                    <div class="setor-icon">
+                                        <i class="fas <?= $setor['principal'] ? 'fa-star' : 'fa-building' ?>"></i>
+                                    </div>
+                                    <div class="setor-info">
+                                        <h4><?= htmlspecialchars($setor['nome']) ?></h4>
+                                        <?php if ($setor['principal']): ?>
+                                            <span class="setor-badge principal">
+                                                <i class="fas fa-crown"></i>
+                                                Setor Principal
+                                            </span>
+                                        <?php endif; ?>
+                                        <!-- ✅ REMOVIDO: Setor Secundário -->
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <div class="setores-summary">
+                            <div class="summary-item">
+                                <i class="fas fa-chart-pie"></i>
+                                <span><strong><?= $usuario['total_setores'] ?></strong> setor<?= $usuario['total_setores'] > 1 ? 'es' : '' ?> no total</span>
+                            </div>
+                            <div class="summary-item">
+                                <i class="fas fa-star"></i>
+                                <span><strong><?= count(array_filter($usuario['setores_detalhados'], function ($s) {
+                                                    return $s['principal'];
+                                                })) ?></strong> setor principal</span>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-center py-4">
+                            <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                            <h5>Nenhum setor encontrado</h5>
+                            <p class="text-muted">Você não está associado a nenhum setor no momento.</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <div class="modal-footer-modern">
+                    <button type="button" class="btn-primary-new" data-bs-dismiss="modal">
+                        <i class="fas fa-check"></i>
+                        Entendi
+                    </button>
+                </div>
             </div>
         </div>
     </div>

@@ -20,13 +20,60 @@ class PerfilController extends Controller
     }
 
     /**
-     * Página principal do perfil
+     * Página principal do perfil - CORREÇÃO DEFINITIVA PARA PRIMEIRO ACESSO
      */
     public function index()
     {
         try {
+            // ✅ CORREÇÃO: Garantir que sessão esteja ativa
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                session_start();
+            }
+
             $usuarioId = get_user_id();
-            $usuario = $this->usuarioModel->findById($usuarioId);
+
+            if (!$usuarioId) {
+                set_flash_message('error', 'Usuário não autenticado.');
+                redirect('auth');
+                exit;
+            }
+
+            // ✅ CORREÇÃO: Verificar se empresa_id está na sessão
+            if (!isset($_SESSION['empresa_id']) || empty($_SESSION['empresa_id'])) {
+                error_log('Empresa ID não encontrada na sessão, buscando do banco...');
+
+                // Buscar empresa_id do banco e atualizar sessão
+                $sqlEmpresaId = "SELECT empresa_id FROM usuarios WHERE id = :id";
+                $stmtEmpresaId = $this->usuarioModel->getDb()->prepare($sqlEmpresaId);
+                $stmtEmpresaId->execute(['id' => $usuarioId]);
+                $userEmpresa = $stmtEmpresaId->fetch(PDO::FETCH_ASSOC);
+
+                if ($userEmpresa && !empty($userEmpresa['empresa_id'])) {
+                    $_SESSION['empresa_id'] = $userEmpresa['empresa_id'];
+                    error_log('Empresa ID atualizada na sessão: ' . $userEmpresa['empresa_id']);
+                }
+            }
+
+            // ✅ CORREÇÃO: Buscar TODOS os dados em uma query única
+            $sql = "SELECT 
+                    u.id,
+                    u.nome,
+                    u.email,
+                    u.cargo,
+                    u.admin,
+                    u.admin_tipo,
+                    u.ativo,
+                    u.ultimo_acesso,
+                    u.empresa_id,
+                    u.data_criacao,
+                    e.nome as empresa_nome
+                FROM usuarios u 
+                LEFT JOIN empresas e ON u.empresa_id = e.id 
+                WHERE u.id = :id AND u.ativo = 1";
+
+            $stmt = $this->usuarioModel->getDb()->prepare($sql);
+            $stmt->execute(['id' => $usuarioId]);
+            $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$usuario) {
                 set_flash_message('error', 'Usuário não encontrado.');
@@ -34,43 +81,84 @@ class PerfilController extends Controller
                 exit;
             }
 
-            // Buscar empresa
-            try {
-                $sql = "SELECT nome FROM empresas WHERE id = :empresa_id";
-                $stmt = $this->usuarioModel->getDb()->prepare($sql);
-                $stmt->execute(['empresa_id' => $usuario['empresa_id']]);
-                $empresa = $stmt->fetch(PDO::FETCH_ASSOC);
-                $usuario['empresa_nome'] = $empresa ? $empresa['nome'] : 'Não definida';
-            } catch (Exception $e) {
-                error_log('Erro ao buscar empresa: ' . $e->getMessage());
-                $usuario['empresa_nome'] = 'Não definida';
+            // ✅ CORREÇÃO: Se empresa_nome vier NULL, buscar separadamente
+            if (empty($usuario['empresa_nome']) && !empty($usuario['empresa_id'])) {
+                error_log('Empresa nome vazio, buscando separadamente...');
+
+                $sqlEmpresa = "SELECT nome FROM empresas WHERE id = :empresa_id";
+                $stmtEmpresa = $this->usuarioModel->getDb()->prepare($sqlEmpresa);
+                $stmtEmpresa->execute(['empresa_id' => $usuario['empresa_id']]);
+                $empresa = $stmtEmpresa->fetch(PDO::FETCH_ASSOC);
+
+                if ($empresa && !empty($empresa['nome'])) {
+                    $usuario['empresa_nome'] = $empresa['nome'];
+                    error_log('Empresa encontrada: ' . $empresa['nome']);
+                } else {
+                    $usuario['empresa_nome'] = 'Empresa não encontrada';
+                    error_log('Empresa não encontrada para ID: ' . $usuario['empresa_id']);
+                }
+            } else if (empty($usuario['empresa_nome'])) {
+                $usuario['empresa_nome'] = 'Empresa não definida';
             }
 
-            // Buscar setor principal
-            try {
-                $sql = "SELECT s.nome FROM setores s 
-                        JOIN usuarios_setores us ON s.id = us.setor_id 
-                        WHERE us.usuario_id = :usuario_id AND us.principal = 1 
-                        LIMIT 1";
-                $stmt = $this->usuarioModel->getDb()->prepare($sql);
-                $stmt->execute(['usuario_id' => $usuarioId]);
-                $setor = $stmt->fetch(PDO::FETCH_ASSOC);
-                $usuario['setor_nome'] = $setor ? $setor['nome'] : 'Não definido';
-            } catch (Exception $e) {
-                error_log('Erro ao buscar setor: ' . $e->getMessage());
-                $usuario['setor_nome'] = 'Não definido';
+            // ✅ CORREÇÃO: Buscar setores separadamente
+            $sqlSetores = "SELECT 
+                        s.id, 
+                        s.nome, 
+                        us.principal
+                    FROM usuarios_setores us
+                    INNER JOIN setores s ON us.setor_id = s.id 
+                    WHERE us.usuario_id = :usuario_id 
+                    AND s.ativo = 1 
+                    AND s.removido = 0
+                    ORDER BY us.principal DESC, s.nome ASC";
+
+            $stmtSetores = $this->usuarioModel->getDb()->prepare($sqlSetores);
+            $stmtSetores->execute(['usuario_id' => $usuarioId]);
+            $setoresDetalhados = $stmtSetores->fetchAll(PDO::FETCH_ASSOC);
+
+            error_log('Setores encontrados: ' . count($setoresDetalhados));
+
+            // ✅ SEMPRE DEFINIR TODAS AS VARIÁVEIS
+            $usuario['setores_detalhados'] = $setoresDetalhados;
+            $usuario['setores_nomes'] = array_column($setoresDetalhados, 'nome');
+            $usuario['total_setores'] = count($setoresDetalhados);
+
+            // Criar resumo
+            if (count($setoresDetalhados) > 0) {
+                if (count($setoresDetalhados) == 1) {
+                    $usuario['setores_resumo'] = $setoresDetalhados[0]['nome'];
+                } else if (count($setoresDetalhados) == 2) {
+                    $usuario['setores_resumo'] = $setoresDetalhados[0]['nome'] . ' e ' . $setoresDetalhados[1]['nome'];
+                } else {
+                    $usuario['setores_resumo'] = $setoresDetalhados[0]['nome'] . ' e mais ' . (count($setoresDetalhados) - 1) . ' outros';
+                }
+            } else {
+                $usuario['setores_resumo'] = 'Nenhum setor definido';
             }
+
+            // ✅ DEBUG COMPLETO
+            error_log('=== PERFIL CARREGADO (PRIMEIRO ACESSO) ===');
+            error_log('Usuario ID: ' . $usuarioId);
+            error_log('Empresa ID: ' . ($usuario['empresa_id'] ?? 'NULL'));
+            error_log('Empresa Nome: "' . $usuario['empresa_nome'] . '"');
+            error_log('Total Setores: ' . $usuario['total_setores']);
+            error_log('Setores Resumo: "' . $usuario['setores_resumo'] . '"');
+            error_log('Setores Array: ' . print_r($usuario['setores_nomes'], true));
+            error_log('Sessão Empresa ID: ' . ($_SESSION['empresa_id'] ?? 'NULL'));
+            error_log('==========================================');
 
             $this->render('perfil/index', ['usuario' => $usuario]);
         } catch (Exception $e) {
-            error_log('Erro no método index do PerfilController: ' . $e->getMessage());
+            error_log('Erro crítico no perfil: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
             set_flash_message('error', 'Erro ao carregar perfil.');
             redirect('dashboard');
         }
     }
 
     /**
-     * Atualizar dados pessoais
+     * Atualizar dados pessoais (nome + sobrenome)
      */
     public function atualizarDados()
     {
@@ -83,11 +171,18 @@ class PerfilController extends Controller
         try {
             $usuarioId = get_user_id();
             $nome = trim($_POST['nome'] ?? '');
+            $sobrenome = trim($_POST['sobrenome'] ?? '');
             $cargo = trim($_POST['cargo'] ?? '');
 
             // Validações
             if (empty($nome)) {
                 set_flash_message('error', 'O nome é obrigatório.');
+                redirect('perfil');
+                exit;
+            }
+
+            if (empty($sobrenome)) {
+                set_flash_message('error', 'O sobrenome é obrigatório.');
                 redirect('perfil');
                 exit;
             }
@@ -98,18 +193,27 @@ class PerfilController extends Controller
                 exit;
             }
 
+            if (strlen($sobrenome) < 2) {
+                set_flash_message('error', 'O sobrenome deve ter pelo menos 2 caracteres.');
+                redirect('perfil');
+                exit;
+            }
+
+            // Concatenar nome e sobrenome
+            $nomeCompleto = $nome . ' ' . $sobrenome;
+
             // Atualizar no banco
             $sql = "UPDATE usuarios SET nome = :nome, cargo = :cargo, data_atualizacao = NOW() WHERE id = :id";
             $stmt = $this->usuarioModel->getDb()->prepare($sql);
             $result = $stmt->execute([
-                'nome' => $nome,
+                'nome' => $nomeCompleto,
                 'cargo' => $cargo ?: null,
                 'id' => $usuarioId
             ]);
 
             if ($result && $stmt->rowCount() > 0) {
                 // Atualizar sessão
-                $_SESSION['user_name'] = $nome;
+                $_SESSION['user_name'] = $nomeCompleto;
 
                 // Log da ação
                 $this->registrarLog($usuarioId, 'dados_atualizados', 'Dados pessoais atualizados');
@@ -127,7 +231,76 @@ class PerfilController extends Controller
     }
 
     /**
-     * Alterar senha (seguindo o padrão do AuthController)
+     * ✅ CORREÇÃO DEFINITIVA: Verificar senha atual via AJAX
+     */
+    public function verificarSenhaAtual()
+    {
+        // Forçar header JSON
+        header('Content-Type: application/json; charset=utf-8');
+
+        // Verificar se é POST
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Método não permitido']);
+            exit;
+        }
+
+        try {
+            // Verificar autenticação
+            if (!is_authenticated()) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Não autenticado']);
+                exit;
+            }
+
+            $usuarioId = get_user_id();
+
+            // Obter senha do POST ou JSON
+            $senhaAtual = '';
+            if (isset($_POST['senha_atual'])) {
+                $senhaAtual = $_POST['senha_atual'];
+            } else {
+                // Tentar ler JSON
+                $input = file_get_contents('php://input');
+                $data = json_decode($input, true);
+                $senhaAtual = $data['senha_atual'] ?? '';
+            }
+
+            if (empty($senhaAtual)) {
+                echo json_encode(['success' => false, 'message' => 'Senha não informada']);
+                exit;
+            }
+
+            // Buscar usuário no banco
+            $db = $this->usuarioModel->getDb();
+            $sql = "SELECT id, senha FROM usuarios WHERE id = :id AND ativo = 1";
+            $stmt = $db->prepare($sql);
+            $stmt->execute(['id' => $usuarioId]);
+            $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$usuario) {
+                echo json_encode(['success' => false, 'message' => 'Usuário não encontrado']);
+                exit;
+            }
+
+            // Verificar senha
+            $senhaCorreta = password_verify($senhaAtual, $usuario['senha']);
+
+            echo json_encode([
+                'success' => $senhaCorreta,
+                'message' => $senhaCorreta ? 'Senha correta' : 'Senha incorreta'
+            ]);
+        } catch (Exception $e) {
+            error_log('Erro ao verificar senha atual: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Erro interno do servidor']);
+        }
+
+        exit;
+    }
+
+    /**
+     * Alterar senha (sem alterações)
      */
     public function alterarSenha()
     {
@@ -174,9 +347,16 @@ class PerfilController extends Controller
                 exit;
             }
 
-            // Verificar senha atual usando o método do modelo
-            if (!$this->usuarioModel->verificarSenha($senhaAtual, $usuario['senha'])) {
+            // Verificar senha atual
+            if (!password_verify($senhaAtual, $usuario['senha'])) {
                 set_flash_message('error', 'Senha atual incorreta.');
+                redirect('perfil');
+                exit;
+            }
+
+            // Verificar se a nova senha é diferente da atual
+            if (password_verify($novaSenha, $usuario['senha'])) {
+                set_flash_message('error', 'A nova senha deve ser diferente da atual.');
                 redirect('perfil');
                 exit;
             }
@@ -197,7 +377,7 @@ class PerfilController extends Controller
                 // Enviar email de notificação
                 $this->enviarEmailAlteracaoSenha($usuario['email'], $usuario['nome']);
 
-                // Limpar sessão atual (seguindo o padrão do AuthController)
+                // Limpar sessão atual
                 $this->usuarioModel->limparSessao($usuarioId);
 
                 set_flash_message('success', 'Senha alterada com sucesso! Você será desconectado por segurança.');
@@ -217,7 +397,7 @@ class PerfilController extends Controller
     }
 
     /**
-     * Desativar conta
+     * Desativar conta (sem alterações)
      */
     public function desativar()
     {
@@ -249,7 +429,7 @@ class PerfilController extends Controller
                 exit;
             }
 
-            if (!$this->usuarioModel->verificarSenha($senha, $usuario['senha'])) {
+            if (!password_verify($senha, $usuario['senha'])) {
                 set_flash_message('error', 'Senha incorreta.');
                 redirect('perfil');
                 exit;
@@ -271,7 +451,7 @@ class PerfilController extends Controller
                 // Log da ação
                 $this->registrarLog($usuarioId, 'conta_desativada', 'Conta desativada pelo próprio usuário');
 
-                // Limpar sessão (seguindo o padrão do AuthController)
+                // Limpar sessão
                 $this->usuarioModel->limparSessao($usuarioId);
 
                 set_flash_message('success', 'Conta desativada com sucesso. Entre em contato com o administrador para reativação.');

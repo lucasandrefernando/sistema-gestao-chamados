@@ -1,22 +1,31 @@
 /**
- * Perfil Manager - Versão Profissional
- * @version 2.0.0 - Solução completa e funcional
+ * Perfil Manager - Versão DEFINITIVA
+ * @version 4.0.0 - Correção final dos problemas
  */
 
 if (window.location.pathname.includes('/perfil') || document.title.includes('Perfil')) {
-    console.log('🚀 Inicializando Perfil Manager...');
+    console.log('🚀 Inicializando Perfil Manager v4.0.0...');
 
-    // Proteção contra múltiplas execuções
+    // ✅ CORREÇÃO DEFINITIVA: Limpar qualquer instância anterior
+    if (window.perfilManager) {
+        delete window.perfilManager;
+    }
     if (window.PerfilManager) {
         delete window.PerfilManager;
     }
 
-    (function () {
+    // ✅ CORREÇÃO: Aguardar DOM estar completamente pronto
+    function initPerfilManager() {
         'use strict';
 
         class PerfilManager {
             constructor() {
                 this.passwordStrengthScore = 0;
+                this.senhaAtualValida = false;
+                this.novaSenhaValida = false;
+                this.senhasCoincidentes = false;
+                this.baseUrl = typeof BASE_URL !== 'undefined' ? BASE_URL : '';
+                this.alertShown = false; // ✅ CORREÇÃO: Flag para alerta único
                 this.init();
             }
 
@@ -25,18 +34,18 @@ if (window.location.pathname.includes('/perfil') || document.title.includes('Per
                 this.bindEvents();
                 this.initPasswordStrength();
                 this.initFormValidation();
+                this.initRealTimeValidation();
                 this.autoHideAlerts();
                 this.protectHeaderDropdowns();
             }
-
-            // ============================================================================
-            // PROTEÇÃO DO HEADER
-            // ============================================================================
 
             protectHeaderDropdowns() {
                 const modals = document.querySelectorAll('.modal');
                 modals.forEach(modal => {
                     modal.addEventListener('show.bs.modal', () => {
+                        // ✅ CORREÇÃO: Resetar flag quando abrir modal
+                        this.alertShown = false;
+
                         const navbarDropdowns = document.querySelectorAll('nav.app-navbar .dropdown-menu.show');
                         navbarDropdowns.forEach(menu => {
                             menu.style.zIndex = '9999';
@@ -52,21 +61,22 @@ if (window.location.pathname.includes('/perfil') || document.title.includes('Per
                 });
             }
 
-            // ============================================================================
-            // EVENTOS
-            // ============================================================================
-
             bindEvents() {
+                // ✅ CORREÇÃO: Remover listeners existentes primeiro
+                const formSenha = document.getElementById('formSenha');
+                if (formSenha) {
+                    // Clonar para remover todos os listeners
+                    const newForm = formSenha.cloneNode(true);
+                    formSenha.parentNode.replaceChild(newForm, formSenha);
+
+                    // Adicionar listener único
+                    newForm.addEventListener('submit', (e) => this.handleFormSenha(e));
+                }
+
                 // Formulário de dados
                 const formDados = document.getElementById('formDados');
                 if (formDados) {
                     formDados.addEventListener('submit', this.handleFormDados.bind(this));
-                }
-
-                // Formulário de senha
-                const formSenha = document.getElementById('formSenha');
-                if (formSenha) {
-                    formSenha.addEventListener('submit', this.handleFormSenha.bind(this));
                 }
 
                 // Formulário de desativação
@@ -88,9 +98,168 @@ if (window.location.pathname.includes('/perfil') || document.title.includes('Per
                 });
             }
 
-            // ============================================================================
-            // SISTEMA DE SENHAS
-            // ============================================================================
+            initRealTimeValidation() {
+                const senhaAtualInput = document.getElementById('senha_atual');
+                if (senhaAtualInput) {
+                    senhaAtualInput.addEventListener('input', this.debounce((e) => {
+                        this.validateSenhaAtual(e.target.value);
+                    }, 500));
+
+                    senhaAtualInput.addEventListener('blur', (e) => {
+                        this.validateSenhaAtual(e.target.value);
+                    });
+                }
+
+                const novaSenhaInput = document.getElementById('nova_senha');
+                if (novaSenhaInput) {
+                    novaSenhaInput.addEventListener('input', (e) => {
+                        this.checkPasswordStrength(e.target.value);
+                        this.validateNovaSenha(e.target.value);
+                        this.validatePasswordMatch();
+                        this.updateSubmitButton();
+                    });
+                }
+
+                const confirmarSenhaInput = document.getElementById('confirmar_senha');
+                if (confirmarSenhaInput) {
+                    confirmarSenhaInput.addEventListener('input', () => {
+                        this.validatePasswordMatch();
+                        this.updateSubmitButton();
+                    });
+                }
+            }
+
+            async validateSenhaAtual(senha) {
+                const feedback = document.getElementById('senha-atual-feedback');
+                const input = document.getElementById('senha_atual');
+
+                if (!senha || senha.length === 0) {
+                    this.senhaAtualValida = false;
+                    this.setFieldState(input, feedback, '', 'neutral');
+                    this.updateSubmitButton();
+                    return;
+                }
+
+                this.setFieldState(input, feedback, '⏳ Verificando...', 'loading');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('senha_atual', senha);
+
+                    const response = await fetch(`${this.baseUrl}perfil/verificar-senha-atual`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error('Resposta inválida do servidor');
+                    }
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.senhaAtualValida = true;
+                        this.setFieldState(input, feedback, '✅ Senha correta', 'success');
+                    } else {
+                        this.senhaAtualValida = false;
+                        this.setFieldState(input, feedback, '❌ ' + (result.message || 'Senha incorreta'), 'error');
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar senha:', error);
+                    this.senhaAtualValida = false;
+                    this.setFieldState(input, feedback, '❌ Erro de conexão. Tente novamente.', 'error');
+                }
+
+                this.updateSubmitButton();
+            }
+
+            validateNovaSenha(senha) {
+                if (!senha || senha.length === 0) {
+                    this.novaSenhaValida = false;
+                    return;
+                }
+                this.novaSenhaValida = this.passwordStrengthScore >= 60;
+            }
+
+            validatePasswordMatch() {
+                const novaSenha = document.getElementById('nova_senha');
+                const confirmarSenha = document.getElementById('confirmar_senha');
+                const feedback = document.getElementById('confirmar-senha-feedback');
+
+                if (!novaSenha || !confirmarSenha || !feedback) return;
+
+                const novaSenhaValue = novaSenha.value;
+                const confirmarSenhaValue = confirmarSenha.value;
+
+                if (!confirmarSenhaValue) {
+                    this.senhasCoincidentes = false;
+                    this.setFieldState(confirmarSenha, feedback, '', 'neutral');
+                    return;
+                }
+
+                if (confirmarSenhaValue === novaSenhaValue) {
+                    this.senhasCoincidentes = true;
+                    this.setFieldState(confirmarSenha, feedback, '✅ Senhas coincidem', 'success');
+                } else {
+                    this.senhasCoincidentes = false;
+                    this.setFieldState(confirmarSenha, feedback, '❌ Senhas não coincidem', 'error');
+                }
+            }
+
+            updateSubmitButton() {
+                const submitBtn = document.getElementById('btn-alterar-senha');
+                if (!submitBtn) return;
+
+                const isValid = this.senhaAtualValida &&
+                    this.novaSenhaValida &&
+                    this.senhasCoincidentes;
+
+                submitBtn.disabled = !isValid;
+
+                if (isValid) {
+                    submitBtn.classList.remove('btn-disabled');
+                    submitBtn.innerHTML = '<i class="fas fa-key"></i> Alterar Senha';
+                } else {
+                    submitBtn.classList.add('btn-disabled');
+                    submitBtn.innerHTML = '<i class="fas fa-lock"></i> Preencha todos os campos';
+                }
+            }
+
+            setFieldState(input, feedback, message, state) {
+                if (!input || !feedback) return;
+
+                input.classList.remove('is-valid', 'is-invalid', 'is-loading');
+                feedback.classList.remove('field-success', 'field-error', 'field-loading', 'field-neutral');
+
+                switch (state) {
+                    case 'success':
+                        input.classList.add('is-valid');
+                        feedback.classList.add('field-success');
+                        break;
+                    case 'error':
+                        input.classList.add('is-invalid');
+                        feedback.classList.add('field-error');
+                        break;
+                    case 'loading':
+                        input.classList.add('is-loading');
+                        feedback.classList.add('field-loading');
+                        break;
+                    case 'neutral':
+                    default:
+                        feedback.classList.add('field-neutral');
+                        break;
+                }
+
+                feedback.textContent = message;
+            }
 
             initPasswordStrength() {
                 const novaSenhaInput = document.getElementById('nova_senha');
@@ -124,56 +293,36 @@ if (window.location.pathname.includes('/perfil') || document.title.includes('Per
                     className = '';
                     score = 0;
                 } else {
-                    // Critérios de força
                     if (password.length >= 8) score += 25;
+                    if (password.length >= 12) score += 15;
                     if (password.match(/[a-z]/)) score += 15;
                     if (password.match(/[A-Z]/)) score += 15;
                     if (password.match(/[0-9]/)) score += 15;
                     if (password.match(/[^a-zA-Z0-9]/)) score += 15;
-                    if (password.length >= 12) score += 15;
 
-                    // Determinar força
                     if (score < 40) {
-                        feedback = '🔴 Fraca - Adicione mais caracteres';
+                        feedback = '🔴 Muito Fraca - Adicione mais caracteres e símbolos';
                         className = 'strength-weak';
                     } else if (score < 60) {
-                        feedback = '🟡 Razoável - Pode melhorar';
+                        feedback = '🟡 Fraca - Adicione letras maiúsculas, números ou símbolos';
                         className = 'strength-fair';
                     } else if (score < 80) {
-                        feedback = '🔵 Boa - Quase lá';
+                        feedback = '🔵 Boa - Quase perfeita!';
                         className = 'strength-good';
                     } else {
-                        feedback = '🟢 Forte - Excelente!';
+                        feedback = '🟢 Muito Forte - Excelente segurança!';
                         className = 'strength-strong';
                     }
                 }
 
                 this.passwordStrengthScore = score;
 
-                // Atualizar visual
                 strengthFill.className = `strength-fill ${className}`;
                 strengthFill.style.width = `${Math.min(score, 100)}%`;
                 strengthText.textContent = feedback;
+
+                this.validateNovaSenha(password);
             }
-
-            validatePasswordMatch() {
-                const novaSenha = document.getElementById('nova_senha');
-                const confirmarSenha = document.getElementById('confirmar_senha');
-
-                if (!novaSenha || !confirmarSenha) return;
-
-                if (confirmarSenha.value && confirmarSenha.value !== novaSenha.value) {
-                    confirmarSenha.setCustomValidity('As senhas não coincidem');
-                    confirmarSenha.classList.add('is-invalid');
-                } else {
-                    confirmarSenha.setCustomValidity('');
-                    confirmarSenha.classList.remove('is-invalid');
-                }
-            }
-
-            // ============================================================================
-            // VALIDAÇÃO DE FORMULÁRIOS
-            // ============================================================================
 
             initFormValidation() {
                 const inputs = document.querySelectorAll('.form-control-modern');
@@ -190,15 +339,25 @@ if (window.location.pathname.includes('/perfil') || document.title.includes('Per
                 });
             }
 
-            // ============================================================================
-            // MANIPULADORES DE FORMULÁRIOS
-            // ============================================================================
 
+            // ✅ CORREÇÃO: Alertas no modal de dados também
             handleFormDados(event) {
                 event.preventDefault();
 
                 const form = event.target;
                 const submitBtn = form.querySelector('button[type="submit"]');
+                const nome = form.querySelector('input[name="nome"]').value.trim();
+                const sobrenome = form.querySelector('input[name="sobrenome"]').value.trim();
+
+                if (!nome || nome.length < 2) {
+                    this.showAlert('error', 'O nome deve ter pelo menos 2 caracteres!', 'modalDados');
+                    return false;
+                }
+
+                if (!sobrenome || sobrenome.length < 2) {
+                    this.showAlert('error', 'O sobrenome deve ter pelo menos 2 caracteres!', 'modalDados');
+                    return false;
+                }
 
                 if (!form.checkValidity()) {
                     form.reportValidity();
@@ -212,47 +371,65 @@ if (window.location.pathname.includes('/perfil') || document.title.includes('Per
                 }, 500);
             }
 
+            // ✅ CORREÇÃO: Alertas dentro do modal de senha
             handleFormSenha(event) {
                 event.preventDefault();
+
+                // Verificar se alerta já foi mostrado
+                if (this.alertShown) {
+                    console.log('Alerta já foi mostrado, ignorando...');
+                    return false;
+                }
 
                 const form = event.target;
                 const novaSenha = document.getElementById('nova_senha').value;
                 const confirmarSenha = document.getElementById('confirmar_senha').value;
                 const senhaAtual = form.querySelector('input[name="senha_atual"]').value;
 
-                if (!senhaAtual) {
-                    this.showAlert('error', 'Digite sua senha atual!');
+                // ✅ CORREÇÃO: Validações com alertas no modal
+                if (!this.senhaAtualValida) {
+                    this.showAlert('error', 'Verifique sua senha atual!', 'modalSenha');
                     return false;
                 }
 
-                if (novaSenha.length < 8) {
-                    this.showAlert('error', 'A nova senha deve ter pelo menos 8 caracteres!');
+                if (!this.novaSenhaValida) {
+                    this.showAlert('error', 'A nova senha não atende aos critérios de segurança!', 'modalSenha');
                     return false;
                 }
 
-                if (novaSenha !== confirmarSenha) {
-                    this.showAlert('error', 'As senhas não coincidem!');
+                if (!this.senhasCoincidentes) {
+                    this.showAlert('error', 'As senhas não coincidem!', 'modalSenha');
                     return false;
                 }
 
                 if (novaSenha === senhaAtual) {
-                    this.showAlert('error', 'A nova senha deve ser diferente da atual!');
+                    this.showAlert('error', 'A nova senha deve ser diferente da atual!', 'modalSenha');
                     return false;
                 }
 
                 if (this.passwordStrengthScore < 60) {
-                    this.showAlert('error', 'A senha é muito fraca. Escolha uma senha mais forte!');
+                    this.showAlert('error', 'A senha é muito fraca. Escolha uma senha mais forte!', 'modalSenha');
                     return false;
                 }
 
-                if (confirm('⚠️ Tem certeza que deseja alterar sua senha?\n\nVocê será desconectado após a alteração e receberá um e-mail de confirmação.')) {
+                // Marcar alerta como mostrado
+                this.alertShown = true;
+
+                const confirmResult = confirm('⚠️ Tem certeza que deseja alterar sua senha?\n\nVocê será desconectado após a alteração e receberá um e-mail de confirmação.');
+
+                if (confirmResult) {
                     const submitBtn = form.querySelector('button[type="submit"]');
                     this.setLoadingState(submitBtn, 'Alterando senha...');
 
                     setTimeout(() => {
                         form.submit();
                     }, 500);
+                } else {
+                    // Resetar flag se cancelar
+                    this.alertShown = false;
                 }
+
+                return false;
             }
 
             handleFormDesativar(event) {
@@ -285,10 +462,6 @@ if (window.location.pathname.includes('/perfil') || document.title.includes('Per
                 }
             }
 
-            // ============================================================================
-            // UTILITÁRIOS
-            // ============================================================================
-
             togglePassword(event) {
                 const button = event.currentTarget;
                 const input = button.parentElement.querySelector('input');
@@ -316,30 +489,51 @@ if (window.location.pathname.includes('/perfil') || document.title.includes('Per
                 button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${text}`;
             }
 
-            showAlert(type, message) {
+            // ✅ CORREÇÃO: Mostrar alertas dentro do modal
+            showAlert(type, message, modalId = null) {
                 // Remover alertas existentes
                 document.querySelectorAll('.notification.auto-generated').forEach(alert => {
                     alert.remove();
                 });
 
-                const alertContainer = document.querySelector('.profile-content');
+                let alertContainer;
+
+                // ✅ CORREÇÃO: Se modalId for especificado, mostrar dentro do modal
+                if (modalId) {
+                    const modal = document.getElementById(modalId);
+                    if (modal) {
+                        alertContainer = modal.querySelector('.modal-body-modern');
+                        if (!alertContainer) {
+                            alertContainer = modal.querySelector('.modal-body');
+                        }
+                    }
+                }
+
+                // Fallback para container principal
+                if (!alertContainer) {
+                    alertContainer = document.querySelector('.profile-content');
+                }
+
                 if (!alertContainer) return;
 
                 const iconClass = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
 
                 const alert = document.createElement('div');
                 alert.className = `notification ${type} auto-generated`;
+                alert.style.marginBottom = '1rem';
                 alert.innerHTML = `
-                    <i class="fas ${iconClass}"></i>
-                    <span>${message}</span>
-                    <button class="close-notification" type="button">&times;</button>
-                `;
+                <i class="fas ${iconClass}"></i>
+                <span>${message}</span>
+                <button class="close-notification" type="button">&times;</button>
+                 `;
 
+                // ✅ CORREÇÃO: Inserir no topo do container
                 alertContainer.insertBefore(alert, alertContainer.firstChild);
 
                 const closeBtn = alert.querySelector('.close-notification');
                 closeBtn.addEventListener('click', () => alert.remove());
 
+                // Auto-remover após 5 segundos
                 setTimeout(() => {
                     if (alert.parentElement) {
                         alert.style.opacity = '0';
@@ -348,7 +542,8 @@ if (window.location.pathname.includes('/perfil') || document.title.includes('Per
                     }
                 }, 5000);
 
-                alertContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // ✅ CORREÇÃO: Scroll suave para o alerta
+                alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
 
             autoHideAlerts() {
@@ -363,30 +558,32 @@ if (window.location.pathname.includes('/perfil') || document.title.includes('Per
                     }, 7000);
                 });
             }
-        }
 
-        // Inicializar apenas uma vez
-        let perfilManagerInstance = null;
-
-        function initPerfil() {
-            if (perfilManagerInstance) {
-                console.log('⚠️ PerfilManager já inicializado');
-                return;
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
             }
-
-            perfilManagerInstance = new PerfilManager();
-            window.PerfilManager = PerfilManager;
-            window.perfilManager = perfilManagerInstance;
         }
 
-        // Inicializar quando DOM estiver pronto
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initPerfil);
-        } else {
-            initPerfil();
-        }
+        // ✅ CORREÇÃO: Instância única
+        window.perfilManager = new PerfilManager();
+        window.PerfilManager = PerfilManager;
+    }
 
-    })();
+    // ✅ CORREÇÃO: Aguardar DOM estar completamente pronto
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPerfilManager);
+    } else {
+        // Aguardar um pouco para garantir que tudo foi carregado
+        setTimeout(initPerfilManager, 100);
+    }
 
 } else {
     console.log('⚠️ perfil.js não executado - não estamos na página de perfil');

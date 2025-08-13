@@ -6,7 +6,7 @@ session_start();
 
 // Informações básicas da aplicação
 define('APP_NAME', 'Sistema de Gestão de Chamados');
-define('APP_VERSION', '2.2.0');
+define('APP_VERSION', '2.0.0');
 //define('APP_URL', 'http://10.0.1.66/sistema-gestao-chamados');
 define('APP_URL', 'https://chamado.eagletelecom.com.br');
 define('APP_PRODUCTION', false);
@@ -383,4 +383,76 @@ function formatarStatusById($statusId)
     ];
 
     return isset($formatado[$statusId]) ? $formatado[$statusId] : 'Desconhecido';
+}
+
+
+
+/**
+ * Função de debug melhorada para verificar dados
+ */
+if (!function_exists('debug_perfil')) {
+    function debug_perfil($dados, $label = 'DEBUG PERFIL')
+    {
+        if (!APP_PRODUCTION) {
+            error_log("=== $label ===");
+            error_log(print_r($dados, true));
+            error_log("=== FIM $label ===");
+        }
+    }
+}
+
+/**
+ * Verifica se há mensagem flash específica
+ */
+if (!function_exists('has_flash_message')) {
+    function has_flash_message($type)
+    {
+        return isset($_SESSION['flash']) && $_SESSION['flash']['type'] === $type;
+    }
+}
+
+/**
+ * Obtém mensagem flash específica
+ */
+if (!function_exists('get_flash_message')) {
+    function get_flash_message($type)
+    {
+        if (isset($_SESSION['flash']) && $_SESSION['flash']['type'] === $type) {
+            $message = $_SESSION['flash']['message'];
+            unset($_SESSION['flash']);
+            return $message;
+        }
+        return null;
+    }
+}
+
+/**
+ * Cache simples para dados do perfil
+ */
+if (!function_exists('cache_perfil_data')) {
+    function cache_perfil_data($key, $data = null, $ttl = 300)
+    {
+        $cacheFile = sys_get_temp_dir() . '/perfil_cache_' . md5($key) . '.tmp';
+
+        if ($data !== null) {
+            // Salvar no cache
+            $cacheData = [
+                'data' => $data,
+                'expires' => time() + $ttl
+            ];
+            file_put_contents($cacheFile, serialize($cacheData));
+            return $data;
+        } else {
+            // Ler do cache
+            if (file_exists($cacheFile)) {
+                $cacheData = unserialize(file_get_contents($cacheFile));
+                if ($cacheData['expires'] > time()) {
+                    return $cacheData['data'];
+                } else {
+                    unlink($cacheFile);
+                }
+            }
+            return null;
+        }
+    }
 }

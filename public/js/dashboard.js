@@ -1596,7 +1596,7 @@ if (window.location.pathname.includes('/dashboard') || document.title.includes('
                                     </a>
                                 </div>
                             </td>
-                            </tr>
+                            </tr> 
                         `;
                     });
 

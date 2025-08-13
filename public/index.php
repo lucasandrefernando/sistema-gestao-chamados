@@ -35,7 +35,7 @@ $params = array_slice($url, 2);
 // Caminho para o arquivo do controlador
 $controllerFile = ROOT_DIR . '/app/controllers/' . $controllerName . '.php';
 
-
+// Adicione esta seção após a seção do perfil existente
 if ($url[0] === 'perfil' && isset($url[1])) {
     switch ($url[1]) {
         case 'atualizar-dados':
@@ -46,12 +46,8 @@ if ($url[0] === 'perfil' && isset($url[1])) {
             $methodName = 'alterarSenha';
             $params = array_slice($url, 2);
             break;
-        case 'solicitar-alteracao-email':
-            $methodName = 'solicitarAlteracaoEmail';
-            $params = array_slice($url, 2);
-            break;
-        case 'confirmar-email':
-            $methodName = 'confirmarEmail';
+        case 'verificar-senha-atual':  // ✅ NOVA ROTA ADICIONADA
+            $methodName = 'verificarSenhaAtual';
             $params = array_slice($url, 2);
             break;
         case 'desativar':

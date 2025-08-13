@@ -1,5 +1,5 @@
 /**
- * PERFIL CSS - Versão Profissional
+ * PERFIL CSS - Versão Profissional Completa
  * Estilos limpos e funcionais para o perfil do usuário
  */
 
@@ -867,10 +867,14 @@
 
 .password-strength-container {
   margin-top: var(--profile-spacing-sm);
+  padding: var(--profile-spacing-sm);
+  background-color: var(--profile-bg);
+  border-radius: var(--profile-radius);
+  border: 1px solid var(--profile-border);
 }
 
 .strength-bar {
-  height: 6px;
+  height: 8px;
   background-color: var(--profile-border);
   border-radius: var(--profile-radius-full);
   overflow: hidden;
@@ -885,27 +889,24 @@
 }
 
 .strength-fill.strength-weak {
-  background-color: var(--profile-danger);
-  width: 25%;
+  background: linear-gradient(90deg, #ef4444, #dc2626);
 }
 
 .strength-fill.strength-fair {
-  background-color: var(--profile-warning);
-  width: 50%;
+  background: linear-gradient(90deg, #f59e0b, #d97706);
 }
 
 .strength-fill.strength-good {
-  background-color: var(--profile-info);
-  width: 75%;
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
 }
 
 .strength-fill.strength-strong {
-  background-color: var(--profile-success);
-  width: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
 }
 
 .strength-text {
   font-size: 0.8rem;
+  font-weight: 500;
   color: var(--profile-text-medium);
   display: flex;
   align-items: center;
@@ -951,6 +952,203 @@
   background-color: #fee2e2;
   color: #991b1b;
   border: 1px solid #fca5a5;
+}
+
+/* ============================================================================
+   FEEDBACK DE VALIDAÇÃO EM TEMPO REAL
+   ============================================================================ */
+
+.field-feedback {
+  font-size: 0.8rem;
+  margin-top: var(--profile-spacing-xs);
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--profile-radius);
+  transition: var(--profile-transition-fast);
+  min-height: 1.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.field-feedback.field-success {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.field-feedback.field-error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.field-feedback.field-loading {
+  background-color: #e0f2fe;
+  color: #0c4a6e;
+  border: 1px solid #bae6fd;
+}
+
+.field-feedback.field-neutral {
+  background-color: transparent;
+  color: transparent;
+  border: 1px solid transparent;
+}
+
+/* Estados dos inputs */
+.form-control-modern.is-loading {
+  border-color: var(--profile-info);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Botão desabilitado */
+.btn-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ============================================================================
+   MODAL DE SETORES
+   ============================================================================ */
+
+.setores-resumo {
+  transition: var(--profile-transition-fast);
+}
+
+.setores-resumo:hover {
+  color: var(--profile-primary-dark) !important;
+  text-decoration: none !important;
+}
+
+.setores-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--profile-spacing-md);
+  margin-bottom: var(--profile-spacing-lg);
+}
+
+@media (min-width: 768px) {
+  .setores-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.setor-card {
+  display: flex;
+  align-items: center;
+  gap: var(--profile-spacing-md);
+  padding: var(--profile-spacing-lg);
+  border: 2px solid var(--profile-border);
+  border-radius: var(--profile-radius-lg);
+  background-color: var(--profile-card-bg);
+  transition: var(--profile-transition);
+}
+
+.setor-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--profile-shadow-md);
+}
+
+.setor-card.setor-principal {
+  border-color: var(--profile-primary);
+  background: linear-gradient(
+    135deg,
+    rgba(67, 97, 238, 0.05),
+    rgba(67, 97, 238, 0.1)
+  );
+}
+
+.setor-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--profile-radius-full);
+  background-color: var(--profile-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.setor-card.setor-principal .setor-icon {
+  background: linear-gradient(
+    135deg,
+    var(--profile-primary),
+    var(--profile-primary-dark)
+  );
+  box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+}
+
+.setor-info {
+  flex: 1;
+}
+
+.setor-info h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: var(--profile-spacing-xs);
+  color: var(--profile-text-dark);
+}
+
+.setor-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--profile-radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.setor-badge.principal {
+  background-color: var(--profile-primary);
+  color: white;
+}
+
+.setor-badge.secundario {
+  background-color: var(--profile-secondary);
+  color: white;
+}
+
+.setores-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--profile-spacing-sm);
+  padding: var(--profile-spacing-lg);
+  background-color: var(--profile-bg);
+  border-radius: var(--profile-radius);
+  border: 1px solid var(--profile-border);
+}
+
+@media (min-width: 768px) {
+  .setores-summary {
+    flex-direction: row;
+    justify-content: space-around;
+  }
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: var(--profile-spacing-sm);
+  font-size: 0.9rem;
+  color: var(--profile-text-medium);
+}
+
+.summary-item i {
+  color: var(--profile-primary);
+  font-size: 1rem;
+}
+
+.summary-item strong {
+  color: var(--profile-text-dark);
 }
 
 /* ============================================================================
@@ -1061,6 +1259,28 @@
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .setores-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .setor-card {
+    padding: var(--profile-spacing-md);
+  }
+
+  .setor-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+
+  .setor-info h4 {
+    font-size: 1rem;
+  }
+
+  .setores-summary {
+    padding: var(--profile-spacing-md);
+  }
 }
 
 /* ============================================================================
@@ -1084,6 +1304,7 @@
 .content-header {
   animation: slideInUp 0.6s ease forwards;
 }
+
 .profile-actions-menu {
   animation-delay: 0.1s;
 }
@@ -1111,5 +1332,61 @@
   .info-section,
   .content-header {
     animation: none;
+  }
+}
+/* ============================================================================
+   ALERTAS DENTRO DOS MODAIS
+   ============================================================================ */
+
+.modal-body-modern .notification {
+  margin-bottom: 1rem;
+  border-radius: var(--profile-radius);
+  font-size: 0.9rem;
+  animation: slideInDown 0.3s ease;
+}
+
+.modal-body-modern .notification.success {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.modal-body-modern .notification.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.modal-body-modern .notification i {
+  margin-right: var(--profile-spacing-sm);
+  font-size: 1rem;
+}
+
+.modal-body-modern .close-notification {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: inherit;
+  cursor: pointer;
+  position: absolute;
+  right: var(--profile-spacing-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.7;
+  transition: var(--profile-transition-fast);
+}
+
+.modal-body-modern .close-notification:hover {
+  opacity: 1;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
