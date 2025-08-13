@@ -1020,7 +1020,7 @@ class ChamadosController extends Controller
             set_flash_message('error', 'Erro ao transferir chamado: ' . $e->getMessage());
             redirect('chamados/visualizar/' . $id);
         }
-    }
+    } 
 
     /**
      * Adiciona um comentário a um chamado

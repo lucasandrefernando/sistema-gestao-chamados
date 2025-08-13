@@ -481,46 +481,96 @@ function esc($str)
                         <!-- Corpo da tabela -->
                         <tbody>
                             <?php
-                            // Limita a exibição aos 5 chamados mais recentes
-                            $recentesLimitados = array_slice($recentes, 0, 5);
+                            // ✅ CORREÇÃO: Limita a exibição aos 10 chamados mais recentes
+                            $recentesLimitados = array_slice($recentes, 0, 6);
 
                             // Loop através dos chamados recentes
                             foreach ($recentesLimitados as $index => $chamado):
 
-                                // Gera iniciais do nome para o avatar
-                                $iniciais = '';
-                                $nomes = explode(' ', $chamado['solicitante']);
-                                foreach ($nomes as $nome) {
-                                    $iniciais .= substr($nome, 0, 1);
-                                    if (strlen($iniciais) >= 2) break;
+                                // ✅ CORREÇÃO: Gera iniciais do nome de forma segura
+                                $iniciais = '??'; // Valor padrão
+                                if (!empty($chamado['solicitante'])) {
+                                    $nomes = array_filter(explode(' ', trim($chamado['solicitante'])));
+                                    $iniciais = '';
+                                    foreach ($nomes as $nome) {
+                                        if (!empty(trim($nome))) {
+                                            $iniciais .= strtoupper(substr(trim($nome), 0, 1));
+                                            if (strlen($iniciais) >= 2) break;
+                                        }
+                                    }
+                                    if (empty($iniciais)) {
+                                        $iniciais = '??';
+                                    }
                                 }
-                                $iniciais = strtoupper($iniciais);
 
-                                // Formata data e hora
-                                $dataObj = new DateTime($chamado['data_solicitacao']);
-                                $dataFormatada = $dataObj->format('d/m/Y');
-                                $horaFormatada = $dataObj->format('H:i');
+                                // ✅ CORREÇÃO DEFINITIVA: Formatação de data 100% segura
+                                $dataFormatada = date('d/m/Y'); // Fallback padrão
+                                $horaFormatada = date('H:i');   // Fallback padrão
+
+                                if (!empty($chamado['data_solicitacao'])) {
+                                    try {
+                                        $dataString = trim($chamado['data_solicitacao']);
+
+                                        // Verifica diferentes formatos possíveis
+                                        if (preg_match('/^\d{2}\/\d{2}\/\d{4}/', $dataString)) {
+                                            // Formato DD/MM/YYYY - já formatado, apenas separa
+                                            $partes = explode(' ', $dataString);
+                                            $dataFormatada = $partes[0];
+                                            $horaFormatada = isset($partes[1]) ? $partes[1] : date('H:i');
+                                        } elseif (preg_match('/^\d{4}-\d{2}-\d{2}/', $dataString)) {
+                                            // Formato YYYY-MM-DD - formato do banco
+                                            $dataObj = DateTime::createFromFormat('Y-m-d H:i:s', $dataString);
+                                            if ($dataObj === false) {
+                                                // Tenta apenas a data sem hora
+                                                $dataObj = DateTime::createFromFormat('Y-m-d', substr($dataString, 0, 10));
+                                            }
+
+                                            if ($dataObj !== false) {
+                                                $dataFormatada = $dataObj->format('d/m/Y');
+                                                $horaFormatada = $dataObj->format('H:i');
+                                            }
+                                        } elseif (is_numeric($dataString)) {
+                                            // Timestamp Unix
+                                            $dataObj = new DateTime();
+                                            $dataObj->setTimestamp((int)$dataString);
+                                            $dataFormatada = $dataObj->format('d/m/Y');
+                                            $horaFormatada = $dataObj->format('H:i');
+                                        } else {
+                                            // Tenta criar DateTime diretamente (último recurso)
+                                            $dataObj = new DateTime($dataString);
+                                            $dataFormatada = $dataObj->format('d/m/Y');
+                                            $horaFormatada = $dataObj->format('H:i');
+                                        }
+                                    } catch (Exception $e) {
+                                        // Log do erro para debug
+                                        error_log("Erro ao formatar data do chamado ID {$chamado['id']}: {$chamado['data_solicitacao']} - Erro: " . $e->getMessage());
+
+                                        // Mantém valores padrão já definidos
+                                        $dataFormatada = date('d/m/Y');
+                                        $horaFormatada = date('H:i');
+                                    }
+                                }
 
                                 // Determina classe CSS do status
-                                $statusClass = '';
-                                switch ($chamado['status']) {
-                                    case 'Aberto':
-                                        $statusClass = 'status-aberto';
-                                        break;
-                                    case 'Em Atendimento':
-                                        $statusClass = 'status-andamento';
-                                        break;
-                                    case 'Concluído':
-                                        $statusClass = 'status-concluido';
-                                        break;
-                                    case 'Pausado':
-                                        $statusClass = 'status-pausado';
-                                        break;
-                                    case 'Cancelado':
-                                        $statusClass = 'status-cancelado';
-                                        break;
-                                    default:
-                                        $statusClass = 'status-aberto';
+                                $statusClass = 'status-aberto'; // Padrão
+                                if (!empty($chamado['status'])) {
+                                    switch (trim($chamado['status'])) {
+                                        case 'Aberto':
+                                            $statusClass = 'status-aberto';
+                                            break;
+                                        case 'Em Atendimento':
+                                            $statusClass = 'status-andamento';
+                                            break;
+                                        case 'Concluído':
+                                            $statusClass = 'status-concluido';
+                                            break;
+                                        case 'Pausado':
+                                            $statusClass = 'status-pausado';
+                                            break;
+                                        case 'Cancelado':
+                                            $statusClass = 'status-cancelado';
+                                            break;
+                                    }
                                 }
                             ?>
                                 <!-- Linha da tabela com animação -->
@@ -528,7 +578,7 @@ function esc($str)
 
                                     <!-- Coluna ID -->
                                     <td>
-                                        <span class="ticket-id">#<?= $chamado['id'] ?></span>
+                                        <span class="ticket-id">#<?= $chamado['id'] ?? '0' ?></span>
                                     </td>
 
                                     <!-- Coluna Solicitante -->
@@ -537,7 +587,7 @@ function esc($str)
                                             <!-- Avatar com iniciais -->
                                             <div class="user-avatar"><?= $iniciais ?></div>
                                             <div class="user-info">
-                                                <p class="user-name"><?= esc($chamado['solicitante']) ?></p>
+                                                <p class="user-name"><?= esc($chamado['solicitante'] ?? 'N/A') ?></p>
                                             </div>
                                         </div>
                                     </td>
@@ -547,8 +597,8 @@ function esc($str)
                                         <div class="ticket-desc">
                                             <div class="desc-preview"
                                                 data-bs-toggle="tooltip"
-                                                title="<?= esc($chamado['descricao']) ?>">
-                                                <?= esc($chamado['descricao']) ?>
+                                                title="<?= esc($chamado['descricao'] ?? '') ?>">
+                                                <?= esc($chamado['descricao'] ?? 'Sem descrição') ?>
                                             </div>
                                         </div>
                                     </td>
@@ -557,7 +607,7 @@ function esc($str)
                                     <td>
                                         <div class="sector-badge">
                                             <i class="fas fa-building"></i>
-                                            <?= esc($chamado['setor']) ?>
+                                            <?= esc($chamado['setor'] ?? 'N/A') ?>
                                         </div>
                                     </td>
 
@@ -565,7 +615,7 @@ function esc($str)
                                     <td>
                                         <span class="status-badge <?= $statusClass ?>">
                                             <i class="fas fa-circle"></i>
-                                            <?= esc($chamado['status']) ?>
+                                            <?= esc($chamado['status'] ?? 'Aberto') ?>
                                         </span>
                                     </td>
 
@@ -585,7 +635,7 @@ function esc($str)
                                     <!-- Coluna Ações -->
                                     <td>
                                         <div class="ticket-actions">
-                                            <a href="<?= base_url('chamados/visualizar/' . $chamado['id']) ?>"
+                                            <a href="<?= base_url('chamados/visualizar/' . ($chamado['id'] ?? '0')) ?>"
                                                 class="action-btn view"
                                                 data-bs-toggle="tooltip"
                                                 title="Visualizar detalhes do chamado">
@@ -607,15 +657,14 @@ function esc($str)
             <?php endif; ?>
         </div>
     </div>
-</div>
 
-<!-- =================================================================
+    <!-- =================================================================
      NOTIFICAÇÃO DE ATUALIZAÇÃO
      Container para notificações dinâmicas via JavaScript
      ================================================================= -->
-<div id="dashboard-notification" class="dashboard-notification"></div>
+    <div id="dashboard-notification" class="dashboard-notification"></div>
 
-<!-- =================================================================
+    <!-- =================================================================
      COMENTÁRIOS PARA DESENVOLVEDORES
      
      ESTRUTURA DO ARQUIVO:
